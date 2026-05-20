@@ -1,0 +1,11 @@
+backend/.env
+backend/venv/
+backend/wealthos.db
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+*.pyc
+*.db
