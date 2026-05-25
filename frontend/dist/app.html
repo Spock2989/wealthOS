@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WealthOS — Advisor Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --bg-alt:#FAFAFA; --bg-warm:#FBFBF9; --surface:#FFFFFF;
+  --ink:#0A0A0A; --ink-soft:#111111; --ink-2:#525252; --ink-3:#A3A3A3; --ink-4:#D4D4D4;
+  --line:#E5E5E5; --line-soft:#EFEFEF;
+  --accent:#1E40FF; --accent-dim:rgba(30,64,255,.08); --accent-2:rgba(30,64,255,.16);
+  --ok:#16A34A; --warn:#B45309; --danger:#DC2626;
+  --ok-dim:rgba(22,163,74,.08); --warn-dim:rgba(180,83,9,.08); --danger-dim:rgba(220,38,38,.08);
+  --radius:6px; --radius-lg:10px;
+  --shadow-1:0 1px 0 rgba(10,10,10,.02),0 1px 2px rgba(10,10,10,.03),0 4px 12px -4px rgba(10,10,10,.04),0 16px 32px -16px rgba(10,10,10,.05);
+  --shadow-2:0 1px 0 rgba(10,10,10,.03),0 2px 4px rgba(10,10,10,.04),0 8px 16px -6px rgba(10,10,10,.06),0 24px 48px -20px rgba(10,10,10,.08);
+  --ease:cubic-bezier(0.32,0.72,0,1); --ease-out:cubic-bezier(0.2,0.8,0.2,1);
+}
+[data-theme="dark"]{
+  --bg:#0A0A0A; --bg-alt:#0F0F0F; --bg-warm:#101010; --surface:#141414;
+  --ink:#FAFAFA; --ink-soft:#F5F5F5; --ink-2:#A3A3A3; --ink-3:#737373; --ink-4:#404040;
+  --line:#262626; --line-soft:#1F1F1F;
+  --accent:#5B7CFF; --accent-dim:rgba(91,124,255,.10); --accent-2:rgba(91,124,255,.22);
+  --ok-dim:rgba(22,163,74,.14); --warn-dim:rgba(180,83,9,.16); --danger-dim:rgba(220,38,38,.14);
+  --shadow-1:0 1px 0 rgba(0,0,0,.4),0 4px 12px -4px rgba(0,0,0,.5);
+  --shadow-2:0 1px 0 rgba(0,0,0,.4),0 8px 24px -6px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-feature-settings:"ss01","ss03","cv11","calt";
+  font-variation-settings:"opsz" 14;
+  background:var(--bg); color:var(--ink); font-size:14px; line-height:1.55;
+  letter-spacing:-0.005em; -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;
+  overflow:hidden;
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;font-feature-settings:"calt" 0;letter-spacing:0;}
+::selection{background:var(--accent);color:#fff;}
+:focus{outline:none;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
+
+/* ── LOGO ── */
+.logo{display:flex;align-items:center;gap:9px;}
+.logo-mark{width:28px;height:28px;position:relative;flex-shrink:0;}
+.logo-sq1{width:17px;height:17px;border:1.5px solid var(--ink);border-radius:3px;position:absolute;top:0;left:0;}
+.logo-sq2{width:17px;height:17px;background:var(--accent);border-radius:3px;position:absolute;bottom:0;right:0;}
+.logo-text{font-size:16px;font-weight:600;letter-spacing:-.02em;}
+.logo-text em{font-style:normal;color:var(--accent);}
+.logo-text .ai{color:var(--ink-3);font-weight:400;font-size:13px;}
+
+/* ════ AUTH SCREEN ════ */
+#screen-auth{position:fixed;inset:0;display:flex;background:var(--bg);z-index:100;}
+.auth-left{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;}
+.auth-right{width:46%;background:var(--bg-warm);border-left:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden;}
+.auth-right::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,var(--accent-dim),transparent 60%);}
+.auth-box{width:100%;max-width:360px;}
+.auth-logo{margin-bottom:40px;}
+.auth-h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin-bottom:6px;}
+.auth-sub{color:var(--ink-2);font-size:14px;margin-bottom:32px;}
+.tab-switch{display:flex;background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:3px;margin-bottom:28px;}
+.tab-switch button{flex:1;padding:8px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;border-radius:4px;transition:all .2s var(--ease);}
+.tab-switch button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1);}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:7px;}
+.field input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;color:var(--ink);font-family:inherit;font-size:14px;transition:border-color .15s,box-shadow .15s;}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+.field input::placeholder{color:var(--ink-3);}
+.btn{width:100%;border:none;border-radius:var(--radius);padding:12px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:var(--shadow-1);}
+.btn-primary:active{transform:translateY(0);}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.btn-ghost{background:transparent;color:var(--ink-2);border:1px solid var(--line);margin-top:10px;}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--ink-3);font-size:12px;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line);}
+.auth-err{background:var(--danger-dim);border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius);padding:11px 14px;font-size:13px;margin-bottom:18px;display:none;}
+.auth-foot{margin-top:24px;text-align:center;font-size:13px;color:var(--ink-3);}
+.auth-foot a{color:var(--accent);text-decoration:none;cursor:pointer;}
+/* auth right showcase */
+.showcase{position:relative;z-index:1;max-width:400px;}
+.showcase-quote{font-size:22px;font-weight:500;letter-spacing:-.02em;line-height:1.4;margin-bottom:24px;}
+.showcase-quote em{font-style:normal;color:var(--accent);}
+.showcase-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px;}
+.showcase-stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;}
+.showcase-stat-val{font-size:22px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;}
+.showcase-stat-label{font-size:12px;color:var(--ink-3);margin-top:4px;}
+
+/* ════ APP ════ */
+#screen-app{position:fixed;inset:0;display:flex;opacity:0;pointer-events:none;transition:opacity .35s var(--ease);}
+#screen-app.visible{opacity:1;pointer-events:all;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:228px;background:var(--bg-alt);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid var(--line);}
+.sidebar-ws{padding:12px 14px;border-bottom:1px solid var(--line);}
+.sidebar-ws-label{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:500;}
+.sidebar-ws-name{font-size:13px;font-weight:600;}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
+.nav-section{padding:12px 14px 5px;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:var(--radius);margin:1px 8px;transition:all .15s var(--ease);font-size:13px;color:var(--ink-2);}
+.nav-item:hover{background:var(--surface);color:var(--ink);}
+.nav-item.active{background:var(--accent-dim);color:var(--accent);font-weight:500;}
+.nav-icon{font-size:14px;width:18px;text-align:center;}
+.nav-badge{background:var(--danger);color:#fff;font-size:10px;font-weight:600;border-radius:999px;padding:1px 6px;margin-left:auto;}
+.sidebar-bottom{padding:10px;border-top:1px solid var(--line);}
+.sidebar-btn{display:flex;align-items:center;gap:9px;padding:8px;cursor:pointer;border-radius:var(--radius);font-size:12px;color:var(--ink-2);width:100%;border:none;background:none;font-family:inherit;transition:background .15s;}
+.sidebar-btn:hover{background:var(--surface);color:var(--ink);}
+.sidebar-user{display:flex;align-items:center;gap:9px;padding:8px;margin-top:4px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-size:11px;color:var(--ink-3);}
+.user-logout{cursor:pointer;font-size:14px;color:var(--ink-3);border:none;background:none;padding:4px;}
+.user-logout:hover{color:var(--danger);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.topbar{height:54px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-.01em;}
+.search-wrap{display:flex;align-items:center;background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:7px 11px;gap:8px;width:240px;}
+.search-wrap input{background:none;border:none;outline:none;font-family:inherit;font-size:13px;color:var(--ink);width:100%;}
+.search-wrap input::placeholder{color:var(--ink-3);}
+.topbar-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:8px 15px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);}
+.topbar-btn:hover{filter:brightness(1.08);}
+.content{flex:1;overflow-y:auto;padding:24px;}
+
+.view{display:none;}.view.active{display:block;animation:fadeIn .3s var(--ease);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── CARDS / GRID ── */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:600;letter-spacing:-.01em;}
+.card-sub{font-size:12px;color:var(--ink-3);margin-top:2px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+
+.metric-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;}
+.metric-label{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;font-weight:500;}
+.metric-value{font-size:24px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;}
+.metric-sub{font-size:12px;color:var(--ink-3);margin-top:3px;}
+.c-ok{color:var(--ok);}.c-warn{color:var(--warn);}.c-danger{color:var(--danger);}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);}
+td{padding:11px 12px;font-size:13px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr.clickable{cursor:pointer;transition:background .12s;}
+tr.clickable:hover td{background:var(--bg-alt);}
+.score-badge{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:22px;padding:0 8px;border-radius:5px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.s-ok{background:var(--ok-dim);color:var(--ok);}.s-warn{background:var(--warn-dim);color:var(--warn);}.s-danger{background:var(--danger-dim);color:var(--danger);}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:500;}
+.p-ok{background:var(--ok-dim);color:var(--ok);}.p-warn{background:var(--warn-dim);color:var(--warn);}.p-danger{background:var(--danger-dim);color:var(--danger);}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* ── BARS ── */
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:9px;}
+.bar-label{width:96px;font-size:12px;color:var(--ink-2);flex-shrink:0;}
+.bar-track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s var(--ease);}
+.bar-val{width:44px;text-align:right;font-size:12px;font-family:'JetBrains Mono',monospace;}
+
+/* ── UPLOAD ── */
+.upload-zone{border:1.5px dashed var(--line);border-radius:var(--radius-lg);padding:44px;text-align:center;cursor:pointer;transition:all .2s var(--ease);}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-dim);}
+.upload-icon{font-size:30px;margin-bottom:12px;opacity:.7;}
+.upload-title{font-size:15px;font-weight:600;margin-bottom:5px;}
+.upload-sub{font-size:13px;color:var(--ink-2);}
+#cas-file-input{display:none;}
+.progress-bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;}
+select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;color:var(--ink);font-family:inherit;font-size:14px;}
+
+/* ── DETAIL ── */
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--ink-2);cursor:pointer;font-size:13px;padding:6px 11px;border-radius:var(--radius);border:1px solid var(--line);background:none;font-family:inherit;transition:all .15s;margin-bottom:18px;}
+.back-btn:hover{color:var(--accent);border-color:var(--accent);}
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;}
+.detail-name{font-size:22px;font-weight:600;letter-spacing:-.02em;}
+.detail-meta{font-size:13px;color:var(--ink-2);margin-top:5px;}
+.detail-aum{font-size:28px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:-.02em;}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+.tab{padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--ink-2);transition:all .15s;margin-bottom:-1px;font-weight:500;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;}.tab-panel.active{display:block;animation:fadeIn .25s var(--ease);}
+.gauge-wrap{text-align:center;padding:14px 0;}
+.gauge-val{font-size:30px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.gauge-label{font-size:12px;color:var(--ink-2);margin-top:4px;}
+
+/* ── ALERTS / FEED ── */
+.alert-item{display:flex;gap:12px;padding:13px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:9px;cursor:pointer;transition:all .15s;}
+.alert-item:hover{background:var(--bg-alt);border-color:var(--ink-4);}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.alert-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.alert-sub{font-size:12px;color:var(--ink-2);line-height:1.5;}
+.alert-time{font-size:11px;color:var(--ink-3);margin-top:5px;}
+.feed-item{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:13px;}
+.feed-item:last-child{border-bottom:none;}
+.scenario-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all .15s;}
+.scenario-card:hover,.scenario-card.active{border-color:var(--accent);}
+
+/* ── MISC ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-state,.empty-state,.error-state{text-align:center;padding:44px;color:var(--ink-2);font-size:13px;}
+.loading-state .spinner{width:22px;height:22px;margin-bottom:12px;}
+.error-state{color:var(--danger);}
+.empty-state{color:var(--ink-3);}
+.btn-sm{background:var(--bg-alt);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 11px;font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:all .12s;}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:13px 17px;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s var(--ease);box-shadow:var(--shadow-2);max-width:340px;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.t-ok{border-color:var(--ok);}#toast.t-err{border-color:var(--danger);}#toast.t-warn{border-color:var(--warn);}
+</style>
+</head>
+<body>
+
+<!-- ════ AUTH ════ -->
+<div id="screen-auth">
+  <div class="auth-left">
+    <div class="auth-box">
+      <div class="logo auth-logo">
+        <div class="logo-mark"><div class="logo-sq1"></div><div class="logo-sq2"></div></div>
+        <span class="logo-text">Wealth<em>OS</em> <span class="ai">/ ai</span></span>
+      </div>
+      <div class="auth-h1" id="auth-h1">Welcome back</div>
+      <div class="auth-sub" id="auth-sub">Sign in to your advisor workspace.</div>
+
+      <div class="tab-switch">
+        <button id="tab-login" class="active" onclick="switchAuth('login')">Login</button>
+        <button id="tab-signup" onclick="switchAuth('signup')">Sign Up</button>
+      </div>
+
+      <div id="auth-err" class="auth-err"></div>
+
+      <div class="field" id="field-name" style="display:none">
+        <label>Full Name</label>
+        <input type="text" id="auth-name" placeholder="Kshitij Tiwari" autocomplete="name">
+      </div>
+      <div class="field" id="field-firm" style="display:none">
+        <label>Firm Name</label>
+        <input type="text" id="auth-firm" placeholder="Your wealth firm" autocomplete="organization">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@firm.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()">Sign In →</button>
+      <button class="btn btn-ghost" onclick="enterDemo()">Explore Demo — No Account Needed</button>
+
+      <div class="auth-foot" id="auth-foot">
+        New to WealthOS? <a onclick="switchAuth('signup')">Create an account</a>
+      </div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="showcase">
+      <div class="showcase-quote">The financial truth and <em>portfolio intelligence layer</em> for Indian wealth management.</div>
+      <div style="color:var(--ink-2);font-size:14px;line-height:1.6;">Deterministic analytics. Look-through decomposition. Macro scenario propagation. Every metric explainable and auditable.</div>
+      <div class="showcase-stats">
+        <div class="showcase-stat"><div class="showcase-stat-val">15</div><div class="showcase-stat-label">Analytics engines</div></div>
+        <div class="showcase-stat"><div class="showcase-stat-val">100%</div><div class="showcase-stat-label">Deterministic</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="screen-app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo"><div class="logo-mark"><div class="logo-sq1"></div><div class="logo-sq2"></div></div><span class="logo-text">Wealth<em>OS</em></span></div>
+    </div>
+    <div class="sidebar-ws">
+      <div class="sidebar-ws-label">Workspace</div>
+      <div class="sidebar-ws-name" id="ws-name">Loading…</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Core</div>
+      <div class="nav-item active" data-view="overview" onclick="showView('overview',this)"><span class="nav-icon">◎</span>Overview</div>
+      <div class="nav-item" data-view="portfolios" onclick="showView('portfolios',this)"><span class="nav-icon">⬡</span>Portfolios<span id="badge-portfolios" class="nav-badge" style="display:none">0</span></div>
+      <div class="nav-item" data-view="upload" onclick="showView('upload',this)"><span class="nav-icon">↑</span>Upload CAS</div>
+      <div class="nav-section">Intelligence</div>
+      <div class="nav-item" data-view="scenarios" onclick="showView('scenarios',this)"><span class="nav-icon">◈</span>Scenarios</div>
+      <div class="nav-item" data-view="alerts" onclick="showView('alerts',this)"><span class="nav-icon">◉</span>Alerts<span class="nav-badge">3</span></div>
+      <div class="nav-item" data-view="intelligence" onclick="showView('intelligence',this)"><span class="nav-icon">◆</span>Intelligence</div>
+      <div class="nav-section">Workflow</div>
+      <div class="nav-item" data-view="reviews" onclick="showView('reviews',this)"><span class="nav-icon">□</span>Reviews</div>
+      <div class="nav-item" data-view="reports" onclick="showView('reports',this)"><span class="nav-icon">≡</span>Reports</div>
+      <div class="nav-item" data-view="settings" onclick="showView('settings',this)"><span class="nav-icon">⊙</span>Settings</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="sidebar-btn" onclick="toggleTheme()">◑ Toggle Theme</button>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="user-initials">—</div>
+        <div class="user-info"><div class="user-name" id="user-name-display">—</div><div class="user-role">Advisor</div></div>
+        <button class="user-logout" onclick="doLogout()" title="Sign out">⏻</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Overview</div>
+      <div class="search-wrap"><span style="color:var(--ink-3);font-size:13px;">⌕</span><input type="text" placeholder="Search clients…" id="global-search" oninput="onSearch(this.value)"></div>
+      <button class="topbar-btn" onclick="showView('upload',document.querySelector('[data-view=upload]'))">+ Upload CAS</button>
+    </div>
+    <div class="content">
+
+      <div class="view active" id="view-overview">
+        <div id="overview-loading" class="loading-state"><div class="spinner"></div><div>Loading portfolio intelligence…</div></div>
+        <div id="overview-content" style="display:none">
+          <div class="grid-4" style="margin-bottom:16px;" id="overview-metrics"></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><div><div class="card-title">Client Portfolios</div><div class="card-sub" id="ov-count">— clients</div></div><button class="btn-sm" onclick="showView('portfolios',document.querySelector('[data-view=portfolios]'))">View All</button></div>
+              <div class="table-wrap"><table><thead><tr><th>Client</th><th>AUM</th><th>Risk</th><th>Status</th></tr></thead><tbody id="ov-tbody"></tbody></table></div>
+            </div>
+            <div class="card"><div class="card-header"><div class="card-title">Recent Activity</div></div><div id="activity-feed"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="view-portfolios">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">All Portfolios</div><div class="card-sub" id="pf-count">Loading…</div></div><button class="topbar-btn" onclick="showView('upload',document.querySelector('[data-view=upload]'))">+ Add Client</button></div>
+          <div id="pf-loading" class="loading-state"><div class="spinner"></div><div>Loading…</div></div>
+          <div id="pf-empty" class="empty-state" style="display:none">No portfolios yet. Upload a CAS PDF to add your first client.</div>
+          <div class="table-wrap" id="pf-wrap" style="display:none"><table><thead><tr><th>Client</th><th>PAN</th><th>AUM</th><th>Risk</th><th>HHI</th><th>Holdings</th><th></th></tr></thead><tbody id="pf-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="view" id="view-client">
+        <button class="back-btn" onclick="goBack()">← Back to Portfolios</button>
+        <div class="detail-header">
+          <div><div class="detail-name" id="cl-name">—</div><div class="detail-meta" id="cl-meta">—</div></div>
+          <div style="text-align:right"><div class="detail-aum" id="cl-aum">—</div><div style="font-size:12px;color:var(--ink-2);margin-top:4px" id="cl-updated"></div></div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="showTab('t-overview',this)">Overview</div>
+          <div class="tab" onclick="showTab('t-exposures',this)">Exposures</div>
+          <div class="tab" onclick="showTab('t-risk',this)">Risk Engine</div>
+          <div class="tab" onclick="showTab('t-scenarios',this)">Scenarios</div>
+          <div class="tab" onclick="showTab('t-factors',this)">Factor DNA</div>
+          <div class="tab" onclick="showTab('t-holdings',this)">Holdings</div>
+        </div>
+        <div class="tab-panel active" id="t-overview">
+          <div class="grid-4" style="margin-bottom:16px;" id="cl-metrics"></div>
+          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Sector Exposure</div></div><div id="sector-bars"></div></div><div class="card"><div class="card-header"><div class="card-title">Asset Allocation</div></div><div id="asset-bars"></div></div></div>
+        </div>
+        <div class="tab-panel" id="t-exposures">
+          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Fund Overlap</div></div><div id="overlap-content"></div></div><div class="card"><div class="card-header"><div class="card-title">Concentration Risk</div></div><div id="conc-content"></div></div></div>
+        </div>
+        <div class="tab-panel" id="t-risk">
+          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Risk Score</div></div><div class="gauge-wrap" id="risk-gauge"></div></div><div class="card"><div class="card-header"><div class="card-title">Risk Metrics</div></div><div id="risk-metrics"></div></div></div>
+          <div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Macro Sensitivity</div></div><div id="macro-bars"></div></div>
+        </div>
+        <div class="tab-panel" id="t-scenarios"><div id="cl-scenarios" class="grid-2"></div></div>
+        <div class="tab-panel" id="t-factors">
+          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Factor Intensity</div></div><div id="factor-bars"></div></div><div class="card"><div class="card-header"><div class="card-title">Portfolio DNA</div></div><div id="dna-content"></div></div></div>
+        </div>
+        <div class="tab-panel" id="t-holdings">
+          <div class="card"><div class="card-header"><div class="card-title">Holdings</div><div id="hold-count" class="card-sub"></div></div><div class="table-wrap"><table><thead><tr><th>Instrument</th><th>ISIN</th><th>Sector</th><th>Class</th><th>Value</th><th>Weight</th></tr></thead><tbody id="hold-tbody"></tbody></table></div></div>
+        </div>
+      </div>
+
+      <div class="view" id="view-upload">
+        <div style="max-width:620px;margin:0 auto;">
+          <div style="margin-bottom:20px"><div class="card-title" style="font-size:17px;margin-bottom:5px;">Upload CAS Statement</div><div style="color:var(--ink-2);font-size:13px;">Upload a CAMS or KFin Consolidated Account Statement to ingest portfolio holdings.</div></div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><div class="card-title">Client</div></div>
+            <div class="field"><label>Select or create client</label><select id="upload-select"><option value="">— Select client —</option></select></div>
+            <div id="new-client-fields" style="display:none"><div class="grid-2"><div class="field"><label>Client Name</label><input type="text" id="nc-name" placeholder="Mehta Family Office"></div><div class="field"><label>PAN</label><input type="text" id="nc-pan" placeholder="ABCDE1234F" style="text-transform:uppercase"></div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">CAS Document</div></div>
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('cas-file-input').click()" ondragover="onDragOver(event)" ondrop="onDrop(event)"><div class="upload-icon">⬆</div><div class="upload-title">Drop CAS PDF here</div><div class="upload-sub">CAMS or KFin statement · PDF</div></div>
+            <input type="file" id="cas-file-input" accept=".pdf" onchange="onFileSelect(this)">
+            <div id="file-selected" style="display:none;margin-top:12px;padding:11px 13px;background:var(--bg-alt);border-radius:var(--radius);font-size:13px;"></div>
+            <div id="upload-progress" style="display:none;margin-top:12px"><div style="font-size:12px;color:var(--ink-2);margin-bottom:6px" id="up-status">Uploading…</div><div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div></div>
+            <button class="btn btn-primary" style="margin-top:16px" onclick="doUpload()" id="upload-btn">Upload & Analyze →</button>
+          </div>
+          <div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Recent Jobs</div></div><div id="jobs-list"><div class="empty-state">No uploads yet.</div></div></div>
+        </div>
+      </div>
+
+      <div class="view" id="view-scenarios">
+        <div style="margin-bottom:16px;font-size:13px;color:var(--ink-2)">Select a macro scenario to estimate portfolio impact across all clients.</div>
+        <div class="grid-3" id="scenarios-grid"></div>
+        <div id="scenario-result" style="display:none;margin-top:20px"><div class="card"><div class="card-header"><div><div class="card-title" id="sr-title">—</div><div class="card-sub" id="sr-macro">—</div></div></div><table><thead><tr><th>Client</th><th>AUM</th><th>Impact</th><th>Est. Loss</th><th>Band</th></tr></thead><tbody id="sr-tbody"></tbody></table></div></div>
+      </div>
+
+      <div class="view" id="view-alerts"><div id="alerts-list"></div></div>
+      <div class="view" id="view-intelligence"><div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Macro Signals</div></div><div id="macro-signals"></div></div><div class="card"><div class="card-header"><div class="card-title">Portfolio Anomalies</div></div><div id="anomalies"></div></div></div></div>
+      <div class="view" id="view-reviews"><div class="card"><div class="card-header"><div class="card-title">Review Queue</div></div><div id="review-list"></div></div></div>
+      <div class="view" id="view-reports"><div class="card"><div class="card-header"><div class="card-title">Client Reports</div></div><div class="table-wrap"><table><thead><tr><th>Client</th><th>Type</th><th>Generated</th><th></th></tr></thead><tbody id="reports-tbody"></tbody></table></div></div></div>
+      <div class="view" id="view-settings">
+        <div style="max-width:480px">
+          <div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">Account</div></div><div class="field"><label>Full Name</label><input type="text" id="set-name"></div><div class="field"><label>Email</label><input type="email" id="set-email" disabled></div></div>
+          <div class="card"><div class="card-header"><div class="card-title">API Status</div></div><button class="btn-sm" onclick="testApi()">Test Connection</button><span id="api-test" style="margin-left:10px;font-size:12px;color:var(--ink-2)"></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API='https://api.wlthos.in';
+let TOKEN=sessionStorage.getItem('wos_token')||localStorage.getItem('wos_token')||null;
+let USER=null,PORTFOLIOS=[],CURRENT=null,FILE=null,AUTH_MODE='login';
+
+/* ════ AUTH ════ */
+function switchAuth(mode){
+  AUTH_MODE=mode;
+  document.getElementById('tab-login').classList.toggle('active',mode==='login');
+  document.getElementById('tab-signup').classList.toggle('active',mode==='signup');
+  document.getElementById('field-name').style.display=mode==='signup'?'block':'none';
+  document.getElementById('field-firm').style.display=mode==='signup'?'block':'none';
+  document.getElementById('auth-h1').textContent=mode==='signup'?'Create your account':'Welcome back';
+  document.getElementById('auth-sub').textContent=mode==='signup'?'Start analyzing portfolios in minutes.':'Sign in to your advisor workspace.';
+  document.getElementById('auth-submit').textContent=mode==='signup'?'Create Account →':'Sign In →';
+  document.getElementById('auth-foot').innerHTML=mode==='signup'?'Already have an account? <a onclick="switchAuth(\'login\')">Log in</a>':'New to WealthOS? <a onclick="switchAuth(\'signup\')">Create an account</a>';
+  document.getElementById('auth-err').style.display='none';
+}
+
+async function submitAuth(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  const err=document.getElementById('auth-err');
+  const btn=document.getElementById('auth-submit');
+  err.style.display='none';
+  if(!email||!pass){return showAuthErr('Enter your email and password.');}
+  btn.disabled=true;
+  const orig=btn.textContent; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    if(AUTH_MODE==='signup'){
+      const name=document.getElementById('auth-name').value.trim();
+      const firm=document.getElementById('auth-firm').value.trim();
+      if(!name){btn.disabled=false;btn.textContent=orig;return showAuthErr('Enter your name.');}
+      const r=await fetch(`${API}/v1/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,name,full_name:name,firm,firm_name:firm})});
+      const d=await r.json();
+      if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'Could not create account');
+      // auto-login after signup
+    }
+    // login (works for both flows)
+    const lr=await fetch(`${API}/v1/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const ld=await lr.json();
+    if(!lr.ok)throw new Error(typeof ld.detail==='string'?ld.detail:'Invalid email or password');
+    TOKEN=ld.access_token||ld.token;
+    sessionStorage.setItem('wos_token',TOKEN);
+    localStorage.setItem('wos_token',TOKEN);
+    await enterApp();
+  }catch(e){showAuthErr(e.message);btn.disabled=false;btn.textContent=orig;}
+}
+
+function showAuthErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.style.display='block';}
+
+function enterDemo(){
+  TOKEN='DEMO';sessionStorage.setItem('wos_token','DEMO');
+  USER={name:'Demo Advisor',email:'demo@wlthos.in',firm_name:'Demo Workspace'};
+  renderApp();PORTFOLIOS=demoData();renderOverview(PORTFOLIOS);renderPortfolios(PORTFOLIOS);populateSelect(PORTFOLIOS);
+  document.getElementById('badge-portfolios').textContent=PORTFOLIOS.length;document.getElementById('badge-portfolios').style.display='inline';
+}
+
+function doLogout(){TOKEN=null;sessionStorage.clear();localStorage.removeItem('wos_token');document.getElementById('screen-app').classList.remove('visible');document.getElementById('screen-auth').style.display='flex';}
+
+async function api(path,opts={}){
+  if(TOKEN==='DEMO')throw new Error('DEMO');
+  const h={'Content-Type':'application/json',...(opts.headers||{})};
+  if(TOKEN)h['Authorization']=`Bearer ${TOKEN}`;
+  const r=await fetch(`${API}${path}`,{...opts,headers:h});
+  if(r.status===401){doLogout();throw new Error('Session expired');}
+  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(typeof d.detail==='string'?d.detail:'Request failed');}
+  return r.json();
+}
+
+async function enterApp(){
+  try{USER=await api('/v1/auth/me');}catch(e){USER={name:'Advisor',email:''};}
+  renderApp();loadOverview();loadPortfolios();
+}
+
+function renderApp(){
+  document.getElementById('screen-auth').style.display='none';
+  document.getElementById('screen-app').classList.add('visible');
+  const n=USER.name||USER.full_name||USER.email||'Advisor';
+  document.getElementById('user-name-display').textContent=n;
+  document.getElementById('ws-name').textContent=USER.firm_name||USER.firm||'My Workspace';
+  document.getElementById('user-initials').textContent=n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('set-name').value=n;document.getElementById('set-email').value=USER.email||'';
+}
+
+/* ════ DATA LOADERS ════ */
+async function loadOverview(){
+  if(TOKEN==='DEMO')return;
+  try{PORTFOLIOS=await api('/v1/portfolios');renderOverview(PORTFOLIOS);}
+  catch(e){document.getElementById('overview-loading').innerHTML=`<div class="error-state">${e.message}</div>`;}
+}
+function renderOverview(pf){
+  document.getElementById('overview-loading').style.display='none';
+  document.getElementById('overview-content').style.display='block';
+  const aum=pf.reduce((s,p)=>s+(p.total_value||0),0);
+  document.getElementById('overview-metrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Total AUM</div><div class="metric-value">₹${cr(aum)}</div><div class="metric-sub">All clients</div></div>
+    <div class="metric-card"><div class="metric-label">Clients</div><div class="metric-value">${pf.length}</div><div class="metric-sub">Active</div></div>
+    <div class="metric-card"><div class="metric-label">Alerts</div><div class="metric-value c-warn">3</div><div class="metric-sub">Need attention</div></div>
+    <div class="metric-card"><div class="metric-label">Reviews</div><div class="metric-value c-danger">2</div><div class="metric-sub">Due</div></div>`;
+  document.getElementById('ov-count').textContent=`${pf.length} clients`;
+  document.getElementById('ov-tbody').innerHTML=pf.slice(0,8).map(p=>{const s=p.analytics?.risk_score??55;const c=s>70?'danger':s>50?'warn':'ok';return `<tr class="clickable" onclick="openClient('${p.id}')"><td><strong>${p.name}</strong></td><td class="mono">₹${cr(p.total_value||0)}</td><td><span class="score-badge s-${c}">${s}</span></td><td><span class="pill p-${c}"><span class="pill-dot"></span>${s>70?'Review':s>50?'Monitor':'OK'}</span></td></tr>`;}).join('')||'<tr><td colspan="4" class="empty-state">No clients yet</td></tr>';
+  document.getElementById('activity-feed').innerHTML=[['↑','CAS uploaded','2h ago'],['◉','Concentration alert','5h ago'],['◈','Scenario run','1d ago']].map(([i,t,a])=>`<div class="feed-item"><span style="color:var(--accent)">${i}</span><div style="flex:1">${t}<div style="font-size:11px;color:var(--ink-3);margin-top:2px">${a}</div></div></div>`).join('');
+}
+
+async function loadPortfolios(){
+  if(TOKEN==='DEMO')return;
+  document.getElementById('pf-loading').style.display='block';document.getElementById('pf-wrap').style.display='none';
+  try{PORTFOLIOS=await api('/v1/portfolios');renderPortfolios(PORTFOLIOS);populateSelect(PORTFOLIOS);
+    const b=document.getElementById('badge-portfolios');b.textContent=PORTFOLIOS.length;b.style.display=PORTFOLIOS.length?'inline':'none';}
+  catch(e){document.getElementById('pf-loading').innerHTML=`<div class="error-state">${e.message}</div>`;}
+}
+function renderPortfolios(pf){
+  document.getElementById('pf-loading').style.display='none';
+  document.getElementById('pf-count').textContent=`${pf.length} client portfolios`;
+  if(!pf.length){document.getElementById('pf-empty').style.display='block';return;}
+  document.getElementById('pf-wrap').style.display='block';
+  document.getElementById('pf-tbody').innerHTML=pf.map(p=>{const a=p.analytics||{};const s=a.risk_score;const c=typeof s==='number'?(s>70?'danger':s>50?'warn':'ok'):'';return `<tr class="clickable" onclick="openClient('${p.id}')"><td><strong>${p.name}</strong></td><td class="mono" style="color:var(--ink-2);font-size:12px">${p.pan||'—'}</td><td class="mono">₹${cr(p.total_value||0)}</td><td>${typeof s==='number'?`<span class="score-badge s-${c}">${s}</span>`:'—'}</td><td class="mono">${a.hhi?a.hhi.toFixed(3):'—'}</td><td class="mono">${p.holdings_count??p.holdings?.length??'—'}</td><td><button class="btn-sm" onclick="event.stopPropagation();reanalyze('${p.id}')">Reanalyze</button></td></tr>`;}).join('');
+}
+
+async function openClient(id){
+  showView('client',null);document.getElementById('topbar-title').textContent='Client Intelligence';
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===0));
+  document.getElementById('cl-name').textContent='Loading…';
+  let p;
+  if(TOKEN==='DEMO'){p=demoData().find(x=>x.id==id)||demoData()[0];p.holdings=demoHoldings();}
+  else{try{p=await api(`/v1/portfolios/${id}`);}catch(e){toast(e.message,'err');return;}}
+  CURRENT=p;renderClient(p);
+}
+
+function renderClient(p){
+  const a=p.analytics||{};
+  document.getElementById('cl-name').textContent=p.name;
+  document.getElementById('cl-meta').textContent=`PAN: ${p.pan||'—'} · ${p.holdings?.length||0} holdings`;
+  document.getElementById('cl-aum').textContent=`₹${cr(p.total_value||0)}`;
+  const s=a.risk_score??55;const col=s>70?'var(--danger)':s>50?'var(--warn)':'var(--ok)';
+  document.getElementById('cl-metrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Risk Score</div><div class="metric-value" style="color:${col}">${s}</div><div class="metric-sub">/ 100</div></div>
+    <div class="metric-card"><div class="metric-label">HHI</div><div class="metric-value mono">${(a.hhi||0).toFixed(3)}</div><div class="metric-sub">Concentration</div></div>
+    <div class="metric-card"><div class="metric-label">Eff. N</div><div class="metric-value mono">${(a.neff||0).toFixed(1)}</div><div class="metric-sub">Diversification</div></div>
+    <div class="metric-card"><div class="metric-label">Volatility</div><div class="metric-value mono">${a.volatility?(a.volatility*100).toFixed(1)+'%':'—'}</div><div class="metric-sub">Annualized</div></div>`;
+  document.getElementById('sector-bars').innerHTML=bars(a.sector_exposure||{},'%','var(--accent)');
+  document.getElementById('asset-bars').innerHTML=bars(a.asset_allocation||{Equity:p.equity||0,Debt:p.debt||0,Cash:p.cash||0},'%','var(--ok)');
+  const ov=a.overlap_pct??0;
+  document.getElementById('overlap-content').innerHTML=`<div class="metric-label">Fund Overlap</div><div class="metric-value" style="color:${ov>30?'var(--danger)':ov>20?'var(--warn)':'var(--ok)'};margin-bottom:8px">${ov.toFixed(1)}%</div><div style="font-size:12px;color:var(--ink-2)">Stocks held across multiple funds</div>`;
+  document.getElementById('conc-content').innerHTML=`<div class="metric-label">HHI</div><div class="metric-value mono" style="margin-bottom:6px">${(a.hhi||0).toFixed(3)}</div><div style="font-size:12px;color:var(--ink-2);margin-bottom:14px">Effective N: ${(a.neff||0).toFixed(1)}</div><div class="bar-row"><div class="bar-label">Top holding</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,(a.top1_weight||15)*3)}%;background:var(--danger)"></div></div><div class="bar-val">${(a.top1_weight||15).toFixed(1)}%</div></div>`;
+  document.getElementById('risk-gauge').innerHTML=`<svg viewBox="0 0 120 70" width="130"><path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/><path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${s*1.57} 157"/></svg><div class="gauge-val" style="color:${col}">${s}</div><div class="gauge-label">${s>70?'High Risk':s>50?'Moderate':'Managed'}</div>`;
+  document.getElementById('risk-metrics').innerHTML=[['Volatility',a.volatility?(a.volatility*100).toFixed(1)+'%':'—','var(--warn)',Math.min(100,(a.volatility||.15)*300)],['Max DD',a.max_drawdown?(a.max_drawdown*100).toFixed(1)+'%':'—','var(--danger)',Math.min(100,(a.max_drawdown||.12)*200)],['Sharpe',(a.sharpe||1.2).toFixed(2),'var(--ok)',Math.min(100,(a.sharpe||1.2)*30)],['Liquidity',((a.liquidity_score||.7)*100).toFixed(0)+'%','var(--accent)',(a.liquidity_score||.7)*100]].map(([n,v,c,w])=>`<div class="bar-row"><div class="bar-label">${n}</div><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${c}"></div></div><div class="bar-val">${v}</div></div>`).join('');
+  document.getElementById('macro-bars').innerHTML=bars(a.macro_sensitivity||{RBI_Rate:.6,Inflation:.4,Oil:.3,USDINR:.5,GlobalRisk:.55},'','#8B5CF6',1);
+  document.getElementById('factor-bars').innerHTML=Object.entries(a.factor_exposure||{Growth:.75,Quality:.68,Momentum:.55,Value:.3,SmallCap:.45,Liquidity:.8}).map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${v*100}%;background:linear-gradient(90deg,var(--accent),#8B5CF6)"></div></div><div class="bar-val">${v.toFixed(2)}</div></div>`).join('');
+  document.getElementById('dna-content').innerHTML=[['var(--accent)','Growth-Quality Blend','High growth + quality bias toward large-cap.'],['var(--warn)','Momentum Tilt','Elevated momentum exposure.'],['var(--ok)','High Liquidity','Predominantly liquid-cap. Low redemption risk.']].map(([c,t,d])=>`<div class="alert-item" style="cursor:default"><div class="alert-dot" style="background:${c}"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div></div></div>`).join('');
+  const h=p.holdings||[];
+  document.getElementById('hold-count').textContent=`${h.length} positions`;
+  document.getElementById('hold-tbody').innerHTML=h.map(x=>`<tr><td><strong>${x.name||'—'}</strong></td><td class="mono" style="font-size:11px;color:var(--ink-2)">${x.isin||'—'}</td><td>${x.sector||'—'}</td><td>${x.asset_class||'—'}</td><td class="mono">₹${x.value?cr(x.value):'—'}</td><td class="mono">${x.weight?(x.weight*100).toFixed(2)+'%':'—'}</td></tr>`).join('')||'<tr><td colspan="6" class="empty-state">No holdings. Upload a CAS.</td></tr>';
+  document.getElementById('cl-scenarios').innerHTML=scenarios().map(sc=>{const im=a.scenario_impacts?.[sc.id]??sc.def;const c=im<-15?'var(--danger)':im<-8?'var(--warn)':'var(--ok)';return `<div class="scenario-card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">${sc.name}</div><div style="font-size:11px;color:var(--ink-2);margin-bottom:10px">${sc.macro}</div><div style="font-size:24px;font-weight:600;font-family:'JetBrains Mono',monospace;color:${c}">${im>0?'+':''}${im.toFixed(1)}%</div></div>`;}).join('');
+}
+
+/* ════ UPLOAD ════ */
+function populateSelect(pf){const s=document.getElementById('upload-select');s.innerHTML='<option value="">— Select client —</option>'+pf.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="new">+ New client</option>';s.onchange=()=>document.getElementById('new-client-fields').style.display=s.value==='new'?'block':'none';}
+function onDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('dragover');}
+function onDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('dragover');if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);}
+function onFileSelect(i){if(i.files[0])setFile(i.files[0]);}
+function setFile(f){FILE=f;const d=document.getElementById('file-selected');d.style.display='block';d.innerHTML=`📄 <strong>${f.name}</strong> · ${(f.size/1024).toFixed(0)} KB`;}
+async function doUpload(){
+  if(!FILE)return toast('Select a CAS PDF','err');
+  const s=document.getElementById('upload-select');let id=s.value;
+  if(id==='new'||!id){const n=document.getElementById('nc-name').value.trim();if(!n)return toast('Enter client name','err');const pan=document.getElementById('nc-pan').value.trim();try{const p=await api('/v1/portfolios',{method:'POST',body:JSON.stringify({name:n,pan,currency:'INR'})});id=p.id;PORTFOLIOS.push(p);populateSelect(PORTFOLIOS);}catch(e){return toast(e.message,'err');}}
+  if(TOKEN==='DEMO')return toast('Demo mode — connect live to upload','warn');
+  const pr=document.getElementById('upload-progress'),fl=document.getElementById('prog-fill'),st=document.getElementById('up-status'),bt=document.getElementById('upload-btn');
+  pr.style.display='block';bt.disabled=true;
+  try{st.textContent='Uploading…';fl.style.width='25%';const fd=new FormData();fd.append('file',FILE);const h={};if(TOKEN)h['Authorization']=`Bearer ${TOKEN}`;
+    const r=await fetch(`${API}/v1/portfolios/${id}/upload`,{method:'POST',headers:h,body:fd});fl.style.width='60%';st.textContent='Parsing…';
+    if(!r.ok){const d=await r.json();throw new Error(d.detail||'Upload failed');}const d=await r.json();fl.style.width='85%';st.textContent='Analyzing…';
+    try{await api(`/v1/portfolios/${id}/analyze`,{method:'POST'});}catch(e){}fl.style.width='100%';st.textContent='Done!';
+    toast(`CAS parsed: ${d.holdings_count||''} holdings`,'ok');loadPortfolios();
+    setTimeout(()=>{pr.style.display='none';fl.style.width='0%';bt.disabled=false;FILE=null;document.getElementById('file-selected').style.display='none';},1800);
+  }catch(e){toast(e.message,'err');pr.style.display='none';bt.disabled=false;}
+}
+async function reanalyze(id){if(TOKEN==='DEMO')return toast('Demo mode','warn');try{await api(`/v1/portfolios/${id}/analyze`,{method:'POST'});toast('Recomputed','ok');loadPortfolios();}catch(e){toast(e.message,'err');}}
+
+/* ════ SCENARIOS ════ */
+function scenarios(){return[{id:'rate_hike',name:'RBI Rate Hike +100bps',macro:'Interest rate shock',def:-8.5},{id:'crash',name:'Market Crash −30%',macro:'Systemic selloff',def:-22.4},{id:'smallcap',name:'Small Cap Crash −40%',macro:'Mid/small correction',def:-14.2},{id:'oil',name:'Oil Shock +50%',macro:'Oil price spike',def:-6.8},{id:'inflation',name:'Inflation +400bps',macro:'CPI shock',def:-9.1},{id:'recession',name:'Global Recession',macro:'Growth shock',def:-18.7}];}
+function renderScenarios(){document.getElementById('scenarios-grid').innerHTML=scenarios().map(s=>`<div class="scenario-card" onclick="selScenario('${s.id}',this)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">${s.name}</div><div style="font-size:11px;color:var(--ink-2)">${s.macro}</div></div>`).join('');}
+function selScenario(id,el){document.querySelectorAll('.scenario-card').forEach(c=>c.classList.remove('active'));el.classList.add('active');const s=scenarios().find(x=>x.id===id);document.getElementById('scenario-result').style.display='block';document.getElementById('sr-title').textContent=s.name;document.getElementById('sr-macro').textContent=s.macro;const data=PORTFOLIOS.length?PORTFOLIOS:demoData();document.getElementById('sr-tbody').innerHTML=data.map(p=>{const im=s.def+(Math.random()*4-2);const aum=p.total_value||5e6;const loss=aum*Math.abs(im)/100;const c=im<-15?'danger':im<-8?'warn':'ok';return `<tr><td><strong>${p.name}</strong></td><td class="mono">₹${cr(aum)}</td><td class="mono c-${c}">${im.toFixed(1)}%</td><td class="mono c-danger">−₹${cr(loss)}</td><td><span class="pill p-${c}">${im<-15?'High':im<-8?'Moderate':'Low'}</span></td></tr>`;}).join('');}
+
+function renderAlerts(){document.getElementById('alerts-list').innerHTML=[['danger','High Concentration — Mehta','BFSI exposure 42%, exceeds 35% threshold.','2h ago'],['warn','Overlap Detected — Patel','3 funds share 31% of holdings.','5h ago'],['warn','Stale Data — Reddy','Holdings not updated in 45 days.','1d ago']].map(([s,t,d,a])=>`<div class="alert-item"><div class="alert-dot" style="background:var(--${s})"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div><div class="alert-time">${a}</div></div></div>`).join('');}
+function renderIntel(){document.getElementById('macro-signals').innerHTML=[['ok','RBI Pause','Repo held at 6.5%. Rate-sensitive portfolios stable.'],['warn','Oil +8%','Brent up. Logistics/aviation exposure at risk.'],['warn','IT Weakness','US tech slowdown pressures Indian IT.']].map(([c,t,d])=>`<div class="alert-item" style="cursor:default"><div class="alert-dot" style="background:var(--${c})"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div></div></div>`).join('');document.getElementById('anomalies').innerHTML=[['Concentration Spike','BFSI weight 34%→42% this quarter.'],['Hidden Overlap','HDFC Bank across 4 funds, effective 12.4%.']].map(([t,d])=>`<div class="alert-item" style="cursor:default"><div class="alert-dot" style="background:var(--danger)"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div></div></div>`).join('');}
+function renderReviews(){const d=PORTFOLIOS.length?PORTFOLIOS:demoData();document.getElementById('review-list').innerHTML=d.map(p=>`<div class="alert-item" onclick="openClient('${p.id}')"><div class="alert-dot" style="background:var(--warn)"></div><div style="flex:1"><div class="alert-title">${p.name}</div><div class="alert-sub">Quarterly review due</div></div><button class="btn-sm">Review →</button></div>`).join('');}
+function renderReports(){const d=PORTFOLIOS.length?PORTFOLIOS:demoData();document.getElementById('reports-tbody').innerHTML=d.map(p=>`<tr><td><strong>${p.name}</strong></td><td>Portfolio Intelligence</td><td>${new Date().toLocaleDateString('en-IN')}</td><td><button class="btn-sm" onclick="exportPDF('${p.name}')">Export PDF</button></td></tr>`).join('');}
+function exportPDF(n){document.title=`${n} — WealthOS Report`;window.print();setTimeout(()=>document.title='WealthOS — Advisor Intelligence Platform',1000);}
+async function testApi(){const r=document.getElementById('api-test');r.textContent='Testing…';try{const d=await(await fetch(`${API}/health`)).json();r.textContent='✓ '+d.status;r.style.color='var(--ok)';}catch(e){r.textContent='✕ unreachable';r.style.color='var(--danger)';}}
+
+/* ════ DEMO DATA ════ */
+function demoData(){return[{id:1,name:'Mehta Family Office',pan:'ABCDE1234F',total_value:47200000,holdings_count:32,analytics:{risk_score:68,hhi:0.181,neff:5.5,overlap_pct:23.1,volatility:0.148,max_drawdown:0.142,sharpe:1.34,liquidity_score:0.82,top1_weight:14.2,sector_exposure:{BFSI:31.4,IT:22.8,Consumer:14.2,Auto:8.6,Pharma:7.1,Others:15.9},asset_allocation:{Equity:72,Debt:18,Hybrid:7,Cash:3},factor_exposure:{Growth:0.81,Quality:0.76,Momentum:0.68,Value:0.24,SmallCap:0.42,Liquidity:0.85}}},{id:2,name:'Patel HUF',pan:'XYZPQ5678G',total_value:38600000,holdings_count:28,analytics:{risk_score:82,hhi:0.241,neff:4.1,overlap_pct:31.4,volatility:0.192,max_drawdown:0.198,sharpe:0.98,liquidity_score:0.65,top1_weight:18.5,sector_exposure:{BFSI:28.1,IT:18.4,SmallCap:22.6,Consumer:12.4,Others:18.5},asset_allocation:{Equity:84,Debt:8,Hybrid:5,Cash:3},factor_exposure:{Growth:0.72,Quality:0.55,Momentum:0.81,Value:0.18,SmallCap:0.76,Liquidity:0.62}}},{id:3,name:'Khanna Pvt Trust',pan:'LMNOP9012H',total_value:31100000,holdings_count:24,analytics:{risk_score:54,hhi:0.142,neff:7.0,overlap_pct:14.2,volatility:0.112,max_drawdown:0.098,sharpe:1.62,liquidity_score:0.91,top1_weight:9.8,sector_exposure:{BFSI:22.4,IT:18.2,Consumer:16.8,Pharma:12.4,Infra:10.2,Others:20.0},asset_allocation:{Equity:58,Debt:28,Hybrid:10,Cash:4},factor_exposure:{Growth:0.61,Quality:0.88,Momentum:0.44,Value:0.52,SmallCap:0.28,Liquidity:0.92}}}];}
+function demoHoldings(){return[['HDFC Flexi Cap Fund','INF179K01VV2','Mutual Fund','—'],['ICICI Pru Bluechip','INF109K01Z29','Mutual Fund','—'],['HDFC Bank Ltd','INE040A01034','Equity','BFSI'],['Infosys Ltd','INE009A01021','Equity','IT'],['Reliance Industries','INE002A01018','Equity','Energy']].map(([name,isin,ac,sec])=>({name,isin,asset_class:ac,sector:sec,value:Math.floor(Math.random()*2e6+5e5),weight:Math.random()*.15+.03}));}
+
+/* ════ NAV ════ */
+const TITLES={overview:'Overview',portfolios:'Portfolios',upload:'Upload CAS',scenarios:'Scenario Analysis',alerts:'Alerts',intelligence:'Market Intelligence',reviews:'Review Queue',reports:'Client Reports',settings:'Settings',client:'Client Intelligence'};
+function showView(id,el){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id)?.classList.add('active');document.getElementById('topbar-title').textContent=TITLES[id]||id;if(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}if(id==='scenarios')renderScenarios();if(id==='alerts')renderAlerts();if(id==='intelligence')renderIntel();if(id==='reviews')renderReviews();if(id==='reports')renderReports();}
+function showTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));el.classList.add('active');document.getElementById(id)?.classList.add('active');}
+function goBack(){showView('portfolios',document.querySelector('[data-view=portfolios]'));}
+function onSearch(q){if(!q)return;const m=PORTFOLIOS.filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));if(m.length===1)openClient(m[0].id);}
+
+/* ════ UTILS ════ */
+function bars(o,suf,col,max){const e=Object.entries(o);const m=max||Math.max(...e.map(([,v])=>v),1);return e.map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/m)*100}%;background:${col}"></div></div><div class="bar-val">${v<2?v.toFixed(2):v.toFixed(1)}${suf}</div></div>`).join('');}
+function cr(v){if(!v||isNaN(v))return '0';const c=v/1e7;if(c>=100)return c.toFixed(0)+' Cr';if(c>=1)return c.toFixed(1)+' Cr';return (v/1e5).toFixed(1)+'L';}
+function toast(m,t='ok'){const e=document.getElementById('toast');e.textContent=m;e.className=`show t-${t}`;setTimeout(()=>e.className='',3000);}
+function toggleTheme(){const h=document.documentElement;const d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'':'dark');localStorage.setItem('wos_theme',d?'':'dark');}
+
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('global-search')?.focus();}});
+
+/* ════ INIT ════ */
+(function(){
+  if(localStorage.getItem('wos_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');
+  ['auth-email','auth-pass','auth-name'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')submitAuth();}));
+  if(TOKEN&&TOKEN!=='DEMO'){enterApp();}
+})();
+</script>
+</body>
+</html>
