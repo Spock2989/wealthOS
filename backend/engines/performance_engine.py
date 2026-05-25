@@ -377,3 +377,63 @@ def pain_ratio(returns: pd.Series, rf: float = RISK_FREE_RATE_IN,
         return 0.0
     ann_ret = annualized_return(returns, periods_per_year)
     return float((ann_ret - rf) / ui)
+
+
+def rolling_alpha(
+    returns: pd.Series,
+    benchmark: pd.Series,
+    window: int = 63,
+    rf: float = RISK_FREE_RATE_IN,
+) -> Dict:
+    """
+    Rolling CAPM alpha — detects style drift and alpha persistence.
+
+    For each rolling window of `window` days, runs OLS regression:
+      r_p − rf = α_t + β_t × (r_m − rf) + ε
+
+    Returns the last 252 days of rolling alpha as a list, plus summary stats.
+    A rising rolling alpha = skill improving; declining = deteriorating.
+    Alpha consistently > 0 at 5% significance = genuine skill signal.
+    """
+    aligned = pd.concat([returns, benchmark], axis=1).dropna()
+    if len(aligned) < window + 10:
+        return {"error": "insufficient_data"}
+
+    rf_d = rf / TRADING_DAYS
+    r_p  = aligned.iloc[:, 0].values - rf_d
+    r_m  = aligned.iloc[:, 1].values - rf_d
+    n    = len(r_p)
+
+    alphas   = np.full(n, np.nan)
+    betas    = np.full(n, np.nan)
+
+    for t in range(window - 1, n):
+        y = r_p[t - window + 1: t + 1]
+        x = r_m[t - window + 1: t + 1]
+        X = np.column_stack([np.ones(window), x])
+        try:
+            coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+            alphas[t] = coef[0]
+            betas[t]  = coef[1]
+        except Exception:
+            pass
+
+    valid_alphas = alphas[~np.isnan(alphas)]
+    ann_alphas   = valid_alphas * TRADING_DAYS
+
+    # Last 252 data points for charting
+    chart_window = min(252, len(valid_alphas))
+    recent_ann   = (valid_alphas[-chart_window:] * TRADING_DAYS).tolist()
+
+    return {
+        "rolling_alpha_annualized_last_252": [round(a * 100, 3) for a in recent_ann],
+        "current_alpha_annualized_pct":      round(float(ann_alphas[-1] * 100), 3) if len(ann_alphas) else 0,
+        "mean_alpha_annualized_pct":         round(float(ann_alphas.mean() * 100), 3) if len(ann_alphas) else 0,
+        "pct_periods_positive_alpha":        round(float((ann_alphas > 0).mean() * 100), 1) if len(ann_alphas) else 0,
+        "alpha_trend":                       (
+            "improving" if len(ann_alphas) > 20 and ann_alphas[-20:].mean() > ann_alphas.mean()
+            else "declining" if len(ann_alphas) > 20 else "insufficient_history"
+        ),
+        "window_days":   window,
+        "methodology":   "rolling_capm_ols_alpha",
+    }

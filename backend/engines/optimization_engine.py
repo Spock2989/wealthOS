@@ -164,27 +164,59 @@ def max_diversification_portfolio(cov_matrix: np.ndarray) -> Dict:
 def efficient_frontier(
     expected_returns: np.ndarray,
     cov_matrix: np.ndarray,
-    n_points: int = 20,
-) -> List[Dict]:
+    n_points: int = 200,
+    rf: float = 0.0675,
+) -> Dict:
     """
-    Generate efficient frontier — set of (return, vol) Pareto-optimal portfolios.
+    Generate full efficient frontier — 200 Pareto-optimal portfolios.
+    Marks minimum variance portfolio and tangency (max Sharpe) portfolio.
+
+    Spec: "Trace 200 portfolios from min variance to max return.
+           Mark: minimum variance portfolio, tangency portfolio (max Sharpe).
+           Report: expected return, volatility, Sharpe for each point."
     """
-    er  = np.asarray(expected_returns)
-    cov = np.asarray(cov_matrix)
+    er  = np.asarray(expected_returns, dtype=float)
+    cov = np.asarray(cov_matrix, dtype=float)
+
+    # Minimum variance portfolio — starting anchor
+    mvp = minimum_variance_portfolio(cov)
 
     r_min = float(er.min())
     r_max = float(er.max())
     target_returns = np.linspace(r_min, r_max, n_points)
 
     frontier = []
-    for target in target_returns:
+    best_sharpe = -np.inf
+    tangency_idx = 0
+
+    for i, target in enumerate(target_returns):
         result = mean_variance_optimize(er, cov, target_return=target)
         if result["converged"]:
-            frontier.append({
-                "expected_return": round(target, 4),
-                "volatility":      result["volatility"],
-                "sharpe":          result["sharpe"],
-                "weights":         result["weights"],
-            })
+            pt = {
+                "expected_return_ann_pct": round(target * 252 * 100, 2),
+                "volatility_ann_pct":      round(result["volatility"] * np.sqrt(252) * 100, 2),
+                "sharpe":                  result["sharpe"],
+                "weights":                 result["weights"],
+            }
+            frontier.append(pt)
+            if result["sharpe"] > best_sharpe:
+                best_sharpe   = result["sharpe"]
+                tangency_idx  = len(frontier) - 1
 
-    return frontier
+    # Mark special portfolios
+    if frontier:
+        frontier[0]["is_minimum_variance"]  = True
+        frontier[tangency_idx]["is_tangency"] = True
+
+    mvp_vol = float(mvp["volatility"] * np.sqrt(252) * 100) if "volatility" in mvp else None
+
+    return {
+        "frontier":                  frontier,
+        "n_points":                  len(frontier),
+        "minimum_variance_portfolio": mvp,
+        "minimum_variance_vol_ann_pct": round(mvp_vol, 2) if mvp_vol else None,
+        "tangency_portfolio_idx":    tangency_idx,
+        "tangency_sharpe":           round(best_sharpe, 3),
+        "rf_used":                   rf,
+        "methodology":               "markowitz_efficient_frontier_200pts",
+    }

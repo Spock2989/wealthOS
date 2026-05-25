@@ -1,9 +1,24 @@
 """
-WealthOS Master Analytics Core v4.0
+WealthOS Master Analytics Core v4.1
 Orchestrates ALL engines into a single unified intelligence output.
 Citadel/Aladdin-grade — deterministic, traceable, explainable.
 
-Every output includes: methodology_version, computed_at, audit_trail.
+Tiers:
+  1  Composition          — allocation, sector, cap, HHI, look-through
+  2  Returns analytics    — stats, risk, performance
+  3  Factor decomposition — CAPM, multifactor, Factor DNA
+  4  Risk models          — covariance (LW/OAS/MCD), EVT/GPD, PCA concentration
+  5  GARCH volatility     — GARCH/EGARCH/GJR + EWMA (RiskMetrics)
+  6  Regime detection     — HMM 2/3-state, Bai-Perron, CUSUM, Kalman beta
+  7  Backtesting          — PSR, DSR, MinBTL
+  8  Look-through         — underlying stock/sector exposure
+  9  Scenarios            — 20 standard scenarios + custom
+  10 Macro sensitivity    — 11-variable matrix
+  11 Proprietary metrics  — Health Score, Fragility, ENB, DR, HHI5, Illusion
+  12 Portfolio optimization — HRP, BL, NCO, Risk Parity, Efficient Frontier
+  13 Legacy risk score    — composite score (backward compat)
+
+Every output: methodology_version, computed_at, audit_trail, holdings_hash.
 """
 
 import numpy as np
@@ -18,8 +33,8 @@ from models import Holding
 from engines.scenario_engine import run_scenarios, compute_full_macro_sensitivity_matrix
 from engines.statistical_engine import compute_statistical_summary
 from engines.risk_engine import compute_risk_summary
-from engines.performance_engine import compute_performance_summary
-from engines.factor_engine import multifactor_regression, capm_regression
+from engines.performance_engine import compute_performance_summary, rolling_alpha
+from engines.factor_engine import multifactor_regression, capm_regression, factor_dna
 from engines.correlation_engine import compute_correlation_report
 from engines.lookthrough_engine import compute_lookthrough_report
 from engines.price_provider import (
@@ -32,6 +47,12 @@ from engines.regime_detection_engine import compute_regime_report
 from engines.robust_stats_engine import data_quality_report
 from engines.backtesting_engine import probabilistic_sharpe_ratio
 from engines.proprietary_metrics_engine import compute_proprietary_metrics
+from engines.advanced_optimization_engine import (
+    hierarchical_risk_parity,
+    nested_clustered_optimization,
+    compute_advanced_optimization_report,
+)
+from engines.optimization_engine import risk_parity_weights, minimum_variance_portfolio
 
 
 def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[str, Any]:
@@ -64,10 +85,12 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
     perf_summary = compute_performance_summary(portfolio_returns, benchmark_returns)
 
     # TIER 3 — Factor decomposition
-    capm        = capm_regression(portfolio_returns, benchmark_returns)
-    multifactor = multifactor_regression(portfolio_returns, factor_returns)
+    capm          = capm_regression(portfolio_returns, benchmark_returns)
+    multifactor   = multifactor_regression(portfolio_returns, factor_returns)
+    factor_dna_out = factor_dna(portfolio_returns, factor_returns)
+    rolling_alpha_out = rolling_alpha(portfolio_returns, benchmark_returns, window=63)
 
-    # TIER 4 — Risk models (covariance + tail risk)
+    # TIER 4 — Risk models (covariance + tail risk + PCA concentration)
     asset_returns_df = _build_asset_returns_df(holdings, days=504)
     risk_models = {}
     cov_matrix  = None
@@ -75,8 +98,8 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
         risk_models = compute_risk_models_report(
             asset_returns_df, portfolio_returns=portfolio_returns
         )
-        # Extract Ledoit-Wolf covariance for proprietary metrics
-        lw = risk_models.get("ledoit_wolf", {})
+        # Extract Ledoit-Wolf covariance for proprietary metrics + optimization
+        lw = risk_models.get("ledoit_wolf_shrinkage", {})
         if "covariance" in lw:
             cov_matrix = np.array(lw["covariance"])
 

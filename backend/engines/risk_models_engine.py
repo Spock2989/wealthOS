@@ -288,6 +288,84 @@ def evt_var_gpd(returns: pd.Series, confidence: float = 0.95) -> Dict:
 
 
 # ════════════════════════════════════════════════════════════════
+# PCA CONCENTRATION (INSTITUTIONAL DIVERSIFICATION SIGNAL)
+# ════════════════════════════════════════════════════════════════
+
+def pca_concentration(returns: pd.DataFrame, n_components: int = 5) -> Dict:
+    """
+    PCA-based portfolio concentration analysis.
+
+    Decomposes the asset return covariance matrix into principal components.
+    The variance explained by each PC reveals how concentrated / diversified
+    the portfolio's risk structure really is.
+
+    Interpretation (from spec):
+      PC1 > 50% variance → dangerously concentrated (one systemic risk driver)
+      PC1 < 25%          → genuinely diversified
+      Top 3 PCs < 60%    → institutional-grade diversification
+
+    Also detects "factor crowding": if PC1 has uniform positive loadings across
+    all assets, the whole portfolio moves together.
+
+    Returns:
+      variance_explained_pct  — list, % variance per PC
+      cumulative_explained_pct — cumulative
+      pc1_loading_uniformity  — |mean(loading)| / std(loading) — crowding indicator
+      concentration_grade     — Diversified | Moderate | Concentrated | Extreme
+    """
+    df = returns.dropna()
+    if df.shape[0] < 30 or df.shape[1] < 2:
+        return {"error": "insufficient_data"}
+
+    n_comp = min(n_components, df.shape[1])
+    cov    = np.cov(df.values.T)
+
+    # Eigendecomposition (sorted descending)
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    idx    = np.argsort(eigvals)[::-1]
+    eigvals = eigvals[idx]
+    eigvecs = eigvecs[:, idx]
+
+    total_var = float(eigvals.sum())
+    var_exp   = [float(v / total_var * 100) for v in eigvals[:n_comp]]
+    cum_exp   = list(np.cumsum(var_exp))
+
+    # PC1 loading uniformity — measures "crowding"
+    pc1_loadings = eigvecs[:, 0]
+    uniformity   = float(abs(pc1_loadings.mean()) / (pc1_loadings.std() + 1e-10))
+
+    pc1_pct = var_exp[0]
+    if pc1_pct < 25:
+        grade = "Diversified"
+    elif pc1_pct < 40:
+        grade = "Moderate"
+    elif pc1_pct < 55:
+        grade = "Concentrated"
+    else:
+        grade = "Extreme_Concentration"
+
+    # Statistical risk: how many PCs needed to explain 80%?
+    pcs_for_80pct = int(next((i+1 for i, c in enumerate(cum_exp) if c >= 80),
+                              len(cum_exp)))
+
+    return {
+        "variance_explained_pct":     [round(v, 2) for v in var_exp],
+        "cumulative_explained_pct":   [round(c, 2) for c in cum_exp],
+        "pc1_variance_pct":           round(pc1_pct, 2),
+        "pc1_loading_uniformity":     round(uniformity, 3),
+        "crowding_risk":              uniformity > 0.5,
+        "pcs_to_explain_80pct":       pcs_for_80pct,
+        "concentration_grade":        grade,
+        "n_assets":                   int(df.shape[1]),
+        "interpretation":             (
+            f"PC1 explains {pc1_pct:.1f}% of portfolio variance. "
+            f"Need {pcs_for_80pct} PCs to explain 80%."
+        ),
+        "methodology":                "pca_covariance_eigendecomposition_v1",
+    }
+
+
+# ════════════════════════════════════════════════════════════════
 # COPULA-BASED DEPENDENCE
 # ════════════════════════════════════════════════════════════════
 
@@ -401,6 +479,7 @@ def compute_risk_models_report(returns: pd.DataFrame,
         out["oracle_shrinkage"]      = oracle_approx_shrinkage(returns)
         out["robust_mcd_covariance"] = mcd_robust_covariance(returns)
         out["gaussian_copula"]       = gaussian_copula_correlation(returns)
+        out["pca_concentration"]     = pca_concentration(returns)
 
-    out["methodology_version"] = "risk_models_v1.0"
+    out["methodology_version"] = "risk_models_v2.0"
     return out

@@ -7,8 +7,10 @@ References:
   - Bollerslev (1986): GARCH
   - Nelson (1991): EGARCH (asymmetric)
   - Glosten, Jagannathan, Runkle (1993): GJR-GARCH (leverage effect)
+  - RiskMetrics (1994): EWMA exponentially weighted moving average variance
   - Yang & Zhang (2000): drift-independent OHLC volatility estimator
   - Parkinson (1980): high-low estimator
+  - Corsi (2009): HAR-RV heterogeneous autoregression
 """
 
 import numpy as np
@@ -315,14 +317,76 @@ def har_rv_model(realized_vols: pd.Series) -> Dict:
 # MASTER VOLATILITY DASHBOARD
 # ════════════════════════════════════════════════════════════════
 
+# ════════════════════════════════════════════════════════════════
+# EWMA — RISKMETRICS (1994)
+# ════════════════════════════════════════════════════════════════
+
+def ewma_volatility(returns: pd.Series, lambda_: float = 0.94,
+                    periods_per_year: int = TRADING_DAYS) -> Dict:
+    """
+    Exponentially Weighted Moving Average variance — RiskMetrics (1994).
+
+    σ²_t = λ · σ²_{t-1} + (1-λ) · r²_{t-1}
+
+    λ = 0.94 for daily (RiskMetrics standard), 0.97 for monthly.
+    Advantage over rolling window: older observations decay smoothly.
+    Used by every major risk system as a baseline before GARCH.
+
+    Returns:
+      current_vol_annualized — today's 1-day conditional vol (annualized)
+      ewma_vol_series        — full history (last 252 days shown)
+      half_life_days         — ln(0.5)/ln(λ) — effective memory of model
+    """
+    r = returns.dropna()
+    if len(r) < 30:
+        return {"error": "insufficient_data"}
+
+    r_sq = r.values ** 2
+    n = len(r_sq)
+    var_ewma = np.zeros(n)
+    var_ewma[0] = r_sq[0]
+
+    for t in range(1, n):
+        var_ewma[t] = lambda_ * var_ewma[t - 1] + (1 - lambda_) * r_sq[t - 1]
+
+    current_var  = float(var_ewma[-1])
+    current_vol  = float(np.sqrt(current_var * periods_per_year))
+    half_life    = float(np.log(0.5) / np.log(lambda_))
+
+    # Forecast 5 and 10 days ahead (mean-reverting to long-run vol)
+    long_run_var = float(r_sq.mean())
+    forecast_5d  = float(np.sqrt((lambda_ ** 5 * current_var +
+                                   (1 - lambda_ ** 5) * long_run_var) * periods_per_year))
+    forecast_10d = float(np.sqrt((lambda_ ** 10 * current_var +
+                                   (1 - lambda_ ** 10) * long_run_var) * periods_per_year))
+
+    return {
+        "current_vol_annualized_pct":  round(current_vol * 100, 3),
+        "forecast_5d_vol_annualized_pct":  round(forecast_5d * 100, 3),
+        "forecast_10d_vol_annualized_pct": round(forecast_10d * 100, 3),
+        "half_life_days":              round(half_life, 1),
+        "lambda":                      lambda_,
+        "long_run_vol_annualized_pct": round(float(np.sqrt(long_run_var * periods_per_year)) * 100, 3),
+        "methodology":                 "ewma_riskmetrics_1994",
+    }
+
+
+# ════════════════════════════════════════════════════════════════
+# MASTER VOLATILITY DASHBOARD
+# ════════════════════════════════════════════════════════════════
+
 def compute_volatility_models_report(returns: pd.Series) -> Dict:
     """All conditional volatility models in one shot."""
     out = {}
     if len(returns) < 100:
         return {"error": "insufficient_data_for_garch"}
 
+    # EWMA first — fast, always works (RiskMetrics baseline)
+    out["ewma_riskmetrics"]    = ewma_volatility(returns, lambda_=0.94)
+
+    # GARCH family — requires arch package
     out["garch_1_1_studentt"] = fit_garch(returns, dist="studentst")
     out["egarch"]             = fit_egarch(returns)
     out["gjr_garch"]          = fit_gjr_garch(returns)
-    out["methodology_version"] = "vol_models_v1.0"
+    out["methodology_version"] = "vol_models_v2.0"
     return out

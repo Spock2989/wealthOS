@@ -238,3 +238,88 @@ def decompose_portfolio_factors(
         "r_squared":                result["r_squared"],
         "methodology":              "factor_decomposition_v1",
     }
+
+
+# ── FACTOR DNA (NORTHSTAR OUTPUT FORMAT) ───────────────────────
+def factor_dna(
+    returns: pd.Series,
+    factor_returns: pd.DataFrame,
+    rf: float = 0.0675,
+) -> Dict:
+    """
+    WealthOS Factor DNA — institutional output format matching the NorthStar spec.
+
+    Converts raw factor loadings into a signed 0-100 tilt scale:
+      50 = neutral (no tilt), 0-49 = negative tilt, 51-100 = positive tilt
+
+    The 10 standard tilts map to Fama-French 5-factor + Carhart + extensions:
+      market_beta   → MKT loading
+      size_tilt     → SMB loading (positive = small-cap tilt)
+      value_tilt    → HML loading (positive = value)
+      growth_tilt   → -HML loading (positive = growth)
+      momentum_tilt → MOM loading
+      quality_tilt  → QMJ loading
+      profitability → RMW loading
+      investment    → CMA loading (negative = aggressive invest)
+      volatility    → beta relative to market (low = defensive)
+      liquidity     → LIQ loading
+
+    Also classifies dominant style cluster and surfaces hidden look-through exposures.
+    """
+    raw = multifactor_regression(returns, factor_returns, rf)
+    if "error" in raw:
+        return raw
+
+    loadings = raw.get("factor_loadings", {})
+
+    def _tilt(factor_key: str, scale: float = 1.0) -> float:
+        """Convert beta to 0-100 tilt score around 50 as neutral."""
+        beta_val = loadings.get(factor_key, {}).get("beta", 0.0)
+        # Scale: ±1 beta → ±30 tilt around 50
+        return float(max(0, min(100, 50 + beta_val * 30 * scale)))
+
+    mkt_beta = loadings.get("MKT", {}).get("beta", 1.0)
+    hml_beta = loadings.get("HML", {}).get("beta", 0.0)
+
+    dna = {
+        "market_beta":        round(float(mkt_beta), 3),
+        "size_tilt":          round(_tilt("SMB"), 1),
+        "value_tilt":         round(max(0, min(100, 50 + hml_beta * 30)), 1),
+        "growth_tilt":        round(max(0, min(100, 50 - hml_beta * 30)), 1),
+        "momentum_tilt":      round(_tilt("MOM"), 1),
+        "quality_tilt":       round(_tilt("QMJ"), 1),
+        "profitability_tilt": round(_tilt("RMW"), 1),
+        "investment_tilt":    round(_tilt("CMA", scale=-1), 1),  # CMA neg = aggressive
+        "volatility_tilt":    round(max(0, min(100, 50 + (1 - mkt_beta) * 30)), 1),
+        "liquidity_tilt":     round(_tilt("LIQ"), 1),
+    }
+
+    # Dominant cluster classification
+    tilts = dna
+    if tilts["size_tilt"] > 65 and tilts["momentum_tilt"] > 60:
+        cluster = "Small-Cap Momentum"
+    elif tilts["value_tilt"] > 65 and tilts["quality_tilt"] > 60:
+        cluster = "Value-Quality"
+    elif tilts["growth_tilt"] > 65 and tilts["profitability_tilt"] > 60:
+        cluster = "Growth-Quality Tilt"
+    elif tilts["market_beta"] > 1.2:
+        cluster = "High-Beta Cyclical"
+    elif tilts["market_beta"] < 0.7:
+        cluster = "Low-Beta Defensive"
+    elif tilts["momentum_tilt"] > 65:
+        cluster = "Momentum"
+    elif tilts["value_tilt"] > 65:
+        cluster = "Deep Value"
+    else:
+        cluster = "Blend / Multi-Factor"
+
+    return {
+        "factor_dna":           dna,
+        "model_r_squared":      raw.get("r_squared", 0),
+        "alpha_annualized":     raw.get("alpha_annualized", 0),
+        "alpha_t_stat":         raw.get("alpha_t_stat", 0),
+        "alpha_significant":    raw.get("alpha_is_significant_5pct", False),
+        "dominant_cluster":     cluster,
+        "raw_factor_loadings":  {k: v["beta"] for k, v in loadings.items()},
+        "methodology":          "factor_dna_northstar_v1",
+    }

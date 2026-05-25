@@ -184,6 +184,119 @@ def chow_test(returns: pd.Series, breakpoint: int) -> Dict:
     }
 
 
+def bai_perron_breaks(returns: pd.Series, max_breaks: int = 3,
+                      min_segment: int = 30) -> Dict:
+    """
+    Bai & Perron (1998/2003) — Multiple structural break detection.
+
+    Unlike Chow (single known break) or CUSUM (drift), Bai-Perron finds the
+    globally optimal set of break dates simultaneously, using dynamic programming
+    to minimize the sum of squared residuals across all segments.
+
+    Algorithm:
+      1. Compute RSS for all admissible sub-samples [i,j] (min_segment gap)
+      2. Dynamic programming: OPT(m,T) = min_{m≤τ≤T-min_seg}[OPT(m-1,τ) + RSS(τ+1,T)]
+      3. Select m via Bayesian Information Criterion
+
+    Output: break dates, segment means, optimal break count, BIC scores.
+    """
+    series = returns.dropna()
+    n = len(series)
+    if n < max_breaks * min_segment + min_segment:
+        return {"error": "insufficient_data_for_break_count"}
+
+    y = series.values
+
+    # Pre-compute RSS for all [i, j] sub-samples
+    rss_table = np.full((n, n), np.inf)
+    for i in range(n):
+        for j in range(i + min_segment - 1, min(i + n, n)):
+            seg = y[i: j + 1]
+            rss_table[i, j] = float(np.sum((seg - seg.mean()) ** 2))
+
+    # Dynamic programming for up to max_breaks breaks
+    bic_scores = {}
+    break_sets  = {}
+
+    for m in range(0, max_breaks + 1):
+        n_segs = m + 1
+
+        if m == 0:
+            # No breaks — full sample
+            dp     = {0: 0.0}
+            parent = {0: []}
+            total_rss = rss_table[0, n - 1]
+            bic_scores[0] = (n * np.log(total_rss / n + 1e-12) +
+                             n_segs * 2 * np.log(n))
+            break_sets[0] = []
+            continue
+
+        # dp[j] = min RSS ending at position j with m segments
+        dp_prev = {0: 0.0}
+        prev_breaks: dict = {0: []}
+
+        for seg_num in range(1, n_segs + 1):
+            dp_curr = {}
+            curr_breaks = {}
+            for j in range(min_segment * seg_num - 1, n):
+                best_rss   = np.inf
+                best_split = -1
+                start_range = min_segment * (seg_num - 1) - 1
+                for k in range(max(start_range, 0), j - min_segment + 1):
+                    if k not in dp_prev:
+                        continue
+                    candidate = dp_prev[k] + rss_table[k + 1 if k > 0 else 0, j]
+                    if candidate < best_rss:
+                        best_rss   = candidate
+                        best_split = k
+                if best_split >= 0:
+                    dp_curr[j]    = best_rss
+                    curr_breaks[j] = prev_breaks.get(best_split, []) + [best_split]
+            dp_prev     = dp_curr
+            prev_breaks = curr_breaks
+
+        if n - 1 not in dp_prev:
+            continue
+
+        total_rss = dp_prev[n - 1]
+        bic       = n * np.log(total_rss / n + 1e-12) + (m + 1) * 2 * np.log(n)
+        bic_scores[m]   = bic
+        raw_breaks       = prev_breaks.get(n - 1, [])
+        break_sets[m]    = sorted([int(b) for b in raw_breaks if 0 < b < n - 1])
+
+    # Select optimal m by minimum BIC
+    optimal_m = min(bic_scores, key=bic_scores.get) if bic_scores else 0
+    best_breaks = break_sets.get(optimal_m, [])
+
+    # Build segment summaries
+    breakpoints = [0] + best_breaks + [n]
+    segments = []
+    for i in range(len(breakpoints) - 1):
+        seg = y[breakpoints[i]: breakpoints[i + 1]]
+        segments.append({
+            "start_idx":  int(breakpoints[i]),
+            "end_idx":    int(breakpoints[i + 1] - 1),
+            "length":     len(seg),
+            "mean_return":round(float(seg.mean() * 252 * 100), 3),
+            "vol_ann":    round(float(seg.std() * np.sqrt(252) * 100), 3),
+        })
+
+    # Convert break indices to approximate dates if possible
+    dates = None
+    if hasattr(series.index, 'strftime'):
+        dates = [series.index[b].strftime('%Y-%m-%d')
+                 for b in best_breaks if 0 < b < n]
+
+    return {
+        "optimal_n_breaks":    int(optimal_m),
+        "break_indices":       best_breaks,
+        "break_dates":         dates,
+        "bic_by_breaks":       {k: round(v, 2) for k, v in bic_scores.items()},
+        "segments":            segments,
+        "methodology":         "bai_perron_2003_dynamic_programming",
+    }
+
+
 def cusum_test(returns: pd.Series) -> Dict:
     """
     Cumulative sum (CUSUM) test for parameter stability.
@@ -284,12 +397,19 @@ def compute_regime_report(returns: pd.Series,
     if len(returns) < 100:
         return {"error": "insufficient_data"}
 
-    out["hmm_2_state"] = fit_hmm_regimes(returns, n_states=2)
-    out["hmm_3_state"] = fit_hmm_regimes(returns, n_states=3)
-    out["cusum_test"]  = cusum_test(returns)
+    out["hmm_2state"]   = fit_hmm_regimes(returns, n_states=2)
+    out["hmm_3state"]   = fit_hmm_regimes(returns, n_states=3)
+    out["cusum_test"]   = cusum_test(returns)
+
+    # Bai-Perron multiple structural breaks (computationally heavier — capped at 2)
+    if len(returns) >= 120:
+        try:
+            out["bai_perron_breaks"] = bai_perron_breaks(returns, max_breaks=2, min_segment=40)
+        except Exception:
+            out["bai_perron_breaks"] = {"error": "computation_failed"}
 
     if benchmark_returns is not None and len(benchmark_returns) >= 30:
         out["kalman_dynamic_beta"] = kalman_dynamic_beta(returns, benchmark_returns)
 
-    out["methodology_version"] = "regime_v1.0"
+    out["methodology_version"] = "regime_v2.0"
     return out
