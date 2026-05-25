@@ -40,7 +40,7 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/wealthos.code-workspace
 
-# Node (if frontend build tools added later)
+# Node
 node_modules/
 npm-debug.log*
 
@@ -49,10 +49,17 @@ logs/
 *.log
 *.log.*
 
-# Compiled assets / build output
-frontend/dist/*.html
-!frontend/dist/index.html
-!frontend/dist/app.html
+# Backend specific
+backend/.env
+backend/venv/
+backend/wealthos.db
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/node_modules/
 
 # Pytest / coverage
 .pytest_cache/
