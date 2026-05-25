@@ -1,0 +1,104 @@
+{
+  "folders": [
+    {
+      "name": "🏠 WealthOS Root",
+      "path": "."
+    },
+    {
+      "name": "⚙️ Backend",
+      "path": "./backend"
+    },
+    {
+      "name": "🖥️ Frontend",
+      "path": "./frontend"
+    },
+    {
+      "name": "📜 Scripts",
+      "path": "./scripts"
+    }
+  ],
+  "settings": {
+    "editor.fontSize": 14,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true,
+    "editor.rulers": [88],
+    "python.defaultInterpreterPath": "/opt/wlthos/backend/venv/bin/python",
+    "python.linting.enabled": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": ["--line-length", "88"],
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/.pytest_cache": true,
+      "**/venv": true
+    },
+    "search.exclude": {
+      "**/venv": true,
+      "**/__pycache__": true
+    },
+    "git.autofetch": true,
+    "git.enableSmartCommit": true
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.flake8",
+      "eamodio.gitlens",
+      "humao.rest-client",
+      "PKief.material-icon-theme",
+      "rangav.vscode-thunder-client",
+      "mechatroner.rainbow-csv"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "▶️ Run FastAPI Dev Server",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+        "cwd": "${workspaceFolder}/backend",
+        "env": {
+          "DATABASE_URL": "postgresql://wealthos:WealthOS_DB_2026!@localhost/wealthosdb"
+        }
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🚀 Deploy to Production",
+        "type": "shell",
+        "command": "bash ./scripts/deploy.sh",
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      },
+      {
+        "label": "⬇️ Pull from Server",
+        "type": "shell",
+        "command": "bash ./scripts/pull-from-server.sh",
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      },
+      {
+        "label": "📊 Server Status",
+        "type": "shell",
+        "command": "bash ./scripts/status.sh",
+        "group": "test",
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      },
+      {
+        "label": "📋 Tail Server Logs",
+        "type": "shell",
+        "command": "ssh -o ServerAliveInterval=30 root@64.227.147.106 'journalctl -u wealthos-api -f'",
+        "group": "test",
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      }
+    ]
+  }
+}
