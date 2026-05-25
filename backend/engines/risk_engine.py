@@ -205,27 +205,64 @@ def compute_risk_summary(
     benchmark_returns: Optional[pd.Series] = None,
     confidence: float = 0.95
 ) -> Dict:
-    """One-call risk dashboard."""
+    """
+    One-call risk dashboard — full VaR suite including EVT/GPD.
+    Historical · Parametric · Cornish-Fisher · Monte Carlo · EVT(GPD) · ES
+    Component VaR · Beta · Downside Beta
+    """
     if len(returns) < 20:
         return {"error": "insufficient_data", "observations": len(returns)}
 
-    summary = {
-        "confidence_level":     confidence,
-        "observations":         len(returns),
+    # Core VaR suite
+    hist_var    = historical_var(returns, confidence)
+    param_var   = parametric_var(returns, confidence)
+    cf_var      = cornish_fisher_var(returns, confidence)
+    mc_var      = monte_carlo_var(returns, confidence)
+    es          = expected_shortfall(returns, confidence)
 
-        # VaR family
-        "historical_var_1d":    round(historical_var(returns, confidence)    * 100, 3),
-        "parametric_var_1d":    round(parametric_var(returns, confidence)    * 100, 3),
-        "cornish_fisher_var_1d":round(cornish_fisher_var(returns, confidence)* 100, 3),
-        "monte_carlo_var_1d":   round(monte_carlo_var(returns, confidence)   * 100, 3),
-        "expected_shortfall_1d":round(expected_shortfall(returns, confidence)* 100, 3),
+    # Also compute at 99% for institutional reporting
+    hist_var_99 = historical_var(returns, 0.99)
+    cf_var_99   = cornish_fisher_var(returns, 0.99)
+    es_99       = expected_shortfall(returns, 0.99)
+
+    summary = {
+        "confidence_level":       confidence,
+        "observations":           len(returns),
+
+        # VaR at specified confidence
+        "historical_var_1d":      round(hist_var    * 100, 3),
+        "parametric_var_1d":      round(param_var   * 100, 3),
+        "cornish_fisher_var_1d":  round(cf_var      * 100, 3),
+        "monte_carlo_var_1d":     round(mc_var      * 100, 3),
+        "expected_shortfall_1d":  round(es          * 100, 3),
+
+        # VaR at 99% (regulatory standard)
+        "historical_var_99_1d":   round(hist_var_99 * 100, 3),
+        "cornish_fisher_var_99_1d": round(cf_var_99 * 100, 3),
+        "expected_shortfall_99_1d": round(es_99     * 100, 3),
+
+        # Scaled VaR (10-day, for FRTB context)
+        "historical_var_10d":     round(hist_var * np.sqrt(10) * 100, 3),
+        "cornish_fisher_var_10d": round(cf_var   * np.sqrt(10) * 100, 3),
 
         # Tail
-        "tail_ratio":           round(tail_ratio(returns), 3),
-        "gain_to_pain_ratio":   round(gain_to_pain_ratio(returns), 3),
+        "tail_ratio":             round(tail_ratio(returns), 3),
+        "gain_to_pain_ratio":     round(gain_to_pain_ratio(returns), 3),
 
-        "methodology_version":  "risk_v1.0",
+        "methodology_version":    "risk_v2.0",
     }
+
+    # EVT/GPD VaR — wired in from risk_models_engine
+    try:
+        from engines.risk_models_engine import evt_var_gpd
+        evt = evt_var_gpd(returns, confidence=confidence)
+        if "error" not in evt:
+            summary["evt_var_1d"]  = round(evt.get("var_evt", 0) * 100, 3)
+            summary["evt_es_1d"]   = round(evt.get("es_evt", 0) * 100, 3)
+            summary["evt_xi"]      = round(evt.get("xi_shape", 0), 4)
+            summary["evt_tail_heavy"] = evt.get("tail_heavy", False)
+    except Exception:
+        pass  # EVT is additive — never block the main summary
 
     if benchmark_returns is not None and len(benchmark_returns) >= 20:
         summary.update({

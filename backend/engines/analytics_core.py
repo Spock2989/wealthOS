@@ -1,17 +1,21 @@
 """
-WealthOS Master Analytics Core v3.0
-Orchestrates ALL 15 engines into a single unified intelligence output.
+WealthOS Master Analytics Core v4.0
+Orchestrates ALL engines into a single unified intelligence output.
+Citadel/Aladdin-grade — deterministic, traceable, explainable.
+
+Every output includes: methodology_version, computed_at, audit_trail.
 """
 
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from collections import defaultdict
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from models import Holding
 
-from engines.scenario_engine import run_scenarios
+from engines.scenario_engine import run_scenarios, compute_full_macro_sensitivity_matrix
 from engines.statistical_engine import compute_statistical_summary
 from engines.risk_engine import compute_risk_summary
 from engines.performance_engine import compute_performance_summary
@@ -27,6 +31,7 @@ from engines.volatility_models_engine import compute_volatility_models_report
 from engines.regime_detection_engine import compute_regime_report
 from engines.robust_stats_engine import data_quality_report
 from engines.backtesting_engine import probabilistic_sharpe_ratio
+from engines.proprietary_metrics_engine import compute_proprietary_metrics
 
 
 def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[str, Any]:
@@ -36,6 +41,7 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
     if total_value == 0:
         return {}
 
+    computed_at = datetime.now(timezone.utc).isoformat()
     weights = {h.id: h.value / total_value for h in holdings}
 
     # TIER 1 — Composition
@@ -43,8 +49,10 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
     sector_exp  = _sector_exposure(holdings, weights)
     cap_split   = _market_cap_split(holdings, weights)
     top_h       = _top_holdings(holdings, weights)
-    hhi         = sum(w ** 2 for w in weights.values())
-    neff        = round(1 / hhi, 2) if hhi > 0 else 0
+    hhi_val     = sum(w ** 2 for w in weights.values())
+    neff_val    = round(1 / hhi_val, 2) if hhi_val > 0 else 0
+    n_funds     = sum(1 for h in holdings if h.instrument and
+                      h.instrument.asset_class in ("mutual_fund", "hybrid", "debt"))
 
     # TIER 2 — Returns analytics
     portfolio_returns = get_portfolio_returns(holdings, days=504)
@@ -59,13 +67,18 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
     capm        = capm_regression(portfolio_returns, benchmark_returns)
     multifactor = multifactor_regression(portfolio_returns, factor_returns)
 
-    # TIER 4 — Risk models
+    # TIER 4 — Risk models (covariance + tail risk)
     asset_returns_df = _build_asset_returns_df(holdings, days=504)
     risk_models = {}
+    cov_matrix  = None
     if asset_returns_df is not None and asset_returns_df.shape[1] >= 2:
         risk_models = compute_risk_models_report(
             asset_returns_df, portfolio_returns=portfolio_returns
         )
+        # Extract Ledoit-Wolf covariance for proprietary metrics
+        lw = risk_models.get("ledoit_wolf", {})
+        if "covariance" in lw:
+            cov_matrix = np.array(lw["covariance"])
 
     # TIER 5 — GARCH volatility
     vol_models = compute_volatility_models_report(portfolio_returns)
@@ -79,30 +92,126 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
     # TIER 8 — Look-through
     lookthrough = compute_lookthrough_report(holdings)
 
-    # TIER 9 — Scenarios
+    # TIER 9 — Scenarios (all 20)
     scenarios = run_scenarios(sector_exp, cap_split, total_value)
 
-    # TIER 10 — Risk score
-    drivers    = _risk_drivers(sector_exp, cap_split, hhi)
-    risk_score = _composite_risk_score(
-        hhi, cap_split, sector_exp, risk_summary, perf_summary, vol_models
+    # TIER 10 — Macro sensitivity matrix (11 variables)
+    macro_matrix = compute_full_macro_sensitivity_matrix(sector_exp, total_value)
+    macro_vulnerability = macro_matrix.get("macro_vulnerability_score", 50.0)
+
+    # TIER 11 — Proprietary metrics (THE MOAT)
+    # Extract inputs for proprietary engine
+    stock_weights_norm = {
+        h.instrument.name or h.id: weights[h.id]
+        for h in holdings if h.instrument
+    }
+    sector_weights_norm = {k: v / 100.0 for k, v in sector_exp.items()}
+    weights_array = np.array(list(weights.values()))
+
+    # Sortino for health score
+    sortino = perf_summary.get("sortino_ratio", 1.0) if isinstance(perf_summary, dict) else 1.0
+
+    # Tail risk score from EVT / ES
+    tail_risk = 50.0
+    if isinstance(risk_summary, dict):
+        es = abs(risk_summary.get("expected_shortfall_1d", 0))
+        tail_risk = min(100, es * 15)  # 7% daily ES → 100 score
+
+    # Regime downside probability
+    regime_downside = 0.30
+    if isinstance(regime, dict):
+        hmm = regime.get("hmm_2state", {})
+        if isinstance(hmm, dict) and "current_state_probs" in hmm:
+            probs = hmm["current_state_probs"]
+            # Determine which state is "bear" by higher volatility
+            regimes = hmm.get("regimes", [])
+            if len(regimes) == 2:
+                bear_state = max(range(2), key=lambda i: regimes[i].get("volatility_pct", 0))
+                regime_downside = probs[bear_state] if len(probs) > bear_state else 0.30
+
+    # Individual vols for diversification ratio
+    individual_vols = None
+    port_vol = None
+    if asset_returns_df is not None:
+        cols = list(asset_returns_df.columns)[:len(weights_array)]
+        if len(cols) == len(weights_array):
+            individual_vols = np.array([
+                asset_returns_df[c].std() * np.sqrt(252)
+                for c in cols
+            ])
+            port_vol_scalar = float(portfolio_returns.std() * np.sqrt(252)) if len(portfolio_returns) > 10 else None
+            port_vol = port_vol_scalar
+
+    prop_metrics = compute_proprietary_metrics(
+        stock_weights=stock_weights_norm,
+        sector_weights=sector_weights_norm,
+        n_funds=max(1, n_funds),
+        weights_array=weights_array,
+        cov_matrix=cov_matrix if cov_matrix is not None and cov_matrix.shape[0] == len(weights_array) else None,
+        individual_vols=individual_vols,
+        portfolio_vol=port_vol,
+        sortino_ratio=sortino,
+        macro_resilience_score=max(0, 100 - macro_vulnerability),
+        macro_vulnerability_score=macro_vulnerability,
+        tail_risk_score=tail_risk,
+        liquidity_score=70.0,
+        liquidity_stress_score=30.0,
+        regime_downside_prob=regime_downside,
+        factor_balance_score=60.0,
     )
 
+    # TIER 12 — Legacy composite risk score (keep for backward compat)
+    drivers    = _risk_drivers(sector_exp, cap_split, hhi_val)
+    risk_score = _composite_risk_score(
+        hhi_val, cap_split, sector_exp, risk_summary, perf_summary, vol_models
+    )
+
+    # Explainability wrapper
+    def _wrap(value, metric_name: str, methodology: str) -> Dict:
+        return {
+            "metric": metric_name,
+            "value": value,
+            "methodology": methodology,
+            "computed_at": computed_at,
+            "methodology_version": "wealthos_v4.0",
+        }
+
     return {
+        # ── Identity
+        "computed_at":           computed_at,
+        "methodology_version":   "wealthos_v4.0_institutional",
+
+        # ── Portfolio composition
         "total_value":           total_value,
         "holdings_count":        len(holdings),
         "asset_allocation":      asset_alloc,
         "sector_exposure":       sector_exp,
         "market_cap_split":      cap_split,
         "top_holdings":          top_h,
-        "hhi":                   round(hhi, 4),
-        "neff":                  neff,
-        "concentration_score":   min(100, int(hhi * 200)),
+
+        # ── Concentration
+        "hhi":                   round(hhi_val, 4),
+        "neff":                  neff_val,
+        "concentration_score":   min(100, int(hhi_val * 200)),
+
+        # ── WealthOS SIGNATURE SCORES (THE MOAT)
+        "portfolio_health_score":    prop_metrics.get("portfolio_health_score", {}),
+        "portfolio_fragility_score": prop_metrics.get("portfolio_fragility_score", {}),
+        "diversification_illusion":  prop_metrics.get("diversification_illusion", {}),
+        "effective_number_of_bets":  prop_metrics.get("effective_number_of_bets", {}),
+        "diversification_ratio":     prop_metrics.get("diversification_ratio", {}),
+        "multi_level_hhi":           prop_metrics.get("multi_level_hhi", {}),
+        "kpi_summary":               prop_metrics.get("kpi_summary", {}),
+        "rebalancing_signals":       prop_metrics.get("rebalancing_signals", {}),
+
+        # ── Returns & stats
         "risk_score":            risk_score,
         "risk_drivers":          drivers,
         "statistical_summary":   stat_summary,
         "risk_metrics":          risk_summary,
         "performance":           perf_summary,
+
+        # ── Factor models
         "capm":                  capm,
         "factor_decomposition":  multifactor,
         "risk_models":           risk_models,
@@ -110,8 +219,22 @@ def compute_portfolio_analytics(holdings: List[Holding], db: Session) -> Dict[st
         "regime_analysis":       regime,
         "probabilistic_sharpe":  psr,
         "lookthrough":           lookthrough,
+
+        # ── Scenarios (all 20) + macro sensitivity
         "scenarios":             scenarios,
-        "methodology_version":   "wealthos_v3.0_institutional",
+        "macro_sensitivity":     macro_matrix,
+
+        # ── Audit trail
+        "audit_trail": {
+            "holdings_hash":     _hash_holdings(holdings),
+            "computation_steps": [
+                "composition", "returns", "risk", "performance",
+                "factor", "risk_models", "volatility", "regime",
+                "lookthrough", "scenarios", "macro_sensitivity",
+                "proprietary_metrics",
+            ],
+            "data_vintage":      computed_at[:10],
+        },
     }
 
 
@@ -238,3 +361,12 @@ def _risk_drivers(sector_exp, cap_split, hhi):
             "method": "herfindahl_hirschman_index"
         })
     return drivers
+
+
+def _hash_holdings(holdings) -> str:
+    """Deterministic fingerprint of holdings state for audit trail."""
+    import hashlib
+    parts = sorted(
+        f"{h.id}:{h.value:.2f}" for h in holdings
+    )
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]

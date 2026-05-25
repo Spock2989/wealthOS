@@ -260,3 +260,120 @@ def compute_performance_summary(
         })
 
     return summary
+
+
+# ── BRINSON-HOOD-BEEBOWER ATTRIBUTION (1986) ────────────────────
+def bhb_attribution(
+    portfolio_weights: dict,     # {sector: portfolio_weight}  (fractions, sum=1)
+    benchmark_weights: dict,     # {sector: benchmark_weight}  (fractions, sum=1)
+    portfolio_returns: dict,     # {sector: portfolio_sector_return} (fractions)
+    benchmark_returns: dict,     # {sector: benchmark_sector_return} (fractions)
+) -> dict:
+    """
+    Brinson-Hood-Beebower (1986) three-way return attribution.
+
+    Decomposes active return into three sources:
+      Allocation effect  = (w_p - w_b) × (R_b_sector - R_b_total)
+        → Did the manager make the right active bets on sectors?
+      Selection effect   = w_b × (R_p_sector - R_b_sector)
+        → Did the manager pick better stocks within each sector?
+      Interaction effect = (w_p - w_b) × (R_p_sector - R_b_sector)
+        → Combined effect of allocation + selection decisions
+
+    Active Return = Σ(Allocation + Selection + Interaction) across sectors
+    This identity holds exactly — no residual.
+
+    Args:
+        portfolio_weights:  {sector: w_p}  — portfolio allocation fraction
+        benchmark_weights:  {sector: w_b}  — benchmark allocation fraction
+        portfolio_returns:  {sector: R_p}  — portfolio return within sector
+        benchmark_returns:  {sector: R_b}  — benchmark return within sector
+
+    Returns:
+        Full BHB decomposition with sector-level and aggregate attribution.
+    """
+    all_sectors = set(portfolio_weights) | set(benchmark_weights)
+
+    # Total benchmark return
+    R_b_total = sum(
+        benchmark_weights.get(s, 0.0) * benchmark_returns.get(s, 0.0)
+        for s in all_sectors
+    )
+    R_p_total = sum(
+        portfolio_weights.get(s, 0.0) * portfolio_returns.get(s, 0.0)
+        for s in all_sectors
+    )
+
+    sector_attribution = []
+    total_allocation   = 0.0
+    total_selection    = 0.0
+    total_interaction  = 0.0
+
+    for sector in sorted(all_sectors):
+        w_p  = portfolio_weights.get(sector, 0.0)
+        w_b  = benchmark_weights.get(sector, 0.0)
+        R_p  = portfolio_returns.get(sector, 0.0)
+        R_b  = benchmark_returns.get(sector, 0.0)
+
+        allocation   = (w_p - w_b) * (R_b - R_b_total)
+        selection    = w_b * (R_p - R_b)
+        interaction  = (w_p - w_b) * (R_p - R_b)
+        total_effect = allocation + selection + interaction
+
+        total_allocation  += allocation
+        total_selection   += selection
+        total_interaction += interaction
+
+        sector_attribution.append({
+            "sector":            sector,
+            "portfolio_weight":  round(w_p * 100, 2),
+            "benchmark_weight":  round(w_b * 100, 2),
+            "active_weight":     round((w_p - w_b) * 100, 2),
+            "portfolio_return":  round(R_p * 100, 3),
+            "benchmark_return":  round(R_b * 100, 3),
+            "active_return":     round((R_p - R_b) * 100, 3),
+            "allocation_effect": round(allocation * 100, 4),
+            "selection_effect":  round(selection * 100, 4),
+            "interaction_effect":round(interaction * 100, 4),
+            "total_effect":      round(total_effect * 100, 4),
+        })
+
+    active_return = R_p_total - R_b_total
+    explained     = total_allocation + total_selection + total_interaction
+    residual      = active_return - explained   # should be ~0 (numerical noise only)
+
+    sector_attribution.sort(key=lambda x: abs(x["total_effect"]), reverse=True)
+
+    return {
+        "portfolio_return_pct":    round(R_p_total * 100, 3),
+        "benchmark_return_pct":    round(R_b_total * 100, 3),
+        "active_return_pct":       round(active_return * 100, 3),
+        "attribution": {
+            "allocation_effect_pct":  round(total_allocation * 100, 4),
+            "selection_effect_pct":   round(total_selection * 100, 4),
+            "interaction_effect_pct": round(total_interaction * 100, 4),
+            "total_explained_pct":    round(explained * 100, 4),
+            "residual_pct":           round(residual * 100, 6),  # must be ~0
+        },
+        "by_sector":        sector_attribution,
+        "n_sectors":        len(all_sectors),
+        "benchmark_return_total_pct": round(R_b_total * 100, 3),
+        "methodology":      "brinson_hood_beebower_1986",
+        "methodology_version": "bhb_v1.0",
+    }
+
+
+def pain_ratio(returns: pd.Series, rf: float = RISK_FREE_RATE_IN,
+               periods_per_year: int = TRADING_DAYS) -> float:
+    """
+    Pain Ratio = annualized excess return / Ulcer Index.
+    Superior to Sharpe for drawdown-sensitive strategies.
+    """
+    from engines.statistical_engine import ulcer_index, annualized_return
+    if len(returns) < 20:
+        return 0.0
+    ui = ulcer_index(returns)
+    if ui == 0:
+        return 0.0
+    ann_ret = annualized_return(returns, periods_per_year)
+    return float((ann_ret - rf) / ui)

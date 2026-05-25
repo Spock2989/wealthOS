@@ -259,6 +259,34 @@ def evt_var_cvar(returns: pd.Series,
     }
 
 
+def evt_var_gpd(returns: pd.Series, confidence: float = 0.95) -> Dict:
+    """
+    Alias for evt_var_cvar — exposes EVT VaR in the format expected by
+    compute_risk_summary in risk_engine.py.
+
+    Returns keys:
+      var_evt   — 1-day VaR (as negative fraction, e.g. -0.023)
+      es_evt    — 1-day ES  (as negative fraction)
+      xi_shape  — GPD shape parameter (tail heaviness)
+      tail_heavy — True if xi > 0.2 (heavy tails confirmed)
+    """
+    result = evt_var_cvar(returns, confidence=confidence)
+    if "error" in result:
+        return result
+
+    var_pct = result.get("var_pct", 0)   # stored as %, positive number
+    es_pct  = result.get("expected_shortfall_pct", 0)
+    xi      = result.get("shape_xi", 0)
+
+    return {
+        "var_evt":   round(-abs(var_pct) / 100, 6),   # return as fraction, negative
+        "es_evt":    round(-abs(es_pct)  / 100, 6),
+        "xi_shape":  round(xi, 4),
+        "tail_heavy": xi > 0.2,
+        "methodology": "evt_pot_gpd_mle_var",
+    }
+
+
 # ════════════════════════════════════════════════════════════════
 # COPULA-BASED DEPENDENCE
 # ════════════════════════════════════════════════════════════════
