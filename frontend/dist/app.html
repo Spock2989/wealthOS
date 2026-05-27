@@ -271,14 +271,42 @@ a{text-decoration:none;color:inherit}
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo"><span class="bmark"></span><span style="font-size:16px;font-weight:600"><b>Wealth</b>OS<span style="color:var(--ink-3);font-weight:400">/ai</span></span></div>
-    <div class="login-title">Advisor Sign In</div>
-    <div class="login-sub">Access your portfolio intelligence dashboard</div>
-    <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" type="email" id="loginEmail" placeholder="advisor@firm.com" autocomplete="email"/></div>
-    <div class="form-group"><label class="form-label">PASSWORD</label><input class="form-input" type="password" id="loginPass" placeholder="Password" autocomplete="current-password"/></div>
-    <div id="loginError" style="display:none;padding:10px 13px;border-radius:7px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);color:#DC2626;font-size:13px;margin-bottom:14px"></div>
-    <div class="form-row"><label class="form-check"><input type="checkbox" id="rememberMe" checked style="accent-color:var(--accent)"/> Remember me</label><span class="form-link" onclick="alert('Contact your administrator to reset your password.')">Forgot password?</span></div>
-    <button id="loginBtn" onclick="doLogin()" class="btn btn-primary" style="width:100%;height:42px;font-size:14px">Sign In to Dashboard</button>
-    <div class="login-hint" id="loginHint">Enter your WealthOS advisor credentials</div>
+    <!-- ── LOGIN VIEW ── -->
+    <div id="loginView">
+      <div class="login-title">Advisor Sign In</div>
+      <div class="login-sub">Access your portfolio intelligence dashboard</div>
+      <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" type="email" id="loginEmail" placeholder="advisor@firm.com" autocomplete="email"/></div>
+      <div class="form-group"><label class="form-label">PASSWORD</label><input class="form-input" type="password" id="loginPass" placeholder="Password" autocomplete="current-password"/></div>
+      <div id="loginError" style="display:none;padding:10px 13px;border-radius:7px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);color:#DC2626;font-size:13px;margin-bottom:14px"></div>
+      <div class="form-row">
+        <label class="form-check"><input type="checkbox" id="rememberMe" checked style="accent-color:var(--accent)"/> Remember me</label>
+        <span class="form-link" onclick="showForgot()">Forgot password?</span>
+      </div>
+      <div id="forgotMsg" style="display:none;padding:8px 12px;border-radius:6px;background:rgba(30,64,255,.07);border:1px solid rgba(30,64,255,.18);color:var(--accent);font-size:13px;margin-bottom:12px">
+        Contact your account administrator to reset your password.
+      </div>
+      <button id="loginBtn" onclick="doLogin()" class="btn btn-primary" style="width:100%;height:42px;font-size:14px">Sign In to Dashboard</button>
+      <div class="login-hint" id="loginHint">Enter your WealthOS advisor credentials</div>
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:13px;color:var(--ink-2)">
+        New to WealthOS? <span class="form-link" onclick="showRegister()" style="color:var(--accent);font-weight:500;cursor:pointer">Create account →</span>
+      </div>
+    </div>
+
+    <!-- ── REGISTER VIEW ── -->
+    <div id="registerView" style="display:none">
+      <div class="login-title">Create Account</div>
+      <div class="login-sub">Set up your WealthOS advisor account</div>
+      <div class="form-group"><label class="form-label">FULL NAME</label><input class="form-input" type="text" id="regName" placeholder="Your full name" autocomplete="name"/></div>
+      <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" type="email" id="regEmail" placeholder="advisor@firm.com" autocomplete="email"/></div>
+      <div class="form-group"><label class="form-label">FIRM / ORGANISATION</label><input class="form-input" type="text" id="regFirm" placeholder="Your firm name" autocomplete="organization"/></div>
+      <div class="form-group"><label class="form-label">PASSWORD</label><input class="form-input" type="password" id="regPass" placeholder="Minimum 8 characters" autocomplete="new-password"/></div>
+      <div id="registerError" style="display:none;padding:10px 13px;border-radius:7px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);color:#DC2626;font-size:13px;margin-bottom:14px"></div>
+      <button id="registerBtn" onclick="doRegister()" class="btn btn-primary" style="width:100%;height:42px;font-size:14px">Create Account</button>
+      <div class="login-hint" id="registerHint">Free during early access</div>
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:13px;color:var(--ink-2)">
+        Already have an account? <span class="form-link" onclick="showLogin()" style="color:var(--accent);font-weight:500;cursor:pointer">Sign in →</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -820,6 +848,83 @@ function doLogout() {
 
 document.getElementById('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
 document.getElementById('loginEmail').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPass').focus(); });
+document.getElementById('regPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doRegister(); });
+
+// ── View switchers ──
+function showLogin() {
+  document.getElementById('loginView').style.display = '';
+  document.getElementById('registerView').style.display = 'none';
+  document.getElementById('loginError').style.display = 'none';
+  setTimeout(function(){ document.getElementById('loginEmail').focus(); }, 60);
+}
+function showRegister() {
+  document.getElementById('loginView').style.display = 'none';
+  document.getElementById('registerView').style.display = '';
+  document.getElementById('registerError').style.display = 'none';
+  setTimeout(function(){ document.getElementById('regName').focus(); }, 60);
+}
+function showForgot() {
+  var msg = document.getElementById('forgotMsg');
+  var lnk = document.getElementById('forgotLink');
+  msg.style.display = (msg.style.display === 'none' || msg.style.display === '') ? 'block' : 'none';
+}
+
+// ── Registration ──
+function doRegister() {
+  var name  = document.getElementById('regName').value.trim();
+  var email = document.getElementById('regEmail').value.trim();
+  var firm  = document.getElementById('regFirm').value.trim();
+  var pass  = document.getElementById('regPass').value;
+  var errEl = document.getElementById('registerError');
+  var btn   = document.getElementById('registerBtn');
+  var hint  = document.getElementById('registerHint');
+
+  errEl.style.display = 'none';
+  if (!name || !email || !pass) {
+    errEl.textContent = 'Please fill in all required fields.';
+    errEl.style.display = 'block'; return;
+  }
+  if (pass.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  hint.textContent = 'Setting up your workspace…';
+
+  fetch('https://api.wlthos.in/api/v1/auth/signup', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email, password: pass, full_name: name, firm_name: firm || null})
+  })
+  .then(function(res) { return res.json().then(function(d){ return {ok: res.ok, data: d}; }); })
+  .then(function(r) {
+    if (!r.ok) {
+      var msg = (r.data && r.data.detail) ? r.data.detail : 'Registration failed. Please try again.';
+      errEl.textContent = msg; errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Create Account';
+      hint.textContent = 'Free during early access'; return;
+    }
+    // Auto-login after registration
+    var token = r.data.access_token;
+    try {
+      localStorage.setItem('wos_token', token);
+      localStorage.setItem('wos_user', JSON.stringify(r.data.user));
+    } catch(e) {}
+    hint.textContent = 'Account created — loading dashboard…';
+    window.location.href = '/dashboard.html';
+  })
+  .catch(function() {
+    errEl.textContent = 'Network error — check your connection and try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Create Account';
+    hint.textContent = 'Free during early access';
+  });
+}
 
 // ══════════════════════════════════════════════════════
 //  THEME

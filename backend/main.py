@@ -28,9 +28,11 @@ from app.models.portfolio import Portfolio                # noqa: F401
 from app.models.holding import Holding                    # noqa: F401
 from app.models.analytics_snapshot import AnalyticsSnapshot  # noqa: F401
 from app.models.ai_report import AIReport                 # noqa: F401
+from app.api.v1.demo import DemoRequest                   # noqa: F401  (registers table)
 
 from app.database import create_tables
 from app.api.v1 import auth, upload, portfolios, analytics_routes, insights, reports, scenarios, lookthrough
+from app.api.v1 import demo                                # demo-requests lead capture
 
 app = FastAPI(
     title="WealthOS API",
@@ -58,6 +60,7 @@ app.include_router(insights.router,         prefix="/api/v1")
 app.include_router(reports.router,          prefix="/api/v1")
 app.include_router(scenarios.router,        prefix="/api/v1")
 app.include_router(lookthrough.router,      prefix="/api/v1")
+app.include_router(demo.router,             prefix="/api/v1")
 
 
 @app.get("/health")
