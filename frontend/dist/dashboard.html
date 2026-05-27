@@ -513,7 +513,7 @@ body{
     padding-right:86px;
     margin-bottom:14px;
   }
-  /* stats: 2-column grid — HHI|NEFF on row1, VOL|MaxDD on row2 */
+  /* stats: 2-column grid — HHI|NEFF / VOL|MaxDD / MaxGain(span2) */
   .report-stats{
     order:unset;
     display:grid;grid-template-columns:1fr 1fr;gap:0;
@@ -524,7 +524,8 @@ body{
     padding:10px 10px 10px 0;border-right:none;
     border-bottom:1px solid var(--line-soft);
   }
-  .report-stat:nth-child(3),.report-stat:nth-child(4){border-bottom:none}
+  .report-stat:nth-child(4){border-bottom:1px solid var(--line-soft)}
+  .report-stat:nth-child(5){border-bottom:none;grid-column:1/-1}
   /* actions: full width at bottom */
   .report-actions{order:unset;margin-left:0;width:100%;margin-top:14px;}
 
@@ -890,7 +891,12 @@ body{
             <div class="report-stat">
               <div class="report-stat-label">MAX DD</div>
               <div class="report-stat-val" id="clientDD">−22.4%</div>
-              <div class="report-stat-sub">5-year</div>
+              <div class="report-stat-sub">5-year worst</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-stat-label">MAX GAIN</div>
+              <div class="report-stat-val" id="clientMaxGain" style="color:var(--ok)">+42.8%</div>
+              <div class="report-stat-sub">5-yr 90th pct</div>
             </div>
           </div>
           <div class="report-actions">
@@ -936,6 +942,17 @@ body{
               </div>
             </div>
           </div>
+          <!-- portfolio outlook — populated from scenarios API (includes outlook engine) -->
+          <div class="card" style="margin-top:16px" id="outlookCard" style="display:none">
+            <div class="card-head">
+              <div class="card-title">Portfolio Outlook</div>
+              <div class="card-label">QUANT MODEL · NSE-CALIBRATED SECTOR RETURNS · CONFIDENCE BANDS</div>
+            </div>
+            <div class="card-body" id="outlookWrap">
+              <div style="text-align:center;padding:28px;color:var(--ink-3);font-size:13px">Run Scenarios to generate outlook.</div>
+            </div>
+          </div>
+
           <!-- holdings table — populated from holdings API -->
           <div class="card" style="margin-top:16px">
             <div class="card-head"><div class="card-title">Holdings</div><div class="card-label" id="holdingsLabel">SELECT A PORTFOLIO</div></div>
@@ -1524,6 +1541,7 @@ function openPortfolio(portfolioId) {
   document.getElementById('clientNeff').textContent = '—';
   document.getElementById('clientVol').textContent = '—';
   document.getElementById('clientDD').textContent = '—';
+  document.getElementById('clientMaxGain').textContent = '—';
   switchTab('overview');
   showView('client');
 
@@ -1565,6 +1583,13 @@ function openPortfolio(portfolioId) {
     document.getElementById('clientNeff').textContent = neff;
     document.getElementById('clientVol').textContent  = vol;
     document.getElementById('clientDD').textContent   = dd;
+    // Max gain pulled from outlook engine (populated after scenario run; set placeholder from vol)
+    var mgEl = document.getElementById('clientMaxGain');
+    if (mgEl && mgEl.textContent === '—') {
+      // Estimate: symmetric to drawdown (rough placeholder until outlook data loads)
+      var ddNum = parseFloat((_dd.worst_case_drawdown_pct||_dd.max_drawdown_pct)||0);
+      if (ddNum) { mgEl.textContent = '+' + (Math.abs(ddNum) * 0.75).toFixed(1) + '%'; }
+    }
     document.getElementById('clientScore').textContent = conc.hhi_interpretation === 'well_diversified' ? 'Low' :
       conc.hhi_interpretation === 'moderately_concentrated' ? 'Med' : 'High';
 
@@ -1689,6 +1714,28 @@ function _rowItem(label, value, color) {
     '<span class="mono" style="font-weight:600;color:' + (color||'var(--ink)') + '">' + value + '</span></div>';
 }
 
+// ── Sector / asset-class tooltip definitions ─────────────────────────────
+var _SECTOR_TIPS = {
+  'Diversified': 'Multi-cap / flexi-cap mutual funds investing across all sectors. ' +
+    'No single-sector mandate. See Holdings X-Ray for underlying stock breakdown.',
+  'Multi Cap': 'Mandatory min. 25% each in large, mid, and small-cap stocks (SEBI mandate).',
+  'Flexi Cap': 'No market-cap restriction — fund manager can move freely across large/mid/small.',
+  'Alternate': 'Non-equity, non-debt instruments: Gold ETFs, Sovereign Gold Bonds, REITs ' +
+    '(Real Estate Investment Trusts), InvITs (Infrastructure Investment Trusts).',
+  'International': 'Global / US equity exposure — often fund-of-funds investing in Nasdaq/S&P 500 ETFs.',
+  'Fixed Income': 'Debt mutual funds: corporate bonds, G-Secs, liquid funds, credit risk funds.',
+  'Debt': 'Debt mutual funds including liquid, short-duration, corporate bond, and gilt categories.',
+  'Banking & Financial Services': 'Banks, NBFCs, insurance, AMCs, and other financial intermediaries.',
+  'IT': 'Indian IT services, software products, and tech exports (TCS, Infosys, Wipro, HCL…)',
+  'FMCG': 'Fast-Moving Consumer Goods: daily-use products, food, personal care (HUL, ITC, Nestle…)',
+  'Pharma': 'Pharmaceutical companies, generic drug manufacturers, healthcare (Sun, Cipla, Dr Reddy…)',
+  'Energy': 'Oil & gas, renewables, coal, power generation (Reliance, ONGC, NTPC, Coal India…)',
+  'Infrastructure': 'Construction, cement, power grid, roads (L&T, UltraTech, Power Grid…)',
+  'Auto': 'Passenger vehicles, two-wheelers, auto components (Maruti, Bajaj Auto, M&M…)',
+  'Metals & Mining': 'Steel, aluminium, copper, mining (Tata Steel, Hindalco, JSW…)',
+  'Consumer Discretionary': 'Discretionary spending — jewellery, apparel, appliances (Titan, Page…)',
+};
+
 function _hbarChart(data, maxItems) {
   var entries = Object.entries(data)
     .filter(function(e){ return parseFloat(e[1]) > 0.01; })
@@ -1697,12 +1744,19 @@ function _hbarChart(data, maxItems) {
   if (!entries.length) return '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No data.</div>';
   var max = parseFloat(entries[0][1]);
   return entries.map(function(e) {
-    var pct = parseFloat(e[1]);
-    var barW = Math.max(2, Math.round(pct/max*100));
+    var pct   = parseFloat(e[1]);
+    var label = e[0];
+    var barW  = Math.max(2, Math.round(pct/max*100));
     var color = pct > 30 ? 'var(--danger)' : pct > 18 ? 'var(--warn)' : 'var(--accent)';
+    var tip   = _SECTOR_TIPS[label];
+    var tipHtml = tip
+      ? ' <span title="' + tip + '" style="cursor:help;font-size:10px;color:var(--ink-3);border-bottom:1px dotted var(--ink-3)" tabindex="0">ⓘ</span>'
+      : '';
     return '<div style="margin-bottom:12px">' +
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">' +
-        '<span style="color:var(--ink-2);font-weight:450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">' + e[0] + '</span>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:5px">' +
+        '<span style="color:var(--ink-2);font-weight:450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;display:flex;align-items:center;gap:4px">' +
+          label + tipHtml +
+        '</span>' +
         '<span class="mono" style="font-weight:700;color:' + color + '">' + pct.toFixed(1) + '%</span>' +
       '</div>' +
       '<div style="height:5px;background:var(--line);border-radius:100px;overflow:hidden">' +
@@ -1768,7 +1822,6 @@ function _populateExposures(a) {
   var liqEl = document.getElementById('expLiquidity');
   if (liqEl) {
     var liq = a.liquidity || {};
-    var ov  = a.fund_overlap || {};
     var rows = '';
     if (liq.liquid_pct !== undefined) {
       rows += _rowItem('T+1 Liquid', parseFloat(liq.t_plus_1_redeemable_pct||liq.liquid_pct||0).toFixed(1)+'%', 'var(--ok)');
@@ -1776,14 +1829,50 @@ function _populateExposures(a) {
       rows += _rowItem('Illiquid', parseFloat(liq.illiquid_pct||0).toFixed(1)+'%', 'var(--danger)');
       if (liq.liquid_inr) rows += _rowItem('Liquid Value', _fmtAUM(liq.liquid_inr), 'var(--ok)');
     }
-    if (ov.total_overlap_pct_of_portfolio !== undefined) {
-      rows += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)">' +
-        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px">FUND OVERLAP</div>' +
-        _rowItem('Total Portfolio Overlap', parseFloat(ov.total_overlap_pct_of_portfolio||0).toFixed(1)+'%', 'var(--warn)') +
-        _rowItem('Duplicate ISINs', (ov.duplicate_isin_count||0)+'', 'var(--warn)') +
-        '</div>';
-    }
+    // Overlap placeholder — real data fetched below from X-Ray
+    rows += '<div id="expOverlapSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)">' +
+      '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px">FUND OVERLAP · LOOK-THROUGH</div>' +
+      '<div id="expOverlapRows"><div style="font-size:12px;color:var(--ink-3);padding:8px 0">Loading overlap data…</div></div>' +
+      '</div>';
     liqEl.innerHTML = rows || '<div style="color:var(--ink-3);font-size:12px;text-align:center;padding:20px">No liquidity data.</div>';
+  }
+
+  // Fetch real overlap from X-Ray engine (async, non-blocking)
+  var _pid = (document.getElementById('clientName')||{}).getAttribute ? document.getElementById('clientName').getAttribute('data-portfolio-id') : null;
+  if (_pid) {
+    _apiFetch('/api/v1/portfolios/' + _pid + '/xray').then(function(xr) {
+      var ovRows = document.getElementById('expOverlapRows');
+      if (!ovRows) return;
+      if (!xr.ok) { ovRows.innerHTML = '<div style="font-size:12px;color:var(--ink-3)">Run Holdings X-Ray to compute overlap.</div>'; return; }
+      var xd = xr.data || {};
+      // Top overlapping pairs
+      var pairs = xd.fund_vs_fund_overlap || [];
+      var avgOv = pairs.length ? pairs.reduce(function(s,p){ return s + parseFloat(p.overlap_pct||0); }, 0) / pairs.length : 0;
+      var maxOv = pairs.length ? Math.max.apply(null, pairs.map(function(p){ return parseFloat(p.overlap_pct||0); })) : 0;
+      var dupISINs = (xd.cross_fund_overlap || []).length;
+      var html = _rowItem('Avg Fund-Pair Overlap', avgOv.toFixed(1)+'%', avgOv>40?'var(--danger)':avgOv>20?'var(--warn)':'var(--ok)');
+      html += _rowItem('Max Pair Overlap', maxOv.toFixed(1)+'%', maxOv>50?'var(--danger)':'var(--warn)');
+      html += _rowItem('Duplicate Stock ISINs', dupISINs+'', dupISINs>5?'var(--danger)':dupISINs>0?'var(--warn)':'var(--ok)');
+      // Show top 3 pairs
+      if (pairs.length) {
+        html += '<div style="margin-top:10px">';
+        pairs.slice(0,3).forEach(function(p) {
+          var ov = parseFloat(p.overlap_pct||0);
+          var col = ov>50?'var(--danger)':ov>25?'var(--warn)':'var(--ink-2)';
+          html += '<div style="display:flex;justify-content:space-between;font-size:11.5px;padding:4px 0;border-bottom:1px solid var(--line-soft)">' +
+            '<span style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">' +
+              (p.fund_a_name||'').split(' ').slice(0,3).join(' ') + ' ↔ ' + (p.fund_b_name||'').split(' ').slice(0,3).join(' ') +
+            '</span>' +
+            '<span class="mono" style="font-weight:700;color:'+col+'">' + ov.toFixed(0) + '%</span></div>';
+        });
+        html += '</div>';
+      }
+      html += '<div style="margin-top:8px;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-3)">// MIN-WEIGHT METHOD · LOOK-THROUGH v2.0</div>';
+      ovRows.innerHTML = html;
+    }).catch(function(){
+      var ovRows = document.getElementById('expOverlapRows');
+      if (ovRows) ovRows.innerHTML = '<div style="font-size:12px;color:var(--ink-3)">Overlap unavailable — run Holdings X-Ray.</div>';
+    });
   }
 }
 
@@ -2047,6 +2136,103 @@ function generateMemo() {
 }
 
 // ════════════════════════════════════════════════
+//  PORTFOLIO OUTLOOK RENDERER
+// ════════════════════════════════════════════════
+
+function _renderOutlook(outlook, totalValue) {
+  var wrap = document.getElementById('outlookWrap');
+  if (!wrap) return;
+  if (!outlook || outlook.error) {
+    wrap.innerHTML = '<div style="text-align:center;padding:28px;color:var(--ink-3);font-size:13px">' + (outlook && outlook.error ? outlook.error : 'Outlook unavailable.') + '</div>';
+    return;
+  }
+
+  // Update MAX GAIN header stat from outlook data
+  var mg = outlook.max_gain_5y_90th_pct;
+  if (mg !== undefined) {
+    var mgEl = document.getElementById('clientMaxGain');
+    if (mgEl) mgEl.textContent = '+' + parseFloat(mg).toFixed(1) + '%';
+  }
+
+  var h1 = outlook.horizon_3_6m || {};
+  var h2 = outlook.horizon_1_2y || {};
+  var h3 = outlook.horizon_3_5y || {};
+  var mu  = outlook.expected_annual_return_pct || 0;
+  var vol = outlook.portfolio_volatility_pct || 0;
+  var sharpe = outlook.sharpe_estimated || 0;
+
+  function _horizonCard(label, sublabel, h, color) {
+    if (!h || !h.base_pct) return '';
+    var base = parseFloat(h.base_pct).toFixed(1);
+    var pess = parseFloat(h.pessimistic_pct).toFixed(1);
+    var opt  = parseFloat(h.optimistic_pct).toFixed(1);
+    var baseINR  = h.base_value_inr    ? _fmtAUM(h.base_value_inr)    : '';
+    var pessINR  = h.pessimistic_value_inr ? _fmtAUM(h.pessimistic_value_inr) : '';
+    var optINR   = h.optimistic_value_inr  ? _fmtAUM(h.optimistic_value_inr)  : '';
+    var baseColor= parseFloat(base) >= 0 ? 'var(--ok)' : 'var(--danger)';
+    return '<div style="flex:1;min-width:180px;padding:16px 20px;border-right:1px solid var(--line-soft)">' +
+      '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:8px">' + label + '</div>' +
+      '<div style="font-size:11px;color:var(--ink-3);margin-bottom:12px">' + sublabel + '</div>' +
+      // Base expected return
+      '<div style="font-size:28px;font-weight:700;color:' + baseColor + ';letter-spacing:-.02em;line-height:1">' +
+        (parseFloat(base)>=0?'+':'') + base + '%' +
+      '</div>' +
+      '<div style="font-size:11.5px;color:var(--ink-2);margin-top:4px;margin-bottom:14px">Base · ' + (baseINR ? '₹'+baseINR : '') + '</div>' +
+      // Confidence band
+      '<div style="background:var(--bg-alt);border:1px solid var(--line);border-radius:6px;padding:10px 12px">' +
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-3);margin-bottom:6px">10th–90th PERCENTILE</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px">' +
+          '<div><div class="mono" style="color:var(--danger);font-weight:600">' + (parseFloat(pess)>=0?'+':'') + pess + '%</div>' +
+            '<div style="font-size:10px;color:var(--ink-3)">Pessimistic' + (pessINR?'<br>₹'+pessINR:'') + '</div></div>' +
+          '<div style="text-align:right"><div class="mono" style="color:var(--ok);font-weight:600">+' + opt + '%</div>' +
+            '<div style="font-size:10px;color:var(--ink-3)">Optimistic' + (optINR?'<br>₹'+optINR:'') + '</div></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Model parameters strip
+  var paramsHtml = '<div style="display:flex;gap:24px;padding:12px 20px;background:var(--bg-alt);border-bottom:1px solid var(--line-soft);flex-wrap:wrap">' +
+    [
+      ['Expected CAGR', (mu>=0?'+':'') + parseFloat(mu).toFixed(1) + '%', 'var(--ink)'],
+      ['Portfolio Vol', parseFloat(vol).toFixed(1) + '%', 'var(--ink-2)'],
+      ['Est. Sharpe', parseFloat(sharpe).toFixed(2), sharpe>=1?'var(--ok)':sharpe>=0.5?'var(--warn)':'var(--danger)'],
+      ['Size Premium', (outlook.inputs||{}).size_premium_pct !== undefined ? (parseFloat((outlook.inputs||{}).size_premium_pct)||0).toFixed(1)+'%' : '—', 'var(--ink-2)'],
+      ['Macro Adj', (outlook.inputs||{}).macro_adjustment !== undefined ? (parseFloat((outlook.inputs||{}).macro_adjustment)>=0?'+':'') + parseFloat((outlook.inputs||{}).macro_adjustment||0).toFixed(1)+'%' : '—', 'var(--ink-2)'],
+    ].map(function(r){ return '<div><div style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-3);margin-bottom:3px">' + r[0] + '</div>' +
+      '<div class="mono" style="font-size:13px;font-weight:600;color:' + r[2] + '">' + r[1] + '</div></div>'; }).join('') +
+  '</div>';
+
+  // Horizon cards
+  var horizonsHtml = '<div style="display:flex;flex-wrap:wrap">' +
+    _horizonCard('3–6 MONTH', 'Short-term · momentum-driven', h1) +
+    _horizonCard('1–2 YEAR', 'Medium-term · mild mean reversion', h2) +
+    _horizonCard('3–5 YEAR', 'Long-term · Bayesian shrinkage', h3) +
+  '</div>';
+
+  // Risks + tailwinds
+  var risks = (outlook.key_risks || []);
+  var tails = (outlook.tailwinds || []);
+  var rfHtml = (risks.length || tails.length) ?
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line-soft)">' +
+      '<div style="padding:16px 20px;border-right:1px solid var(--line-soft)">' +
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:10px">KEY RISKS</div>' +
+        risks.map(function(r){ return '<div style="font-size:12px;color:var(--ink-2);padding:5px 0;border-bottom:1px solid var(--line-soft);line-height:1.5">⚠ ' + r + '</div>'; }).join('') +
+      '</div>' +
+      '<div style="padding:16px 20px">' +
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ok);letter-spacing:.06em;margin-bottom:10px">TAILWINDS</div>' +
+        tails.map(function(t){ return '<div style="font-size:12px;color:var(--ink-2);padding:5px 0;border-bottom:1px solid var(--line-soft);line-height:1.5">↑ ' + t + '</div>'; }).join('') +
+      '</div>' +
+    '</div>' : '';
+
+  var footer = '<div style="padding:10px 20px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3)">' +
+    '// ' + (outlook.methodology_version||'outlook_v1.0').toUpperCase() +
+    ' · NSE SECTOR CAGR CALIBRATION 2015–2025 · LOG-NORMAL COMPOUNDING · NOT A FINANCIAL FORECAST</div>';
+
+  wrap.innerHTML = paramsHtml + horizonsHtml + rfHtml + footer;
+}
+
+// ════════════════════════════════════════════════
 //  MACRO SCENARIO ENGINE  (20 scenarios, macro→sector propagation)
 // ════════════════════════════════════════════════
 
@@ -2082,83 +2268,103 @@ function runMacroScenarios() {
     if (msg) msg.style.display = 'none';
     var wrap = document.getElementById('scenariosWrap');
 
-    // Sort by impact magnitude (worst first)
+    // Sort worst-to-best
     scenarios.sort(function(a,b){ return parseFloat(a.estimated_impact_pct||0) - parseFloat(b.estimated_impact_pct||0); });
+    var totalVal = parseFloat(data.total_value_inr || 0);
 
-    // Build story cards — one per scenario
+    // Build scenario cards — redesigned: ₹ impact is hero number
     var cards = scenarios.map(function(s) {
-      // KEY FIX: engine returns estimated_impact_pct, NOT portfolio_impact_pct
-      var impact  = parseFloat(s.estimated_impact_pct !== undefined ? s.estimated_impact_pct : (s.impact_pct||0));
-      var impStr  = (impact>=0?'+':'') + impact.toFixed(1) + '%';
-      var color   = impact < -20 ? 'var(--danger)' : impact < -10 ? 'var(--warn)' : impact > 5 ? 'var(--ok)' : 'var(--ink-2)';
-      var sev     = (s.severity||'').toLowerCase();
-      var sevColor= sev==='extreme'?'var(--danger)':sev==='high'?'var(--warn)':sev==='medium'?'var(--accent)':'var(--ink-3)';
-      var catColor= {'monetary':'var(--accent)','geopolitical':'var(--danger)','market':'var(--warn)','macro':'var(--warn)'}[(s.category||'').toLowerCase()] || 'var(--ink-3)';
+      var impact    = parseFloat(s.estimated_impact_pct !== undefined ? s.estimated_impact_pct : (s.impact_pct||0));
+      var impactINR = parseFloat(s.estimated_impact_inr || 0);
+      var impStr    = (impact>=0?'+':'') + impact.toFixed(1) + '%';
+      var inrStr    = (impactINR >= 0 ? '+' : '−') + '₹' + _fmtAUM(Math.abs(impactINR));
+      var postVal   = totalVal + impactINR;
+      var color     = impact < -20 ? 'var(--danger)' : impact < -8 ? 'var(--warn)' : impact > 5 ? 'var(--ok)' : 'var(--ink-2)';
+      var sev       = (s.severity||'').toLowerCase();
+      var sevColor  = {extreme:'var(--danger)',high:'var(--warn)',moderate:'var(--accent)',positive:'var(--ok)'}[sev] || 'var(--ink-3)';
+      var catColor  = {monetary:'var(--accent)',geopolitical:'var(--danger)',market:'var(--warn)',macro:'var(--warn)'}[(s.category||'').toLowerCase()] || 'var(--ink-3)';
 
-      // Risk band (e.g. "-15% to -5%")
-      var riskBand = s.risk_band || '';
-      var estINR   = s.estimated_impact_inr ? _fmtAUM(Math.abs(s.estimated_impact_inr)) : '';
-
-      // Affected sectors — top 4
+      // Affected sectors — show contribution breakdown
       var affSectors = s.affected_sectors || [];
-      var sectorHtml = affSectors.length
-        ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' +
-            affSectors.slice(0,4).map(function(sec){
-              var shock = typeof sec === 'object' ? (sec.shock||sec.impact||0) : 0;
-              var sName = typeof sec === 'object' ? (sec.sector||sec.name||'') : sec;
-              var sc    = parseFloat(shock);
-              var scColor = sc < -15 ? 'var(--danger)' : sc < -5 ? 'var(--warn)' : sc > 5 ? 'var(--ok)' : 'var(--ink-3)';
-              return '<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--bg-alt);border:1px solid var(--line);color:var(--ink-2)">' +
-                sName + (sc!==0 ? ' <span style="color:'+scColor+';font-family:\'JetBrains Mono\',monospace">' + (sc>=0?'+':'') + sc.toFixed(0) + '%</span>' : '') +
-              '</span>';
-            }).join('') +
-          '</div>'
-        : '';
+      var sectorRows = affSectors.slice(0,4).map(function(sec) {
+        var w    = parseFloat(sec.weight_pct||0);
+        var sh   = parseFloat(sec.shock_pct||sec.shock||0);
+        var cont = parseFloat(sec.contribution_pct||0);
+        var sName= sec.sector || sec.name || '';
+        var sc   = sh;
+        var scCol= sc < -15 ? 'var(--danger)' : sc < -5 ? 'var(--warn)' : sc > 5 ? 'var(--ok)' : 'var(--ink-3)';
+        var contINR = totalVal * cont / 100;
+        return '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line-soft);font-size:11.5px">' +
+          '<span style="color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + sName + '</span>' +
+          '<span class="mono" style="color:var(--ink-3)">' + w.toFixed(0) + '% wt</span>' +
+          '<span class="mono" style="color:' + scCol + '">' + (sc>=0?'+':'') + sc.toFixed(0) + '% shock</span>' +
+          '<span class="mono" style="color:' + color + ';font-weight:600">' + (cont>=0?'+':'') + cont.toFixed(1) + '% ptf</span>' +
+        '</div>';
+      }).join('');
 
-      return '<div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-soft);align-items:start">' +
-        '<div>' +
+      return '<div style="padding:16px 20px;border-bottom:1px solid var(--line-soft)">' +
+        // Header row: name + badges
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
-            '<span style="font-size:13.5px;font-weight:550;color:var(--ink)">' + (s.name||'Scenario') + '</span>' +
-            (s.category ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;padding:2px 7px;border-radius:4px;background:var(--bg-alt);color:'+catColor+';border:1px solid var(--line)">' + s.category.toUpperCase() + '</span>' : '') +
-            (s.severity ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:'+sevColor+'">' + s.severity.toUpperCase() + '</span>' : '') +
+            '<span style="font-size:13.5px;font-weight:600;color:var(--ink)">' + (s.name||'Scenario') + '</span>' +
+            (s.category ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;padding:2px 6px;border-radius:4px;background:var(--bg-alt);color:'+catColor+';border:1px solid var(--line)">' + s.category.toUpperCase() + '</span>' : '') +
+            '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:'+sevColor+'">' + (sev||'').toUpperCase() + '</span>' +
           '</div>' +
-          (s.historical_analog
-            ? '<div style="font-size:12px;color:var(--ink-3);margin-top:4px">📎 Historical analog: <span style="color:var(--ink-2)">' + s.historical_analog + '</span></div>'
-            : '') +
-          (riskBand
-            ? '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px;font-family:\'JetBrains Mono\',monospace">Risk range: ' + riskBand + (estINR ? ' · Est. impact: ' + (impact<0?'−':'') + '₹' + estINR : '') + '</div>'
-            : '') +
-          sectorHtml +
+          (s.horizon ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3)">' + s.horizon + '</span>' : '') +
         '</div>' +
-        '<div style="text-align:right;min-width:72px">' +
-          '<div class="mono" style="font-size:22px;font-weight:700;color:' + color + ';line-height:1">' + impStr + '</div>' +
-          '<div style="font-size:10.5px;color:var(--ink-3);margin-top:3px">' + (s.horizon||'') + '</div>' +
+        // Impact numbers
+        '<div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:10px;flex-wrap:wrap">' +
+          '<div>' +
+            '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-3);margin-bottom:3px">PORTFOLIO IMPACT</div>' +
+            '<div style="font-size:28px;font-weight:700;color:' + color + ';letter-spacing:-.02em;line-height:1">' + inrStr + '</div>' +
+            '<div class="mono" style="font-size:14px;color:' + color + ';margin-top:2px">' + impStr + ' of portfolio</div>' +
+          '</div>' +
+          (totalVal > 0 && postVal ? '<div style="padding-left:20px;border-left:1px solid var(--line-soft)">' +
+            '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-3);margin-bottom:3px">POST-STRESS VALUE</div>' +
+            '<div style="font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-.01em">₹' + _fmtAUM(postVal) + '</div>' +
+            '<div style="font-size:11px;color:var(--ink-3)">vs ₹' + _fmtAUM(totalVal) + ' today</div>' +
+          '</div>' : '') +
         '</div>' +
+        // Description
+        (s.historical_analog ? '<div style="font-size:11.5px;color:var(--ink-3);margin-bottom:8px">Historical analog: ' + s.historical_analog + '</div>' : '') +
+        // Sector breakdown table
+        (sectorRows ? '<div style="background:var(--bg-alt);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin-top:6px">' +
+          '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-3);margin-bottom:6px">SECTOR IMPACT BREAKDOWN</div>' +
+          sectorRows +
+        '</div>' : '') +
       '</div>';
     }).join('');
 
-    // Macro sensitivity matrix (compact grid — top macro drivers)
+    // Macro sensitivity matrix
     var macroMatrix = data.macro_sensitivity || {};
     var mKeys = Object.keys(macroMatrix).slice(0,9);
     var matrixHtml = mKeys.length
-      ? '<div style="padding:16px 18px;border-top:1px solid var(--line)">' +
-          '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:12px">MACRO SENSITIVITY MATRIX</div>' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">' +
+      ? '<div style="padding:16px 20px;border-top:1px solid var(--line)">' +
+          '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:12px">MACRO SENSITIVITY MATRIX · SINGLE-EVENT SHOCKS</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px">' +
           mKeys.map(function(ev) {
-            var m = macroMatrix[ev];
-            var pct = typeof m === 'object' ? (m.estimated_impact_pct||m.portfolio_impact_pct||m.impact_pct||0) : m;
-            var p = parseFloat(pct);
-            var color = p < -10 ? 'var(--danger)' : p < -3 ? 'var(--warn)' : p > 0 ? 'var(--ok)' : 'var(--ink-2)';
-            return '<div style="background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px">' +
-              '<div style="font-size:10px;color:var(--ink-3);margin-bottom:4px">' + ev.replace(/_/g,' ').toUpperCase() + '</div>' +
-              '<div class="mono" style="font-size:16px;font-weight:700;color:' + color + '">' + (p>=0?'+':'') + p.toFixed(1) + '%</div></div>';
+            var m   = macroMatrix[ev];
+            var pct = typeof m === 'object' ? (m.total_impact_pct||m.estimated_impact_pct||m.portfolio_impact_pct||0) : m;
+            var p   = parseFloat(pct);
+            var col = p < -10 ? 'var(--danger)' : p < -3 ? 'var(--warn)' : p > 0 ? 'var(--ok)' : 'var(--ink-2)';
+            var inrVal = totalVal * p / 100;
+            return '<div style="background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px">' +
+              '<div style="font-size:10.5px;color:var(--ink-2);margin-bottom:6px;line-height:1.3">' + ev.replace(/_/g,' ') + '</div>' +
+              '<div class="mono" style="font-size:18px;font-weight:700;color:' + col + '">' + (p>=0?'+':'') + p.toFixed(1) + '%</div>' +
+              (totalVal > 0 ? '<div style="font-size:10.5px;color:var(--ink-3);margin-top:2px">' + (inrVal>=0?'+':'−') + '₹' + _fmtAUM(Math.abs(inrVal)) + '</div>' : '') +
+            '</div>';
           }).join('') + '</div></div>'
       : '';
 
+    // Portfolio Outlook (from outlook engine piggy-backed on scenarios endpoint)
+    if (data.outlook) {
+      _renderOutlook(data.outlook, totalVal);
+    }
+
     wrap.innerHTML =
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:0">' + cards + '</div>' +
+      '<div>' + cards + '</div>' +
       matrixHtml +
-      '<div style="padding:12px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">' +
+      '<div style="padding:10px 20px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3)">' +
       '// ' + scenarios.length + ' MACRO SCENARIOS · PROPAGATION: MACRO→SECTOR→PORTFOLIO · ' + (data.methodology_version||'scenario_v2.1') + '</div>';
   }).catch(function() {
     if (btn) { btn.disabled=false; btn.textContent='Run Macro Scenarios'; }

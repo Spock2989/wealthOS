@@ -138,11 +138,21 @@ def get_all_scenarios(
     results = run_scenarios(sector_exp, cap_split, total_value)
     macro_matrix = compute_full_macro_sensitivity_matrix(sector_exp, total_value)
 
+    # Portfolio outlook — deterministic forward projection (3-6M, 1-2Y, 3-5Y)
+    outlook = {}
+    try:
+        from engines.outlook_engine import run_outlook
+        outlook = run_outlook(sector_exp, cap_split, total_value)
+    except Exception as _e:
+        import logging
+        logging.getLogger(__name__).warning("outlook_engine failed: %s", _e)
+
     return {
         "portfolio_id":        portfolio_id,
         "total_value_inr":     total_value,
         "scenarios":           results,
         "macro_sensitivity":   macro_matrix,
+        "outlook":             outlook,
         "methodology_version": "scenario_v2.1",
         "snapshot_used_at":    snap.created_at.isoformat(),
         "sector_inputs":       sector_exp,

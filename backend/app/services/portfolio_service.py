@@ -79,10 +79,18 @@ class PortfolioService:
         return self.db.query(AnalyticsSnapshot).filter(AnalyticsSnapshot.portfolio_id==portfolio_id).order_by(AnalyticsSnapshot.created_at.desc()).first()
 
     def save_ai_report(self, portfolio_id, snapshot_id, bundle):
-        report = AIReport(portfolio_id=portfolio_id, snapshot_id=snapshot_id,
-            report_type="portfolio_review", portfolio_summary=bundle.portfolio_summary,
-            meeting_prep_notes=bundle.meeting_prep_notes, risk_commentary=bundle.risk_commentary,
-            ai_provider=bundle.ai_provider, model=bundle.model)
+        # bundle is a plain dict returned by InsightEngine.generate()
+        _g = bundle.get if isinstance(bundle, dict) else lambda k, d=None: getattr(bundle, k, d)
+        report = AIReport(
+            portfolio_id=portfolio_id,
+            snapshot_id=snapshot_id,
+            report_type="portfolio_review",
+            portfolio_summary=_g("portfolio_summary"),
+            meeting_prep_notes=_g("meeting_prep_notes"),
+            risk_commentary=_g("risk_commentary"),
+            ai_provider=_g("ai_provider", "anthropic"),
+            model=_g("model"),
+        )
         self.db.add(report); self.db.commit(); self.db.refresh(report)
         return report
 
