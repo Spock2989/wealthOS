@@ -927,6 +927,16 @@ function doRegister() {
 }
 
 // ══════════════════════════════════════════════════════
+//  AUTH GUARD — skip login if already signed in
+// ══════════════════════════════════════════════════════
+(function(){
+  try {
+    var tok = localStorage.getItem('wos_token') || sessionStorage.getItem('wos_token');
+    if (tok) { window.location.replace('/dashboard.html'); }
+  } catch(e) {}
+})();
+
+// ══════════════════════════════════════════════════════
 //  THEME
 // ══════════════════════════════════════════════════════
 (function(){try{if(localStorage.getItem('wt')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}})();

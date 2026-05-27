@@ -970,7 +970,11 @@ function _apiFetch(path, opts) {
   opts = opts || {};
   opts.headers = Object.assign({'Authorization': 'Bearer ' + _getToken()}, opts.headers || {});
   return fetch(API_BASE + path, opts).then(function(res) {
-    if (res.status === 401) { window.location.replace('/app.html'); throw new Error('Unauthorized'); }
+    if (res.status === 401) {
+      try { localStorage.removeItem('wos_token'); localStorage.removeItem('wos_user');
+            sessionStorage.removeItem('wos_token'); sessionStorage.removeItem('wos_user'); } catch(e) {}
+      window.location.replace('/app.html'); throw new Error('Unauthorized');
+    }
     return res.json().then(function(data) { return {ok: res.ok, status: res.status, data: data}; });
   });
 }
