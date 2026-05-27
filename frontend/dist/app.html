@@ -273,11 +273,12 @@ a{text-decoration:none;color:inherit}
     <div class="login-logo"><span class="bmark"></span><span style="font-size:16px;font-weight:600"><b>Wealth</b>OS<span style="color:var(--ink-3);font-weight:400">/ai</span></span></div>
     <div class="login-title">Advisor Sign In</div>
     <div class="login-sub">Access your portfolio intelligence dashboard</div>
-    <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" type="email" id="loginEmail" value="rahul@wealthos.ai" placeholder="advisor@firm.com"/></div>
-    <div class="form-group"><label class="form-label">PASSWORD</label><input class="form-input" type="password" id="loginPass" value="••••••••" placeholder="Password"/></div>
-    <div class="form-row"><label class="form-check"><input type="checkbox" checked style="accent-color:var(--accent)"/> Remember me</label><span class="form-link" onclick="alert('Password reset link sent!')">Forgot password?</span></div>
-    <a href="/dashboard.html" class="btn btn-primary" style="width:100%;height:42px;font-size:14px;display:flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer">Sign In to Dashboard</a>
-    <div class="login-hint">Demo: use any email · password <span>any</span></div>
+    <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" type="email" id="loginEmail" placeholder="advisor@firm.com" autocomplete="email"/></div>
+    <div class="form-group"><label class="form-label">PASSWORD</label><input class="form-input" type="password" id="loginPass" placeholder="Password" autocomplete="current-password"/></div>
+    <div id="loginError" style="display:none;padding:10px 13px;border-radius:7px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);color:#DC2626;font-size:13px;margin-bottom:14px"></div>
+    <div class="form-row"><label class="form-check"><input type="checkbox" id="rememberMe" checked style="accent-color:var(--accent)"/> Remember me</label><span class="form-link" onclick="alert('Contact your administrator to reset your password.')">Forgot password?</span></div>
+    <button id="loginBtn" onclick="doLogin()" class="btn btn-primary" style="width:100%;height:42px;font-size:14px">Sign In to Dashboard</button>
+    <div class="login-hint" id="loginHint">Enter your WealthOS advisor credentials</div>
   </div>
 </div>
 
@@ -745,15 +746,80 @@ var STATE = {view:'overview',prevView:'overview',client:null,tab:'tab-overview',
 // ══════════════════════════════════════════════════════
 //  LOGIN / LOGOUT
 // ══════════════════════════════════════════════════════
-function doLogin(){
-  window.location.href='/dashboard.html';
+var API_BASE = 'https://api.wlthos.in';
+
+function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPass').value;
+  var errEl = document.getElementById('loginError');
+  var hintEl = document.getElementById('loginHint');
+  var btn = document.getElementById('loginBtn');
+
+  errEl.style.display = 'none';
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Loading state
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  hintEl.textContent = 'Authenticating…';
+
+  fetch(API_BASE + '/api/v1/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email, password: password})
+  })
+  .then(function(res) {
+    return res.json().then(function(data) { return {ok: res.ok, data: data}; });
+  })
+  .then(function(r) {
+    if (!r.ok) {
+      var msg = (r.data && r.data.detail) ? r.data.detail : 'Invalid email or password.';
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign In to Dashboard';
+      hintEl.textContent = 'Enter your WealthOS advisor credentials';
+      return;
+    }
+    // Success — persist token
+    var token = r.data.access_token;
+    var remember = document.getElementById('rememberMe').checked;
+    try {
+      if (remember) {
+        localStorage.setItem('wos_token', token);
+        localStorage.setItem('wos_user', JSON.stringify(r.data.user));
+      } else {
+        sessionStorage.setItem('wos_token', token);
+        sessionStorage.setItem('wos_user', JSON.stringify(r.data.user));
+      }
+    } catch(e) {}
+    hintEl.textContent = 'Access granted — loading dashboard…';
+    window.location.href = '/dashboard.html';
+  })
+  .catch(function(err) {
+    errEl.textContent = 'Network error — check your connection and try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Sign In to Dashboard';
+    hintEl.textContent = 'Enter your WealthOS advisor credentials';
+  });
 }
-function doLogout(){
+
+function doLogout() {
+  try { localStorage.removeItem('wos_token'); localStorage.removeItem('wos_user'); } catch(e) {}
+  try { sessionStorage.removeItem('wos_token'); sessionStorage.removeItem('wos_user'); } catch(e) {}
   document.getElementById('appShell').classList.remove('show');
-  var ls=document.getElementById('loginScreen');
-  ls.style.display='flex';ls.classList.remove('out');
+  var ls = document.getElementById('loginScreen');
+  ls.style.display = 'flex'; ls.classList.remove('out');
 }
-document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+
+document.getElementById('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPass').focus(); });
 
 // ══════════════════════════════════════════════════════
 //  THEME

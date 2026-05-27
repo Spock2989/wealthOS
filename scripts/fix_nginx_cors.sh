@@ -1,16 +1,11 @@
-##############################################################
-# WealthOS API — Nginx (production)
-# api.wlthos.in → FastAPI on 127.0.0.1:8000
-#
-# CORS: hardcoded to wlthos.in — do NOT use $variable pattern
-# (nginx if+variable+add_header is unreliable for CORS)
-#
-# Deploy on server:
-#   cp /opt/wlthos/infra/nginx/wealthos-api.conf \
-#      /etc/nginx/sites-available/wealthos-api
-#   nginx -t && systemctl reload nginx
-##############################################################
+#!/bin/bash
+# Run this on the server (SSH as root) to fix browser login CORS
+# Usage: bash fix_nginx_cors.sh
 
+set -e
+
+echo "▶ Writing clean nginx config..."
+cat > /etc/nginx/sites-available/wealthos-api << 'NGINXEOF'
 server {
     listen 80;
     server_name api.wlthos.in;
@@ -28,7 +23,6 @@ server {
     ssl_prefer_server_ciphers on;
 
     location / {
-        # Handle CORS preflight — must come before proxy_pass
         if ($request_method = OPTIONS) {
             add_header 'Access-Control-Allow-Origin'      'https://wlthos.in' always;
             add_header 'Access-Control-Allow-Methods'     'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
@@ -40,7 +34,6 @@ server {
             return 204;
         }
 
-        # CORS headers on all real responses
         add_header 'Access-Control-Allow-Origin'      'https://wlthos.in' always;
         add_header 'Access-Control-Allow-Methods'     'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers'     'Authorization, Content-Type, Accept, X-Requested-With' always;
@@ -57,3 +50,38 @@ server {
         proxy_send_timeout 120s;
     }
 }
+NGINXEOF
+
+echo "▶ Testing nginx config..."
+nginx -t
+
+echo "▶ Reloading nginx..."
+systemctl reload nginx
+
+echo ""
+echo "✅ Nginx reloaded. Testing CORS preflight..."
+curl -s -o /dev/null -w "OPTIONS preflight status: %{http_code}\n" \
+  -X OPTIONS https://api.wlthos.in/api/v1/auth/login \
+  -H "Origin: https://wlthos.in" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: Content-Type"
+
+echo ""
+echo "▶ Checking CORS headers returned..."
+curl -sI -X OPTIONS https://api.wlthos.in/api/v1/auth/login \
+  -H "Origin: https://wlthos.in" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: Content-Type" \
+  | grep -i "access-control"
+
+echo ""
+echo "▶ Testing login endpoint..."
+curl -s -X POST https://api.wlthos.in/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://wlthos.in" \
+  -d '{"email":"tiwarikshitij20@gmail.com","password":"WealthOS2026!"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Login OK — token:', d.get('access_token','')[:40]+'...')" 2>/dev/null \
+  || echo "⚠️ Login returned unexpected response"
+
+echo ""
+echo "Done. If all checks pass, browser login at https://wlthos.in/app.html should work."

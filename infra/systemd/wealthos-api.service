@@ -1,14 +1,20 @@
 [Unit]
 Description=WealthOS API
-After=network.target postgresql.service
+# Removed postgresql.service dependency — running SQLite until PG migration
+After=network.target
 
 [Service]
 User=root
 WorkingDirectory=/opt/wlthos/backend
-Environment="DATABASE_URL=postgresql://wealthos:WealthOS_DB_2026!@localhost/wealthosdb"
-EnvironmentFile=/opt/wlthos/backend/.env
+# SQLite until PostgreSQL is provisioned. To migrate:
+#   1. Install PostgreSQL, create wealthosdb
+#   2. Uncomment the line below and remove the SQLite line
+#Environment="DATABASE_URL=postgresql://wealthos:WealthOS_DB_2026!@localhost/wealthosdb"
+Environment="DATABASE_URL=sqlite:///./wealthos.db"
+EnvironmentFile=-/opt/wlthos/backend/.env
 ExecStart=/opt/wlthos/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
