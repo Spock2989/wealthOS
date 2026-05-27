@@ -19,7 +19,7 @@ git commit -m "feat: WealthOS v4.0 Citadel-grade quant engine
 git push origin main
 ```
 
-## Step 2 — Deploy backend to server (Mac Terminal, same window)
+## Step 2 — Deploy backend + frontend to server (Mac Terminal, same window)
 
 ```bash
 make deploy
@@ -32,6 +32,22 @@ rsync -avz backend/ root@64.227.147.106:/opt/wlthos/backend/ \
 
 ssh root@64.227.147.106 "systemctl restart wealthos-api && sleep 5 && curl -s http://localhost:8000/health"
 ```
+
+### ⚠️ FRONTEND DEPLOY — CORRECT PATH (verified 2026-05-27)
+Nginx serves from `/opt/wlthos/frontend/dist/` — NOT `/var/www/wlthos/`.
+Always use this command for frontend deploys:
+
+```bash
+rsync -avz /Users/user/Documents/Claude/Projects/WealthOS/frontend/dist/ root@64.227.147.106:/opt/wlthos/frontend/dist/
+```
+
+### Frontend files (canonical, as of 2026-05-27)
+- `frontend/dist/index.html` — Main app (app_3 design: two-panel auth + institutional dashboard)
+- `frontend/dist/app.html` — Same as index.html (alias)
+- `frontend/dist/landing.html` — Marketing landing page
+
+The app_3 design is the canonical UI. Do NOT revert to the old React build (162KB index.html).
+After deploy: Cmd+Shift+R on wlthos.in to hard refresh.
 
 ## Step 3 — Fix CORS (SSH terminal — run on SERVER only)
 

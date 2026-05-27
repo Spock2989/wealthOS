@@ -98,10 +98,9 @@ async def register(req: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(400, "Password must be at least 8 characters.")
     user = User(
         email=email,
-        full_name=req.full_name.strip(),
+        name=req.full_name.strip(),
         password_hash=hash_password(req.password),
-        is_active=False,
-        is_verified=False,
+        is_active=True,
     )
     # Add optional fields safely
     try:
@@ -110,17 +109,8 @@ async def register(req: RegisterRequest, db: Session = Depends(get_db)):
     except Exception:
         pass
     db.add(user)
-    db.flush()
-    tok = make_token()
-    db.add(EmailVerificationToken(
-        token=tok,
-        email=email,
-        expires_at=(datetime.utcnow() + timedelta(hours=24)).isoformat(),
-        used=False,
-    ))
     db.commit()
-    await send_verify_email(email, req.full_name, tok)
-    return {"message": "Account created. Check your email to verify.", "email": email}
+    return {"message": "Account created successfully.", "email": email}
 
 # ── Verify ────────────────────────────────────────────────────────
 @router.get("/verify", response_class=HTMLResponse)
@@ -137,7 +127,6 @@ async def verify_email(token: str = Query(...), db: Session = Depends(get_db)):
     if not user:
         return _page(False, "Account not found.", False)
     user.is_active = True
-    user.is_verified = True
     tok.used = True
     db.commit()
     await send_welcome_email(user.email, user.name)
@@ -155,9 +144,6 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = get_user(db, req.email)
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(401, "Invalid email or password.")
-    is_verified = getattr(user, "is_verified", True)
-    if not is_verified:
-        raise HTTPException(403, "Please verify your email before logging in. Check your inbox.")
     is_active = getattr(user, "is_active", True)
     if not is_active:
         raise HTTPException(403, "Account inactive. Contact support.")
@@ -168,7 +154,7 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
         "user": {
             "email": user.email,
             "full_name": user.name,
-            "firm_name": getattr(user, "firm_name", ""),
+            "firm_name": getattr(user, "firm", ""),
             "role": getattr(user, "role", "Advisor"),
         }
     }
@@ -179,7 +165,7 @@ async def me(current_user=Depends(get_current_user)):
     return {
         "email": current_user.email,
         "full_name": current_user.name,
-        "firm_name": getattr(current_user, "firm_name", ""),
+        "firm_name": getattr(current_user, "firm", ""),
         "role": getattr(current_user, "role", "Advisor"),
     }
 
@@ -187,7 +173,7 @@ async def me(current_user=Depends(get_current_user)):
 @router.post("/resend-verify")
 async def resend_verify(req: ResendRequest, db: Session = Depends(get_db)):
     user = get_user(db, req.email)
-    if not user or getattr(user, "is_verified", False):
+    if not user or user.is_active:
         return {"message": "If registered and unverified, a new link has been sent."}
     db.query(EmailVerificationToken).filter(
         EmailVerificationToken.email == req.email.lower(),
@@ -206,7 +192,7 @@ async def resend_verify(req: ResendRequest, db: Session = Depends(get_db)):
 @router.post("/forgot-password")
 async def forgot_password(req: ForgotRequest, db: Session = Depends(get_db)):
     user = get_user(db, req.email)
-    if user and getattr(user, "is_verified", True):
+    if user:
         db.query(PasswordResetToken).filter(
             PasswordResetToken.email == req.email.lower(),
             PasswordResetToken.used == False

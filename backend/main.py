@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from routers import demo, users, portfolios, ingestion
 
@@ -7,25 +6,13 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="WealthOS API",
-    version="1.0.0",
+    version="1.6.0",
     description="Institutional portfolio intelligence infrastructure for Indian wealth management"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://wlthos.in",
-        "http://wlthos.in",
-        "https://www.wlthos.in",
-        "https://wlthos.in",
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS is handled exclusively by nginx reverse proxy.
+# Do NOT add FastAPI CORSMiddleware — it causes duplicate Access-Control headers
+# which browsers (especially Safari) reject with "Load failed".
 
 app.include_router(demo.router)
 app.include_router(users.router)

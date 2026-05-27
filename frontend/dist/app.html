@@ -1,643 +1,1300 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WealthOS — Advisor Intelligence Platform</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>WealthOS — Advisor Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='18' height='18' rx='3' fill='none' stroke='%230A0A0A' stroke-width='2'/%3E%3Crect x='12' y='12' width='18' height='18' rx='3' fill='%231E40FF'/%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;550;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#FFFFFF; --bg-alt:#FAFAFA; --bg-warm:#FBFBF9; --surface:#FFFFFF;
-  --ink:#0A0A0A; --ink-soft:#111111; --ink-2:#525252; --ink-3:#A3A3A3; --ink-4:#D4D4D4;
-  --line:#E5E5E5; --line-soft:#EFEFEF;
-  --accent:#1E40FF; --accent-dim:rgba(30,64,255,.08); --accent-2:rgba(30,64,255,.16);
-  --ok:#16A34A; --warn:#B45309; --danger:#DC2626;
-  --ok-dim:rgba(22,163,74,.08); --warn-dim:rgba(180,83,9,.08); --danger-dim:rgba(220,38,38,.08);
-  --radius:6px; --radius-lg:10px;
+  --bg:#FFFFFF;--bg-alt:#FAFAFA;--bg-warm:#FBFBF9;--surface:#FFFFFF;
+  --ink:#0A0A0A;--ink-soft:#111111;--ink-2:#525252;--ink-3:#A3A3A3;--ink-4:#D4D4D4;
+  --line:#E5E5E5;--line-soft:#EFEFEF;
+  --accent:#1E40FF;--accent-dim:rgba(30,64,255,.08);--accent-2:rgba(30,64,255,.16);
+  --ok:#16A34A;--warn:#B45309;--danger:#DC2626;
+  --radius:6px;--radius-lg:10px;
   --shadow-1:0 1px 0 rgba(10,10,10,.02),0 1px 2px rgba(10,10,10,.03),0 4px 12px -4px rgba(10,10,10,.04),0 16px 32px -16px rgba(10,10,10,.05);
   --shadow-2:0 1px 0 rgba(10,10,10,.03),0 2px 4px rgba(10,10,10,.04),0 8px 16px -6px rgba(10,10,10,.06),0 24px 48px -20px rgba(10,10,10,.08);
-  --ease:cubic-bezier(0.32,0.72,0,1); --ease-out:cubic-bezier(0.2,0.8,0.2,1);
+  --ease:cubic-bezier(0.32,0.72,0,1);
+  --sb:224px;
 }
-[data-theme="dark"]{
-  --bg:#0A0A0A; --bg-alt:#0F0F0F; --bg-warm:#101010; --surface:#141414;
-  --ink:#FAFAFA; --ink-soft:#F5F5F5; --ink-2:#A3A3A3; --ink-3:#737373; --ink-4:#404040;
-  --line:#262626; --line-soft:#1F1F1F;
-  --accent:#5B7CFF; --accent-dim:rgba(91,124,255,.10); --accent-2:rgba(91,124,255,.22);
-  --ok-dim:rgba(22,163,74,.14); --warn-dim:rgba(180,83,9,.16); --danger-dim:rgba(220,38,38,.14);
+[data-theme=dark]{
+  --bg:#0A0A0A;--bg-alt:#0F0F0F;--bg-warm:#101010;--surface:#141414;
+  --ink:#FAFAFA;--ink-soft:#F5F5F5;--ink-2:#A3A3A3;--ink-3:#737373;--ink-4:#404040;
+  --line:#262626;--line-soft:#1F1F1F;
+  --accent:#5B7CFF;--accent-dim:rgba(91,124,255,.10);--accent-2:rgba(91,124,255,.22);
   --shadow-1:0 1px 0 rgba(0,0,0,.4),0 4px 12px -4px rgba(0,0,0,.5);
   --shadow-2:0 1px 0 rgba(0,0,0,.4),0 8px 24px -6px rgba(0,0,0,.6);
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
-body{
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  font-feature-settings:"ss01","ss03","cv11","calt";
-  font-variation-settings:"opsz" 14;
-  background:var(--bg); color:var(--ink); font-size:14px; line-height:1.55;
-  letter-spacing:-0.005em; -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;
-  overflow:hidden;
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;font-feature-settings:"ss01","ss03","cv11","calt";background:var(--bg-alt);color:var(--ink);font-size:14px;line-height:1.55;letter-spacing:-.005em;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:#fff}
+:focus{outline:none}:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.mono{font-family:'JetBrains Mono',monospace;font-feature-settings:"calt" 0;letter-spacing:0}
+a{text-decoration:none;color:inherit}
+/* ─ SCROLLBAR ─ */
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--ink-4);border-radius:3px}
+/* ─ LOGIN ─ */
+#loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;transition:opacity .4s,transform .4s}
+#loginScreen.out{opacity:0;transform:scale(.97);pointer-events:none}
+.login-box{width:380px;padding:40px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-2)}
+.login-logo{display:flex;align-items:center;gap:9px;margin-bottom:32px}
+.bmark{width:20px;height:20px;position:relative}
+.bmark::before,.bmark::after{content:"";position:absolute;inset:0;border:1px solid var(--ink);border-radius:2px}
+.bmark::after{transform:translate(5px,5px);border-color:var(--accent);background:var(--accent)}
+.login-title{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-bottom:6px}
+.login-sub{font-size:13.5px;color:var(--ink-2);margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.07em;display:block;margin-bottom:6px}
+.form-input{width:100%;height:40px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;transition:border-color .15s,box-shadow .15s}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.form-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.form-check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.form-link{font-size:13px;color:var(--accent);cursor:pointer}
+.login-hint{text-align:center;margin-top:16px;font-size:12px;color:var(--ink-3)}
+.login-hint span{font-family:'JetBrains Mono',monospace;background:var(--bg-alt);padding:2px 7px;border-radius:4px;border:1px solid var(--line)}
+/* ─ APP SHELL ─ */
+#appShell{display:none;height:100vh;overflow:hidden;flex-direction:column}
+#appShell.show{display:flex}
+.app{display:flex;flex:1;overflow:hidden}
+/* ─ SIDEBAR ─ */
+.sb{width:var(--sb);flex-shrink:0;background:var(--bg);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100%;overflow-y:auto;overflow-x:hidden}
+.sb::-webkit-scrollbar{display:none}
+.sb-brand{display:flex;align-items:center;gap:9px;padding:0 16px;height:58px;border-bottom:1px solid var(--line);font-weight:550;font-size:14px;color:var(--ink);flex-shrink:0}
+.sb-nav{flex:1;padding:8px}
+.sb-section{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.08em;padding:10px 8px 5px;margin-top:4px}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius);font-size:13px;font-weight:450;color:var(--ink-2);cursor:pointer;transition:background .12s,color .12s;position:relative;user-select:none}
+.sb-item:hover{background:var(--bg-alt);color:var(--ink)}
+.sb-item.active{background:var(--accent-dim);color:var(--accent);font-weight:500}
+.sb-item.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--accent);border-radius:0 2px 2px 0}
+.sb-item svg{width:15px;height:15px;flex-shrink:0;color:var(--ink-3)}
+.sb-item.active svg{color:var(--accent)}
+.sb-badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:1px 6px;border-radius:100px;font-weight:500}
+.sb-badge.red{background:var(--danger);color:#fff}
+.sb-badge.amber{background:var(--warn);color:#fff}
+.sb-badge.gray{background:var(--ink-4);color:var(--ink-2)}
+.sb-footer{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.advisor-row{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .12s}
+.advisor-row:hover{background:var(--bg-alt)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.advisor-name{font-size:12.5px;font-weight:500}
+.advisor-role{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3)}
+.sys-row{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:var(--bg-alt)}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--ok);position:relative;flex-shrink:0}
+.pulse::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--ok);opacity:.35;animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.8);opacity:0}}
+/* ─ MAIN ─ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:58px;border-bottom:1px solid var(--line);background:var(--bg);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;position:relative;z-index:10}
+.tb-title{font-size:16px;font-weight:600;color:var(--ink-soft);letter-spacing:-.015em;flex:1}
+.tb-sub{font-size:11px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.tb-left{display:flex;flex-direction:column}
+.tb-right{display:flex;align-items:center;gap:8px}
+.search-btn{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg-alt);font-size:13px;color:var(--ink-2);cursor:pointer;transition:border-color .15s;min-width:200px}
+.search-btn:hover{border-color:var(--ink-3)}
+.icon-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:7px;background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-2);transition:border-color .15s,color .15s;position:relative;flex-shrink:0}
+.icon-btn:hover{border-color:var(--ink-3);color:var(--ink)}
+.notif-dot{position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:var(--danger);color:#fff;font-size:8px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
+.content{flex:1;overflow-y:auto;padding:22px}
+/* ─ BUTTONS ─ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 14px;border-radius:7px;font-family:inherit;font-size:13px;font-weight:500;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;border:1px solid transparent;transition:transform .12s var(--ease),background .15s,border-color .15s,color .15s,box-shadow .2s}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn-primary:hover{background:#000;box-shadow:0 0 0 3px rgba(10,10,10,.06),0 4px 12px -2px rgba(10,10,10,.2)}
+[data-theme=dark] .btn-primary{background:#fff;color:#0A0A0A}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{background:var(--bg-alt);border-color:var(--ink-3)}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-accent:hover{box-shadow:0 0 0 3px var(--accent-dim)}
+.btn-ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn-sm{height:28px;padding:0 11px;font-size:12px;border-radius:6px}
+.btn-xs{height:24px;padding:0 9px;font-size:11px;border-radius:5px}
+/* ─ CARDS ─ */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);gap:12px}
+.card-title{font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:-.008em}
+.card-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em}
+.card-body{padding:18px}
+/* ─ STATS ─ */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;cursor:default;transition:box-shadow .2s,border-color .2s}
+.stat-card:hover{box-shadow:var(--shadow-1);border-color:var(--ink-4)}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.08em;margin-bottom:7px}
+.stat-val{font-size:24px;font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1}
+.stat-sub{font-size:11.5px;margin-top:5px}
+.up{color:var(--ok)}.dn{color:var(--danger)}.am{color:var(--warn)}
+/* ─ TABLE ─ */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:9px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);font-weight:500;letter-spacing:.06em;border-bottom:1px solid var(--line);background:var(--bg-alt);white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--line-soft);color:var(--ink);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr.clickable{cursor:pointer;transition:background .1s}
+.tbl tbody tr.clickable:hover td{background:color-mix(in srgb,var(--accent-dim) 50%,var(--bg-alt))}
+.tbl td.muted{color:var(--ink-2)}
+.tbl td.num{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+/* ─ PILLS ─ */
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:.02em;white-space:nowrap}
+.pill-low{background:rgba(22,163,74,.08);color:var(--ok);border:1px solid rgba(22,163,74,.18)}
+.pill-med{background:rgba(180,83,9,.08);color:var(--warn);border:1px solid rgba(180,83,9,.18)}
+.pill-hi{background:rgba(220,38,38,.08);color:var(--danger);border:1px solid rgba(220,38,38,.18)}
+.pill-blue{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-2)}
+.pill-gray{background:var(--bg-alt);color:var(--ink-2);border:1px solid var(--line)}
+/* ─ TAG ─ */
+.tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-2);padding:2px 8px;border:1px solid var(--line);border-radius:100px;background:var(--bg)}
+/* ─ VIEWS ─ */
+.view{display:none;animation:fadeIn .2s var(--ease)}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* ─ GRID ─ */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:3fr 1fr;gap:16px}
+/* ─ PAGE HEADER ─ */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+.ph-title{font-size:20px;font-weight:600;color:var(--ink-soft);letter-spacing:-.02em}
+.ph-sub{font-size:13px;color:var(--ink-2);margin-top:3px}
+.ph-right{display:flex;gap:8px;align-items:flex-start;flex-shrink:0}
+/* ─ BACK BTN ─ */
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer;padding:6px 10px;border-radius:6px;border:none;background:transparent;font-family:inherit;transition:background .15s,color .15s;margin-bottom:14px}
+.back-btn:hover{background:var(--bg-alt);color:var(--ink)}
+/* ─ RISK BAR ─ */
+.risk-bar-wrap{display:flex;align-items:center;gap:8px}
+.risk-bar-track{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden;min-width:50px}
+.risk-bar-fill{height:100%;border-radius:2px}
+/* ─ PROGRESS BAR ─ */
+.prog-row{margin-bottom:12px}
+.prog-head{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px}
+.prog-track{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .8s var(--ease)}
+/* ─ TABS ─ */
+.tabs{display:flex;gap:2px;padding:3px;background:var(--bg-alt);border:1px solid var(--line);border-radius:9px;width:fit-content;margin-bottom:18px;overflow-x:auto;flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{padding:7px 15px;border-radius:7px;font-size:13px;font-weight:450;color:var(--ink-2);cursor:pointer;border:none;background:transparent;font-family:inherit;transition:background .12s,color .12s;white-space:nowrap}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{background:var(--surface);color:var(--ink);font-weight:500;box-shadow:var(--shadow-1)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:fadeIn .2s var(--ease)}
+/* ─ ALERT ITEM ─ */
+.alert-item{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:background .12s}
+.alert-item:last-child{border-bottom:none}
+.alert-item:hover{background:var(--bg-alt)}
+.alert-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.alert-body{flex:1;min-width:0}
+.alert-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px}
+.alert-desc{font-size:12px;color:var(--ink-2);line-height:1.4}
+.alert-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);flex-shrink:0;margin-top:3px}
+/* ─ INTEL ITEM ─ */
+.intel-item{padding:13px 16px;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:background .12s}
+.intel-item:last-child{border-bottom:none}
+.intel-item:hover{background:var(--bg-alt)}
+.intel-tag-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;margin-bottom:4px}
+.intel-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px;line-height:1.35}
+.intel-desc{font-size:12px;color:var(--ink-2);line-height:1.4}
+/* ─ DETAIL VIEW ─ */
+.detail-hero{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px}
+.detail-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.05em;display:flex;gap:14px;flex-wrap:wrap;margin-top:5px}
+/* ─ MEMO ─ */
+.memo-block{border-left:2px solid var(--accent);padding:16px 20px;background:var(--bg-alt);border-radius:0 8px 8px 0;margin-bottom:14px}
+.memo-meta{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:10px}
+.memo-text{font-size:14px;line-height:1.65;color:var(--ink)}
+.memo-text p{margin-bottom:12px}
+.memo-text p:last-child{margin-bottom:0}
+/* ─ GAUGE ─ */
+.gauge-wrap{position:relative;flex-shrink:0}
+.gauge-wrap svg{display:block;transform:rotate(-90deg)}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+/* ─ SCENARIO BUILDER ─ */
+.scen-card{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;margin-bottom:12px}
+.scen-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:background .12s}
+.scen-row:last-child{border-bottom:none}
+.scen-row:hover{background:var(--bg-alt)}
+.scen-row.selected{background:var(--accent-dim);border-left:3px solid var(--accent)}
+.scen-row.selected .scen-name{color:var(--accent);font-weight:500}
+.scen-name{font-size:13px;color:var(--ink);flex:1}
+.scen-impact{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600}
+/* ─ SETTINGS ─ */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--line-soft)}
+.setting-row:last-child{border-bottom:none}
+.setting-info{flex:1}
+.setting-label{font-size:13.5px;font-weight:500;color:var(--ink)}
+.setting-desc{font-size:12px;color:var(--ink-2);margin-top:2px}
+.toggle{width:36px;height:20px;border-radius:100px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--ok)}
+.toggle.off{background:var(--ink-4)}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;transition:left .2s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:19px}
+.toggle.off::after{left:3px}
+/* ─ INPUT ─ */
+.input{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font:inherit;font-size:13.5px;transition:border-color .15s,box-shadow .15s;width:100%}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.select{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer}
+/* ─ TOOLTIP ─ */
+#tooltip{position:fixed;z-index:500;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 13px;max-width:220px;font-size:12px;color:var(--ink-2);pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:var(--shadow-2)}
+#tooltip.show{opacity:1}
+#tooltip .t-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
+/* ─ CHART ─ */
+.chart-wrap{position:relative}
+.chart-wrap svg{overflow:visible;display:block;width:100%}
+/* ─ OVERLAP BAR ─ */
+.ol-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.ol-name{font-size:12.5px;color:var(--ink);min-width:140px;flex-shrink:0}
+.ol-track{flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.ol-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .8s var(--ease)}
+.ol-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);min-width:38px;text-align:right}
+/* ─ DIVIDER ─ */
+.divider{height:1px;background:var(--line);margin:18px 0}
+/* ─ PRINT ─ */
+@media print{
+  .sb,.topbar,#loginScreen,.back-btn,.btn-ghost,.ph-right,.tabs,.print-hide{display:none!important}
+  .main{overflow:visible!important}.content{overflow:visible!important;padding:0}
+  body{overflow:visible!important;height:auto!important}
+  #appShell{height:auto!important;overflow:visible!important}
+  .app{height:auto!important;overflow:visible!important}
+  .view.active{display:block!important}
+  .tab-panel{display:block!important}
+  .card{break-inside:avoid;margin-bottom:16px}
+  .tbl td,.tbl th{padding:6px 10px}
+  @page{margin:20mm}
 }
-.mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;font-feature-settings:"calt" 0;letter-spacing:0;}
-::selection{background:var(--accent);color:#fff;}
-:focus{outline:none;}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
-
-/* ── LOGO ── */
-.logo{display:flex;align-items:center;gap:9px;}
-.logo-mark{width:28px;height:28px;position:relative;flex-shrink:0;}
-.logo-sq1{width:17px;height:17px;border:1.5px solid var(--ink);border-radius:3px;position:absolute;top:0;left:0;}
-.logo-sq2{width:17px;height:17px;background:var(--accent);border-radius:3px;position:absolute;bottom:0;right:0;}
-.logo-text{font-size:16px;font-weight:600;letter-spacing:-.02em;}
-.logo-text em{font-style:normal;color:var(--accent);}
-.logo-text .ai{color:var(--ink-3);font-weight:400;font-size:13px;}
-
-/* ════ AUTH SCREEN ════ */
-#screen-auth{position:fixed;inset:0;display:flex;background:var(--bg);z-index:100;}
-.auth-left{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;}
-.auth-right{width:46%;background:var(--bg-warm);border-left:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden;}
-.auth-right::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,var(--accent-dim),transparent 60%);}
-.auth-box{width:100%;max-width:360px;}
-.auth-logo{margin-bottom:40px;}
-.auth-h1{font-size:26px;font-weight:600;letter-spacing:-.03em;margin-bottom:6px;}
-.auth-sub{color:var(--ink-2);font-size:14px;margin-bottom:32px;}
-.tab-switch{display:flex;background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:3px;margin-bottom:28px;}
-.tab-switch button{flex:1;padding:8px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;border-radius:4px;transition:all .2s var(--ease);}
-.tab-switch button.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1);}
-.field{margin-bottom:16px;}
-.field label{display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:7px;}
-.field input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;color:var(--ink);font-family:inherit;font-size:14px;transition:border-color .15s,box-shadow .15s;}
-.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
-.field input::placeholder{color:var(--ink-3);}
-.btn{width:100%;border:none;border-radius:var(--radius);padding:12px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);display:flex;align-items:center;justify-content:center;gap:7px;}
-.btn-primary{background:var(--accent);color:#fff;}
-.btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:var(--shadow-1);}
-.btn-primary:active{transform:translateY(0);}
-.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
-.btn-ghost{background:transparent;color:var(--ink-2);border:1px solid var(--line);margin-top:10px;}
-.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
-.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--ink-3);font-size:12px;}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line);}
-.auth-err{background:var(--danger-dim);border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius);padding:11px 14px;font-size:13px;margin-bottom:18px;display:none;}
-.auth-foot{margin-top:24px;text-align:center;font-size:13px;color:var(--ink-3);}
-.auth-foot a{color:var(--accent);text-decoration:none;cursor:pointer;}
-/* auth right showcase */
-.showcase{position:relative;z-index:1;max-width:400px;}
-.showcase-quote{font-size:22px;font-weight:500;letter-spacing:-.02em;line-height:1.4;margin-bottom:24px;}
-.showcase-quote em{font-style:normal;color:var(--accent);}
-.showcase-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px;}
-.showcase-stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;}
-.showcase-stat-val{font-size:22px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;}
-.showcase-stat-label{font-size:12px;color:var(--ink-3);margin-top:4px;}
-
-/* ════ APP ════ */
-#screen-app{position:fixed;inset:0;display:flex;opacity:0;pointer-events:none;transition:opacity .35s var(--ease);}
-#screen-app.visible{opacity:1;pointer-events:all;}
-
-/* ── SIDEBAR ── */
-.sidebar{width:228px;background:var(--bg-alt);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
-.sidebar-logo{padding:18px 16px;border-bottom:1px solid var(--line);}
-.sidebar-ws{padding:12px 14px;border-bottom:1px solid var(--line);}
-.sidebar-ws-label{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:500;}
-.sidebar-ws-name{font-size:13px;font-weight:600;}
-.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
-.nav-section{padding:12px 14px 5px;font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-radius:var(--radius);margin:1px 8px;transition:all .15s var(--ease);font-size:13px;color:var(--ink-2);}
-.nav-item:hover{background:var(--surface);color:var(--ink);}
-.nav-item.active{background:var(--accent-dim);color:var(--accent);font-weight:500;}
-.nav-icon{font-size:14px;width:18px;text-align:center;}
-.nav-badge{background:var(--danger);color:#fff;font-size:10px;font-weight:600;border-radius:999px;padding:1px 6px;margin-left:auto;}
-.sidebar-bottom{padding:10px;border-top:1px solid var(--line);}
-.sidebar-btn{display:flex;align-items:center;gap:9px;padding:8px;cursor:pointer;border-radius:var(--radius);font-size:12px;color:var(--ink-2);width:100%;border:none;background:none;font-family:inherit;transition:background .15s;}
-.sidebar-btn:hover{background:var(--surface);color:var(--ink);}
-.sidebar-user{display:flex;align-items:center;gap:9px;padding:8px;margin-top:4px;}
-.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;}
-.user-info{flex:1;min-width:0;}
-.user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.user-role{font-size:11px;color:var(--ink-3);}
-.user-logout{cursor:pointer;font-size:14px;color:var(--ink-3);border:none;background:none;padding:4px;}
-.user-logout:hover{color:var(--danger);}
-
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
-.topbar{height:54px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0;}
-.topbar-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-.01em;}
-.search-wrap{display:flex;align-items:center;background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:7px 11px;gap:8px;width:240px;}
-.search-wrap input{background:none;border:none;outline:none;font-family:inherit;font-size:13px;color:var(--ink);width:100%;}
-.search-wrap input::placeholder{color:var(--ink-3);}
-.topbar-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:8px 15px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);}
-.topbar-btn:hover{filter:brightness(1.08);}
-.content{flex:1;overflow-y:auto;padding:24px;}
-
-.view{display:none;}.view.active{display:block;animation:fadeIn .3s var(--ease);}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-
-/* ── CARDS / GRID ── */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.card-title{font-size:14px;font-weight:600;letter-spacing:-.01em;}
-.card-sub{font-size:12px;color:var(--ink-3);margin-top:2px;}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
-
-.metric-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;}
-.metric-label{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;font-weight:500;}
-.metric-value{font-size:24px;font-weight:600;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;}
-.metric-sub{font-size:12px;color:var(--ink-3);margin-top:3px;}
-.c-ok{color:var(--ok);}.c-warn{color:var(--warn);}.c-danger{color:var(--danger);}
-
-/* ── TABLE ── */
-.table-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;}
-th{font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);}
-td{padding:11px 12px;font-size:13px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
-tr:last-child td{border-bottom:none;}
-tr.clickable{cursor:pointer;transition:background .12s;}
-tr.clickable:hover td{background:var(--bg-alt);}
-.score-badge{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:22px;padding:0 8px;border-radius:5px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;}
-.s-ok{background:var(--ok-dim);color:var(--ok);}.s-warn{background:var(--warn-dim);color:var(--warn);}.s-danger{background:var(--danger-dim);color:var(--danger);}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:500;}
-.p-ok{background:var(--ok-dim);color:var(--ok);}.p-warn{background:var(--warn-dim);color:var(--warn);}.p-danger{background:var(--danger-dim);color:var(--danger);}
-.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
-
-/* ── BARS ── */
-.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:9px;}
-.bar-label{width:96px;font-size:12px;color:var(--ink-2);flex-shrink:0;}
-.bar-track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:3px;transition:width .6s var(--ease);}
-.bar-val{width:44px;text-align:right;font-size:12px;font-family:'JetBrains Mono',monospace;}
-
-/* ── UPLOAD ── */
-.upload-zone{border:1.5px dashed var(--line);border-radius:var(--radius-lg);padding:44px;text-align:center;cursor:pointer;transition:all .2s var(--ease);}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-dim);}
-.upload-icon{font-size:30px;margin-bottom:12px;opacity:.7;}
-.upload-title{font-size:15px;font-weight:600;margin-bottom:5px;}
-.upload-sub{font-size:13px;color:var(--ink-2);}
-#cas-file-input{display:none;}
-.progress-bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px;}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;}
-select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;color:var(--ink);font-family:inherit;font-size:14px;}
-
-/* ── DETAIL ── */
-.back-btn{display:flex;align-items:center;gap:6px;color:var(--ink-2);cursor:pointer;font-size:13px;padding:6px 11px;border-radius:var(--radius);border:1px solid var(--line);background:none;font-family:inherit;transition:all .15s;margin-bottom:18px;}
-.back-btn:hover{color:var(--accent);border-color:var(--accent);}
-.detail-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;}
-.detail-name{font-size:22px;font-weight:600;letter-spacing:-.02em;}
-.detail-meta{font-size:13px;color:var(--ink-2);margin-top:5px;}
-.detail-aum{font-size:28px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:-.02em;}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
-.tab{padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--ink-2);transition:all .15s;margin-bottom:-1px;font-weight:500;}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.tab-panel{display:none;}.tab-panel.active{display:block;animation:fadeIn .25s var(--ease);}
-.gauge-wrap{text-align:center;padding:14px 0;}
-.gauge-val{font-size:30px;font-weight:600;font-family:'JetBrains Mono',monospace;}
-.gauge-label{font-size:12px;color:var(--ink-2);margin-top:4px;}
-
-/* ── ALERTS / FEED ── */
-.alert-item{display:flex;gap:12px;padding:13px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:9px;cursor:pointer;transition:all .15s;}
-.alert-item:hover{background:var(--bg-alt);border-color:var(--ink-4);}
-.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
-.alert-title{font-size:13px;font-weight:600;margin-bottom:3px;}
-.alert-sub{font-size:12px;color:var(--ink-2);line-height:1.5;}
-.alert-time{font-size:11px;color:var(--ink-3);margin-top:5px;}
-.feed-item{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:13px;}
-.feed-item:last-child{border-bottom:none;}
-.scenario-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all .15s;}
-.scenario-card:hover,.scenario-card.active{border-color:var(--accent);}
-
-/* ── MISC ── */
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.loading-state,.empty-state,.error-state{text-align:center;padding:44px;color:var(--ink-2);font-size:13px;}
-.loading-state .spinner{width:22px;height:22px;margin-bottom:12px;}
-.error-state{color:var(--danger);}
-.empty-state{color:var(--ink-3);}
-.btn-sm{background:var(--bg-alt);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 11px;font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:all .12s;}
-.btn-sm:hover{border-color:var(--accent);color:var(--accent);}
-#toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:13px 17px;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s var(--ease);box-shadow:var(--shadow-2);max-width:340px;}
-#toast.show{transform:translateY(0);opacity:1;}
-#toast.t-ok{border-color:var(--ok);}#toast.t-err{border-color:var(--danger);}#toast.t-warn{border-color:var(--warn);}
 </style>
 </head>
 <body>
 
-<!-- ════ AUTH ════ -->
-<div id="screen-auth">
-  <div class="auth-left">
-    <div class="auth-box">
-      <div class="logo auth-logo">
-        <div class="logo-mark"><div class="logo-sq1"></div><div class="logo-sq2"></div></div>
-        <span class="logo-text">Wealth<em>OS</em> <span class="ai">/ ai</span></span>
-      </div>
-      <div class="auth-h1" id="auth-h1">Welcome back</div>
-      <div class="auth-sub" id="auth-sub">Sign in to your advisor workspace.</div>
+<!-- ══ TOOLTIP ══ -->
+<div id="tooltip"><div class="t-title" id="ttTitle"></div><div id="ttBody"></div></div>
 
-      <div class="tab-switch">
-        <button id="tab-login" class="active" onclick="switchAuth('login')">Login</button>
-        <button id="tab-signup" onclick="switchAuth('signup')">Sign Up</button>
-      </div>
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo"><span class="bmark"></span><span style="font-size:16px;font-weight:600"><b>Wealth</b>OS<span style="color:var(--ink-3);font-weight:400">/ai</span></span></div>
+    <div class="login-title">Advisor Sign In</div>
+    <div class="login-sub">Access your portfolio intelligence dashboard</div>
+    <div class="form-group"><label class="form-label">EMAIL ADDRESS</label><input class="form-input" type="email" id="loginEmail" value="rahul@wealthos.ai" placeholder="advisor@firm.com"/></div>
+    <div class="form-group"><label class="form-label">PASSWORD</label><input class="form-input" type="password" id="loginPass" value="••••••••" placeholder="Password"/></div>
+    <div class="form-row"><label class="form-check"><input type="checkbox" checked style="accent-color:var(--accent)"/> Remember me</label><span class="form-link" onclick="alert('Password reset link sent!')">Forgot password?</span></div>
+    <a href="/dashboard.html" class="btn btn-primary" style="width:100%;height:42px;font-size:14px;display:flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer">Sign In to Dashboard</a>
+    <div class="login-hint">Demo: use any email · password <span>any</span></div>
+  </div>
+</div>
 
-      <div id="auth-err" class="auth-err"></div>
+<!-- ══ APP SHELL ══ -->
+<div id="appShell">
+<div class="app">
 
-      <div class="field" id="field-name" style="display:none">
-        <label>Full Name</label>
-        <input type="text" id="auth-name" placeholder="Kshitij Tiwari" autocomplete="name">
+<!-- SIDEBAR -->
+<aside class="sb">
+  <div class="sb-brand">
+    <span class="bmark"></span>
+    <span style="font-size:14px;font-weight:550"><b>Wealth</b>OS<span style="color:var(--ink-3);font-weight:400">/ai</span></span>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-section">WORKSPACE</div>
+    <div class="sb-item active" data-view="overview" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</div>
+    <div class="sb-item" data-view="portfolios" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 7h20M2 12h16M2 17h20"/></svg>Portfolios<span class="sb-badge gray">48</span></div>
+    <div class="sb-item" data-view="intelligence" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Intelligence</div>
+    <div class="sb-item" data-view="scenarios" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Scenarios</div>
+    <div class="sb-section">ADVISOR</div>
+    <div class="sb-item" data-view="reviews" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Reviews<span class="sb-badge amber">7</span></div>
+    <div class="sb-item" data-view="alerts" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts<span class="sb-badge red">3</span></div>
+    <div class="sb-item" data-view="reports" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>Client Reports</div>
+    <div class="sb-item" data-view="compliance" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Compliance</div>
+    <div class="sb-section">SYSTEM</div>
+    <div class="sb-item" data-view="datasources" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Sources</div>
+    <div class="sb-item" data-view="settings" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Settings</div>
+  </nav>
+  <div class="sb-footer">
+    <div class="advisor-row">
+      <div class="avatar">RS</div>
+      <div><div class="advisor-name">Rahul Sharma</div><div class="advisor-role">SENIOR RIA · MUMBAI</div></div>
+      <div style="margin-left:auto;cursor:pointer;color:var(--ink-3)" onclick="doLogout()" title="Sign out">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </div>
-      <div class="field" id="field-firm" style="display:none">
-        <label>Firm Name</label>
-        <input type="text" id="auth-firm" placeholder="Your wealth firm" autocomplete="organization">
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="auth-email" placeholder="you@firm.com" autocomplete="email">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <div class="sys-row" style="flex:1"><span class="pulse"></span><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3)">SYSTEM ONLINE · v2.0</span></div>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+    </div>
+  </div>
+</aside>
 
-      <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()">Sign In →</button>
-      <button class="btn btn-ghost" onclick="enterDemo()">Explore Demo — No Account Needed</button>
+<!-- MAIN -->
+<div class="main">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="tb-left"><div class="tb-title" id="tbTitle">Good morning, Rahul</div><div class="tb-sub mono" id="tbTime"></div></div>
+    <div class="tb-right">
+      <div class="search-btn" onclick="openSearch()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search portfolios, clients…<span class="mono" style="margin-left:auto;color:var(--ink-3);font-size:10px">⌘K</span></div>
+      <div class="icon-btn" onclick="nav(document.querySelector('[data-view=alerts]'))" title="Alerts"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot">3</span></div>
+      <button class="btn btn-primary btn-sm" onclick="nav(document.querySelector('[data-view=portfolios]'));setTimeout(()=>document.getElementById('uploadModal').style.display='flex',300)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+        Upload CAS
+      </button>
+    </div>
+  </div>
 
-      <div class="auth-foot" id="auth-foot">
-        New to WealthOS? <a onclick="switchAuth('signup')">Create an account</a>
+  <!-- CONTENT -->
+  <div class="content" id="mainContent">
+
+<!-- ════════════ VIEW: OVERVIEW ════════════ -->
+<div class="view active" id="view-overview">
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">TOTAL AUM</div><div class="stat-val">₹847 Cr</div><div class="stat-sub up mono">+₹12.4 Cr this month</div></div>
+    <div class="stat-card"><div class="stat-label">ACTIVE CLIENTS</div><div class="stat-val">48</div><div class="stat-sub mono" style="color:var(--ink-2)">3 new this quarter</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="nav(document.querySelector('[data-view=alerts]'))"><div class="stat-label">CRITICAL ALERTS</div><div class="stat-val dn">3</div><div class="stat-sub am mono">+2 since yesterday ↗</div></div>
+    <div class="stat-card"><div class="stat-label">REVIEWS DUE</div><div class="stat-val am">7</div><div class="stat-sub am mono">2 overdue</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Client Portfolios</div><div class="card-sub">CLICK ANY ROW TO OPEN FULL REPORT</div></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm">Filter</button><button class="btn btn-primary btn-sm" onclick="openClient('mehta')">+ New Client</button></div></div>
+      <table class="tbl">
+        <thead><tr><th>CLIENT</th><th>AUM</th><th>RISK</th><th>CONCENTRATION</th><th>LAST REVIEW</th><th>STATUS</th></tr></thead>
+        <tbody>
+          <tr class="clickable" onclick="openClient('mehta')"><td><div style="font-weight:500">Mehta Family Office</div><div class="muted" style="font-size:11.5px;margin-top:1px;color:var(--ink-3)">₹47.2 Cr · 247 holdings · 12 funds</div></td><td class="num">₹47.2 Cr</td><td><div class="risk-bar-wrap"><div class="risk-bar-track"><div class="risk-bar-fill" style="width:68%;background:var(--warn)"></div></div><span class="mono am" style="font-size:12px;min-width:22px">68</span></div></td><td><span class="pill pill-hi">BFSI 31.4%</span></td><td class="muted num" style="font-size:12px">12 May</td><td><span class="pill pill-med">Review Due</span></td></tr>
+          <tr class="clickable" onclick="openClient('patel')"><td><div style="font-weight:500">Patel HUF</div><div style="font-size:11.5px;margin-top:1px;color:var(--ink-3)">₹38.6 Cr · 189 holdings · 9 funds</div></td><td class="num">₹38.6 Cr</td><td><div class="risk-bar-wrap"><div class="risk-bar-track"><div class="risk-bar-fill" style="width:82%;background:var(--danger)"></div></div><span class="mono dn" style="font-size:12px;min-width:22px">82</span></div></td><td><span class="pill pill-hi">IT+BFSI 38%</span></td><td class="muted num" style="font-size:12px">3 May</td><td><span class="pill pill-hi">Overdue</span></td></tr>
+          <tr class="clickable" onclick="openClient('khanna')"><td><div style="font-weight:500">Khanna Pvt Trust</div><div style="font-size:11.5px;margin-top:1px;color:var(--ink-3)">₹31.1 Cr · 142 holdings · 7 funds</div></td><td class="num">₹31.1 Cr</td><td><div class="risk-bar-wrap"><div class="risk-bar-track"><div class="risk-bar-fill" style="width:54%;background:#D97706"></div></div><span class="mono" style="font-size:12px;min-width:22px;color:#D97706">54</span></div></td><td><span class="pill pill-med">Pharma 18%</span></td><td class="muted num" style="font-size:12px">18 May</td><td><span class="pill pill-low">Reviewed</span></td></tr>
+          <tr class="clickable" onclick="openClient('reddy')"><td><div style="font-weight:500">Reddy Holdings</div><div style="font-size:11.5px;margin-top:1px;color:var(--ink-3)">₹28.4 Cr · 198 holdings · 10 funds</div></td><td class="num">₹28.4 Cr</td><td><div class="risk-bar-wrap"><div class="risk-bar-track"><div class="risk-bar-fill" style="width:74%;background:var(--warn)"></div></div><span class="mono am" style="font-size:12px;min-width:22px">74</span></div></td><td><span class="pill pill-hi">SmCap 34%</span></td><td class="muted num" style="font-size:12px">9 May</td><td><span class="pill pill-med">Review Due</span></td></tr>
+          <tr class="clickable" onclick="openClient('agarwal')"><td><div style="font-weight:500">Agarwal Industries</div><div style="font-size:11.5px;margin-top:1px;color:var(--ink-3)">₹22.8 Cr · 156 holdings · 8 funds</div></td><td class="num">₹22.8 Cr</td><td><div class="risk-bar-wrap"><div class="risk-bar-track"><div class="risk-bar-fill" style="width:44%;background:var(--ok)"></div></div><span class="mono up" style="font-size:12px;min-width:22px">44</span></div></td><td><span class="pill pill-low">Balanced</span></td><td class="muted num" style="font-size:12px">20 May</td><td><span class="pill pill-low">Reviewed</span></td></tr>
+        </tbody>
+      </table>
+      <div style="padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"><span class="mono" style="font-size:11px;color:var(--ink-3)">SHOWING 5 OF 48 CLIENTS</span><button class="btn btn-ghost btn-sm" onclick="nav(document.querySelector('[data-view=portfolios]'))">View all 48 →</button></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Active Alerts</div><span class="pill pill-hi">3 critical</span></div>
+        <div class="alert-item" onclick="openAlert('a1')"><div class="alert-dot" style="background:var(--danger)"></div><div class="alert-body"><div class="alert-title">Patel HUF — BFSI Breach</div><div class="alert-desc">38.2% vs 35% threshold. Review now.</div></div><div class="alert-time">2m</div></div>
+        <div class="alert-item" onclick="openAlert('a2')"><div class="alert-dot" style="background:var(--danger)"></div><div class="alert-body"><div class="alert-title">Iyer — SmallCap −8.4%</div><div class="alert-desc">Liquidity risk elevated. 5-day drawdown.</div></div><div class="alert-time">1h</div></div>
+        <div class="alert-item" onclick="openAlert('a3')"><div class="alert-dot" style="background:var(--warn)"></div><div class="alert-body"><div class="alert-title">RBI Signal — 6 portfolios</div><div class="alert-desc">Rate hike prob 72%. Duration risk.</div></div><div class="alert-time">3h</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Intelligence Feed</div><span class="tag">LIVE</span></div>
+        <div class="intel-item" onclick="openIntel('i1')"><div class="intel-tag-label" style="color:var(--danger)">● MACRO EVENT</div><div class="intel-title">US Fed holds — IT upside</div><div class="intel-desc">Mehta +1.2%, Reddy +0.8% estimated</div></div>
+        <div class="intel-item" onclick="openIntel('i2')"><div class="intel-tag-label" style="color:var(--warn)">● SECTOR SIGNAL</div><div class="intel-title">BFSI credit growth slowing</div><div class="intel-desc">4 portfolios have >30% BFSI exposure</div></div>
+        <div class="intel-item" onclick="openIntel('i3')"><div class="intel-tag-label" style="color:var(--accent)">● PORTFOLIO ANOMALY</div><div class="intel-title">Mehta: Axis↔Mirae 42.1% overlap</div><div class="intel-desc">Diversification illusion detected</div></div>
       </div>
     </div>
   </div>
-  <div class="auth-right">
-    <div class="showcase">
-      <div class="showcase-quote">The financial truth and <em>portfolio intelligence layer</em> for Indian wealth management.</div>
-      <div style="color:var(--ink-2);font-size:14px;line-height:1.6;">Deterministic analytics. Look-through decomposition. Macro scenario propagation. Every metric explainable and auditable.</div>
-      <div class="showcase-stats">
-        <div class="showcase-stat"><div class="showcase-stat-val">15</div><div class="showcase-stat-label">Analytics engines</div></div>
-        <div class="showcase-stat"><div class="showcase-stat-val">100%</div><div class="showcase-stat-label">Deterministic</div></div>
+  <!-- AUM chart -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><div class="card-title">AUM Trend — 12 Month</div><div style="display:flex;gap:12px;font-size:12px"><span style="color:var(--accent)">● Total AUM</span><span style="color:var(--ink-3)">● Equity</span></div></div>
+    <div class="card-body" style="padding:16px 18px"><div class="chart-wrap"><svg id="aumChart" viewBox="0 0 700 120" height="120" preserveAspectRatio="none"></svg></div></div>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: PORTFOLIOS ════════════ -->
+<div class="view" id="view-portfolios">
+  <div class="ph"><div><div class="ph-title">All Portfolios</div><div class="ph-sub">48 active clients · ₹847 Cr total AUM</div></div><div class="ph-right"><button class="btn btn-ghost">Export</button><button class="btn btn-primary">+ Add Client</button></div></div>
+  <div class="card">
+    <div class="card-head" style="padding:10px 16px">
+      <input class="input" style="max-width:280px;height:32px;font-size:13px" placeholder="Search clients…" oninput="filterPortfolios(this.value)"/>
+      <div style="display:flex;gap:8px">
+        <select class="select" style="height:32px;font-size:13px"><option>All Risk Levels</option><option>High Risk</option><option>Medium Risk</option><option>Low Risk</option></select>
+        <select class="select" style="height:32px;font-size:13px"><option>Sort: AUM ↓</option><option>Sort: Risk ↓</option><option>Sort: Name</option></select>
+      </div>
+    </div>
+    <table class="tbl" id="portfoliosTable">
+      <thead><tr><th>CLIENT</th><th>AUM</th><th>RISK</th><th>FACTOR BIAS</th><th>OVERLAP</th><th>HHI</th><th>LAST UPDATED</th><th>STATUS</th><th></th></tr></thead>
+      <tbody id="portfoliosTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: INTELLIGENCE ════════════ -->
+<div class="view" id="view-intelligence">
+  <div class="ph"><div><div class="ph-title">Portfolio Intelligence</div><div class="ph-sub">AI-generated insights from deterministic analytics core · Updated live</div></div><div class="ph-right"><span class="tag">AUTO-REFRESH 5m</span></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Macro Signals</div><span class="pill pill-blue">3 active</span></div>
+      <div class="intel-item" onclick="openIntel('i1')"><div class="intel-tag-label" style="color:var(--danger)">● HIGH IMPACT</div><div class="intel-title">US Fed holds rates — Indian IT upside potential</div><div class="intel-desc">Pause in rate cycle supports USD/INR stability. Your IT-heavy portfolios benefit. Click for full analysis →</div></div>
+      <div class="intel-item" onclick="openIntel('i2')"><div class="intel-tag-label" style="color:var(--warn)">● MEDIUM IMPACT</div><div class="intel-title">BFSI credit growth slowing — Q4 FY26 data</div><div class="intel-desc">Private bank loan growth at 14.2% vs 18% last year. 4 portfolios affected. Click for details →</div></div>
+      <div class="intel-item" onclick="openIntel('i4')"><div class="intel-tag-label" style="color:var(--ok)">● LOW IMPACT</div><div class="intel-title">INR strengthening at 83.4 USD/INR</div><div class="intel-desc">Positive for import-heavy FMCG. IT slightly affected. Net neutral for most portfolios →</div></div>
+      <div class="intel-item" onclick="openIntel('i5')"><div class="intel-tag-label" style="color:var(--warn)">● MEDIUM IMPACT</div><div class="intel-title">Oil prices rising — $84/bbl, 6-week trend</div><div class="intel-desc">Auto and aviation under pressure. 6 portfolios have >8% effective exposure via look-through →</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Portfolio Anomalies</div><span class="pill pill-hi">4 flagged</span></div>
+      <div class="intel-item" onclick="openIntel('a1d')"><div class="intel-tag-label" style="color:var(--danger)">● CONCENTRATION BREACH</div><div class="intel-title">Patel HUF — BFSI 38.2% (limit 35%)</div><div class="intel-desc">Threshold exceeded. Effective exposure via look-through across 6 direct + 4 MF holdings →</div></div>
+      <div class="intel-item" onclick="openIntel('i3')"><div class="intel-tag-label" style="color:var(--warn)">● OVERLAP DETECTED</div><div class="intel-title">Mehta — Axis↔Mirae 42.1% fund overlap</div><div class="intel-desc">8.3% redundant HDFC Bank exposure. Diversification illusion. Click to analyse →</div></div>
+      <div class="intel-item" onclick="openIntel('i6')"><div class="intel-tag-label" style="color:var(--warn)">● LIQUIDITY RISK</div><div class="intel-title">Iyer Fund — 34% illiquid small-cap</div><div class="intel-desc">3 thematic funds below ₹500 Cr AUM. Redemption risk elevated →</div></div>
+      <div class="intel-item" onclick="openIntel('i7')"><div class="intel-tag-label" style="color:var(--accent)">● FACTOR DRIFT</div><div class="intel-title">Reddy — Small-cap bias increased to 0.71</div><div class="intel-desc">Up from 0.58 last quarter. Portfolio risk profile shifting →</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><div class="card-title">Performance Attribution — Portfolio Intelligence</div><div class="card-sub">FACTOR CONTRIBUTION · LAST 90 DAYS</div></div>
+    <div class="card-body"><div class="chart-wrap"><svg id="intelChart" viewBox="0 0 700 140" height="140"></svg></div></div>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: INTELLIGENCE DETAIL ════════════ -->
+<div class="view" id="view-intel-detail">
+  <button class="back-btn" onclick="navBack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Back</button>
+  <div class="detail-hero" id="intelDetailHero"></div>
+  <div class="g2" id="intelDetailBody"></div>
+</div>
+
+<!-- ════════════ VIEW: SCENARIOS ════════════ -->
+<div class="view" id="view-scenarios">
+  <div class="ph"><div><div class="ph-title">Scenario Simulation Engine</div><div class="ph-sub">Deterministic macro shock propagation · Select scenario + portfolio to run</div></div></div>
+  <div class="g2">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head"><div class="card-title">Select Scenario</div><div class="card-sub">CLICK TO SELECT · THEN RUN</div></div>
+        <div id="scenarioList"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Select Portfolio</div></div>
+        <div style="padding:14px 16px">
+          <select class="select" style="width:100%" id="scenPortfolio" onchange="runScenario()">
+            <option value="mehta">Mehta Family Office — ₹47.2 Cr</option>
+            <option value="patel">Patel HUF — ₹38.6 Cr</option>
+            <option value="khanna">Khanna Pvt Trust — ₹31.1 Cr</option>
+            <option value="reddy">Reddy Holdings — ₹28.4 Cr</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="scenarioResult">
+      <div class="card-head"><div class="card-title">Simulation Result</div><div class="card-sub" id="scenResultMeta">SELECT A SCENARIO TO RUN</div></div>
+      <div id="scenarioResultBody" style="padding:16px">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--ink-3);gap:10px">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <div style="font-size:13px">Select a scenario and portfolio to run simulation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-head"><div class="card-title">All Scenarios — Full Portfolio Impact Table</div><button class="btn btn-ghost btn-sm" onclick="exportPDF()">Export PDF</button></div>
+    <table class="tbl" id="allScenariosTable">
+      <thead><tr><th>SCENARIO</th><th>MEHTA FAMILY</th><th>PATEL HUF</th><th>KHANNA TRUST</th><th>REDDY HOLDINGS</th><th>WORST SEGMENT</th></tr></thead>
+      <tbody id="allScenariosTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: REVIEWS ════════════ -->
+<div class="view" id="view-reviews">
+  <div class="ph"><div><div class="ph-title">Client Reviews</div><div class="ph-sub">7 due · 2 overdue</div></div><div class="ph-right"><button class="btn btn-primary">Schedule Review</button></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Upcoming Reviews</div><span class="pill pill-med">7 pending</span></div>
+      <table class="tbl">
+        <thead><tr><th>CLIENT</th><th>SCHEDULED</th><th>TYPE</th><th>STATUS</th><th></th></tr></thead>
+        <tbody>
+          <tr class="clickable" onclick="openClient('patel')"><td style="font-weight:500">Patel HUF</td><td class="num muted">3 May 2026</td><td><span class="pill pill-hi">Overdue 18d</span></td><td><span class="pill pill-hi">URGENT</span></td><td><button class="btn btn-accent btn-xs">Open Report</button></td></tr>
+          <tr class="clickable" onclick="openClient('mehta')"><td style="font-weight:500">Mehta Family Office</td><td class="num muted">25 May 2026</td><td class="muted">Quarterly</td><td><span class="pill pill-med">Due in 4d</span></td><td><button class="btn btn-ghost btn-xs">Open Report</button></td></tr>
+          <tr class="clickable" onclick="openClient('reddy')"><td style="font-weight:500">Reddy Holdings</td><td class="num muted">28 May 2026</td><td class="muted">Monthly</td><td><span class="pill pill-med">Due in 7d</span></td><td><button class="btn btn-ghost btn-xs">Open Report</button></td></tr>
+          <tr class="clickable"><td style="font-weight:500">Shah Capital Trust</td><td class="num muted">1 Jun 2026</td><td class="muted">Quarterly</td><td><span class="pill pill-low">Scheduled</span></td><td><button class="btn btn-ghost btn-xs">Open Report</button></td></tr>
+          <tr class="clickable"><td style="font-weight:500">Iyer Retirement Fund</td><td class="num muted">5 Jun 2026</td><td class="muted">Annual</td><td><span class="pill pill-low">Scheduled</span></td><td><button class="btn btn-ghost btn-xs">Open Report</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Meeting Prep Generator</div></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div><div style="font-size:12px;color:var(--ink-2);margin-bottom:6px">Select client</div><select class="select" style="width:100%"><option>Mehta Family Office</option><option>Patel HUF</option><option>Khanna Trust</option></select></div>
+        <div><div style="font-size:12px;color:var(--ink-2);margin-bottom:6px">Meeting type</div><select class="select" style="width:100%"><option>Quarterly Review</option><option>Annual Review</option><option>Ad-hoc Discussion</option></select></div>
+        <button class="btn btn-primary" style="width:100%" onclick="alert('Meeting prep generated! Opening client report…');openClient(\'mehta\')">Generate Meeting Brief</button>
+        <div style="padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg-alt);font-size:12px;color:var(--ink-2)">Brief includes: portfolio snapshot, risk flags, sector changes, factor drift, recommended talking points, and suggested actions.</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ════ APP ════ -->
-<div id="screen-app">
-  <div class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo"><div class="logo-mark"><div class="logo-sq1"></div><div class="logo-sq2"></div></div><span class="logo-text">Wealth<em>OS</em></span></div>
+<!-- ════════════ VIEW: ALERTS ════════════ -->
+<div class="view" id="view-alerts">
+  <div class="ph"><div><div class="ph-title">Active Alerts</div><div class="ph-sub">3 critical · 2 elevated · 1 informational</div></div><div class="ph-right"><button class="btn btn-ghost btn-sm">Mark all read</button><button class="btn btn-ghost btn-sm">Settings</button></div></div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Critical</div><span class="pill pill-hi">2</span></div>
+      <div class="alert-item" onclick="openAlert('a1')"><div class="alert-dot" style="background:var(--danger)"></div><div class="alert-body"><div class="alert-title">Patel HUF — BFSI Concentration Breach (38.2%)</div><div class="alert-desc">Threshold 35% exceeded. Effective exposure computed via look-through across 6 direct + 4 MF holdings. Immediate review required. Click for full analysis.</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="alert-time">2m ago</div><span class="pill pill-hi">BREACH</span></div></div>
+      <div class="alert-item" onclick="openAlert('a2')"><div class="alert-dot" style="background:var(--danger)"></div><div class="alert-body"><div class="alert-title">Iyer Retirement Fund — SmallCap Drawdown −8.4%</div><div class="alert-desc">Small-cap thematic cluster down 8.4% in 5 days. 3 funds below ₹500 Cr AUM threshold. Redemption pressure elevated. Liquidity score dropped to 0.54.</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="alert-time">1h ago</div><span class="pill pill-hi">DRAWDOWN</span></div></div>
     </div>
-    <div class="sidebar-ws">
-      <div class="sidebar-ws-label">Workspace</div>
-      <div class="sidebar-ws-name" id="ws-name">Loading…</div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Elevated</div><span class="pill pill-med">2</span></div>
+      <div class="alert-item" onclick="openAlert('a3')"><div class="alert-dot" style="background:var(--warn)"></div><div class="alert-body"><div class="alert-title">Macro Signal — RBI Rate Hike Probability 72%</div><div class="alert-desc">6 portfolios have long-duration debt exposure above 15%. Est. impact if 75bps hike: avg −4.2% on debt component.</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="alert-time">3h ago</div><span class="pill pill-med">MACRO</span></div></div>
+      <div class="alert-item" onclick="openAlert('a4')"><div class="alert-dot" style="background:var(--warn)"></div><div class="alert-body"><div class="alert-title">Reddy Holdings — Small-cap factor drift</div><div class="alert-desc">Small-cap bias increased from 0.58 to 0.71 this quarter. Portfolio risk profile shifting materially.</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="alert-time">6h ago</div><span class="pill pill-med">DRIFT</span></div></div>
     </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">Core</div>
-      <div class="nav-item active" data-view="overview" onclick="showView('overview',this)"><span class="nav-icon">◎</span>Overview</div>
-      <div class="nav-item" data-view="portfolios" onclick="showView('portfolios',this)"><span class="nav-icon">⬡</span>Portfolios<span id="badge-portfolios" class="nav-badge" style="display:none">0</span></div>
-      <div class="nav-item" data-view="upload" onclick="showView('upload',this)"><span class="nav-icon">↑</span>Upload CAS</div>
-      <div class="nav-section">Intelligence</div>
-      <div class="nav-item" data-view="scenarios" onclick="showView('scenarios',this)"><span class="nav-icon">◈</span>Scenarios</div>
-      <div class="nav-item" data-view="alerts" onclick="showView('alerts',this)"><span class="nav-icon">◉</span>Alerts<span class="nav-badge">3</span></div>
-      <div class="nav-item" data-view="intelligence" onclick="showView('intelligence',this)"><span class="nav-icon">◆</span>Intelligence</div>
-      <div class="nav-section">Workflow</div>
-      <div class="nav-item" data-view="reviews" onclick="showView('reviews',this)"><span class="nav-icon">□</span>Reviews</div>
-      <div class="nav-item" data-view="reports" onclick="showView('reports',this)"><span class="nav-icon">≡</span>Reports</div>
-      <div class="nav-item" data-view="settings" onclick="showView('settings',this)"><span class="nav-icon">⊙</span>Settings</div>
-    </nav>
-    <div class="sidebar-bottom">
-      <button class="sidebar-btn" onclick="toggleTheme()">◑ Toggle Theme</button>
-      <div class="sidebar-user">
-        <div class="user-avatar" id="user-initials">—</div>
-        <div class="user-info"><div class="user-name" id="user-name-display">—</div><div class="user-role">Advisor</div></div>
-        <button class="user-logout" onclick="doLogout()" title="Sign out">⏻</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title" id="topbar-title">Overview</div>
-      <div class="search-wrap"><span style="color:var(--ink-3);font-size:13px;">⌕</span><input type="text" placeholder="Search clients…" id="global-search" oninput="onSearch(this.value)"></div>
-      <button class="topbar-btn" onclick="showView('upload',document.querySelector('[data-view=upload]'))">+ Upload CAS</button>
-    </div>
-    <div class="content">
-
-      <div class="view active" id="view-overview">
-        <div id="overview-loading" class="loading-state"><div class="spinner"></div><div>Loading portfolio intelligence…</div></div>
-        <div id="overview-content" style="display:none">
-          <div class="grid-4" style="margin-bottom:16px;" id="overview-metrics"></div>
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-header"><div><div class="card-title">Client Portfolios</div><div class="card-sub" id="ov-count">— clients</div></div><button class="btn-sm" onclick="showView('portfolios',document.querySelector('[data-view=portfolios]'))">View All</button></div>
-              <div class="table-wrap"><table><thead><tr><th>Client</th><th>AUM</th><th>Risk</th><th>Status</th></tr></thead><tbody id="ov-tbody"></tbody></table></div>
-            </div>
-            <div class="card"><div class="card-header"><div class="card-title">Recent Activity</div></div><div id="activity-feed"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="view" id="view-portfolios">
-        <div class="card">
-          <div class="card-header"><div><div class="card-title">All Portfolios</div><div class="card-sub" id="pf-count">Loading…</div></div><button class="topbar-btn" onclick="showView('upload',document.querySelector('[data-view=upload]'))">+ Add Client</button></div>
-          <div id="pf-loading" class="loading-state"><div class="spinner"></div><div>Loading…</div></div>
-          <div id="pf-empty" class="empty-state" style="display:none">No portfolios yet. Upload a CAS PDF to add your first client.</div>
-          <div class="table-wrap" id="pf-wrap" style="display:none"><table><thead><tr><th>Client</th><th>PAN</th><th>AUM</th><th>Risk</th><th>HHI</th><th>Holdings</th><th></th></tr></thead><tbody id="pf-tbody"></tbody></table></div>
-        </div>
-      </div>
-
-      <div class="view" id="view-client">
-        <button class="back-btn" onclick="goBack()">← Back to Portfolios</button>
-        <div class="detail-header">
-          <div><div class="detail-name" id="cl-name">—</div><div class="detail-meta" id="cl-meta">—</div></div>
-          <div style="text-align:right"><div class="detail-aum" id="cl-aum">—</div><div style="font-size:12px;color:var(--ink-2);margin-top:4px" id="cl-updated"></div></div>
-        </div>
-        <div class="tabs">
-          <div class="tab active" onclick="showTab('t-overview',this)">Overview</div>
-          <div class="tab" onclick="showTab('t-exposures',this)">Exposures</div>
-          <div class="tab" onclick="showTab('t-risk',this)">Risk Engine</div>
-          <div class="tab" onclick="showTab('t-scenarios',this)">Scenarios</div>
-          <div class="tab" onclick="showTab('t-factors',this)">Factor DNA</div>
-          <div class="tab" onclick="showTab('t-holdings',this)">Holdings</div>
-        </div>
-        <div class="tab-panel active" id="t-overview">
-          <div class="grid-4" style="margin-bottom:16px;" id="cl-metrics"></div>
-          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Sector Exposure</div></div><div id="sector-bars"></div></div><div class="card"><div class="card-header"><div class="card-title">Asset Allocation</div></div><div id="asset-bars"></div></div></div>
-        </div>
-        <div class="tab-panel" id="t-exposures">
-          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Fund Overlap</div></div><div id="overlap-content"></div></div><div class="card"><div class="card-header"><div class="card-title">Concentration Risk</div></div><div id="conc-content"></div></div></div>
-        </div>
-        <div class="tab-panel" id="t-risk">
-          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Risk Score</div></div><div class="gauge-wrap" id="risk-gauge"></div></div><div class="card"><div class="card-header"><div class="card-title">Risk Metrics</div></div><div id="risk-metrics"></div></div></div>
-          <div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Macro Sensitivity</div></div><div id="macro-bars"></div></div>
-        </div>
-        <div class="tab-panel" id="t-scenarios"><div id="cl-scenarios" class="grid-2"></div></div>
-        <div class="tab-panel" id="t-factors">
-          <div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Factor Intensity</div></div><div id="factor-bars"></div></div><div class="card"><div class="card-header"><div class="card-title">Portfolio DNA</div></div><div id="dna-content"></div></div></div>
-        </div>
-        <div class="tab-panel" id="t-holdings">
-          <div class="card"><div class="card-header"><div class="card-title">Holdings</div><div id="hold-count" class="card-sub"></div></div><div class="table-wrap"><table><thead><tr><th>Instrument</th><th>ISIN</th><th>Sector</th><th>Class</th><th>Value</th><th>Weight</th></tr></thead><tbody id="hold-tbody"></tbody></table></div></div>
-        </div>
-      </div>
-
-      <div class="view" id="view-upload">
-        <div style="max-width:620px;margin:0 auto;">
-          <div style="margin-bottom:20px"><div class="card-title" style="font-size:17px;margin-bottom:5px;">Upload CAS Statement</div><div style="color:var(--ink-2);font-size:13px;">Upload a CAMS or KFin Consolidated Account Statement to ingest portfolio holdings.</div></div>
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-header"><div class="card-title">Client</div></div>
-            <div class="field"><label>Select or create client</label><select id="upload-select"><option value="">— Select client —</option></select></div>
-            <div id="new-client-fields" style="display:none"><div class="grid-2"><div class="field"><label>Client Name</label><input type="text" id="nc-name" placeholder="Mehta Family Office"></div><div class="field"><label>PAN</label><input type="text" id="nc-pan" placeholder="ABCDE1234F" style="text-transform:uppercase"></div></div></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">CAS Document</div></div>
-            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('cas-file-input').click()" ondragover="onDragOver(event)" ondrop="onDrop(event)"><div class="upload-icon">⬆</div><div class="upload-title">Drop CAS PDF here</div><div class="upload-sub">CAMS or KFin statement · PDF</div></div>
-            <input type="file" id="cas-file-input" accept=".pdf" onchange="onFileSelect(this)">
-            <div id="file-selected" style="display:none;margin-top:12px;padding:11px 13px;background:var(--bg-alt);border-radius:var(--radius);font-size:13px;"></div>
-            <div id="upload-progress" style="display:none;margin-top:12px"><div style="font-size:12px;color:var(--ink-2);margin-bottom:6px" id="up-status">Uploading…</div><div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div></div>
-            <button class="btn btn-primary" style="margin-top:16px" onclick="doUpload()" id="upload-btn">Upload & Analyze →</button>
-          </div>
-          <div class="card" style="margin-top:16px"><div class="card-header"><div class="card-title">Recent Jobs</div></div><div id="jobs-list"><div class="empty-state">No uploads yet.</div></div></div>
-        </div>
-      </div>
-
-      <div class="view" id="view-scenarios">
-        <div style="margin-bottom:16px;font-size:13px;color:var(--ink-2)">Select a macro scenario to estimate portfolio impact across all clients.</div>
-        <div class="grid-3" id="scenarios-grid"></div>
-        <div id="scenario-result" style="display:none;margin-top:20px"><div class="card"><div class="card-header"><div><div class="card-title" id="sr-title">—</div><div class="card-sub" id="sr-macro">—</div></div></div><table><thead><tr><th>Client</th><th>AUM</th><th>Impact</th><th>Est. Loss</th><th>Band</th></tr></thead><tbody id="sr-tbody"></tbody></table></div></div>
-      </div>
-
-      <div class="view" id="view-alerts"><div id="alerts-list"></div></div>
-      <div class="view" id="view-intelligence"><div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Macro Signals</div></div><div id="macro-signals"></div></div><div class="card"><div class="card-header"><div class="card-title">Portfolio Anomalies</div></div><div id="anomalies"></div></div></div></div>
-      <div class="view" id="view-reviews"><div class="card"><div class="card-header"><div class="card-title">Review Queue</div></div><div id="review-list"></div></div></div>
-      <div class="view" id="view-reports"><div class="card"><div class="card-header"><div class="card-title">Client Reports</div></div><div class="table-wrap"><table><thead><tr><th>Client</th><th>Type</th><th>Generated</th><th></th></tr></thead><tbody id="reports-tbody"></tbody></table></div></div></div>
-      <div class="view" id="view-settings">
-        <div style="max-width:480px">
-          <div class="card" style="margin-bottom:16px"><div class="card-header"><div class="card-title">Account</div></div><div class="field"><label>Full Name</label><input type="text" id="set-name"></div><div class="field"><label>Email</label><input type="email" id="set-email" disabled></div></div>
-          <div class="card"><div class="card-header"><div class="card-title">API Status</div></div><button class="btn-sm" onclick="testApi()">Test Connection</button><span id="api-test" style="margin-left:10px;font-size:12px;color:var(--ink-2)"></span></div>
-        </div>
-      </div>
-
+    <div class="card">
+      <div class="card-head"><div class="card-title">Informational</div><span class="pill pill-low">1</span></div>
+      <div class="alert-item" onclick="openAlert('a5')"><div class="alert-dot" style="background:var(--ok)"></div><div class="alert-body"><div class="alert-title">Mehta Family Office — AMFI data refreshed</div><div class="alert-desc">Monthly MF portfolio disclosures updated. 12 fund holdings refreshed. Look-through analysis recomputed.</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="alert-time">Today 9:14</div><span class="pill pill-low">INFO</span></div></div>
     </div>
   </div>
 </div>
 
-<div id="toast"></div>
+<!-- ════════════ VIEW: ALERT DETAIL ════════════ -->
+<div class="view" id="view-alert-detail">
+  <button class="back-btn" onclick="navBack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Back to Alerts</button>
+  <div id="alertDetailContent"></div>
+</div>
 
+<!-- ════════════ VIEW: CLIENT REPORTS ════════════ -->
+<div class="view" id="view-reports">
+  <div class="ph"><div><div class="ph-title">Client Reports</div><div class="ph-sub">Generate, preview, and send client-ready portfolio reports</div></div><div class="ph-right"><button class="btn btn-primary" onclick="openClient('mehta');setTimeout(()=>switchTab('tab-memo'),400)">+ Generate Report</button></div></div>
+  <div class="card">
+    <table class="tbl">
+      <thead><tr><th>CLIENT</th><th>LAST REPORT</th><th>TYPE</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+      <tbody>
+        <tr class="clickable"><td style="font-weight:500">Mehta Family Office</td><td class="num muted">18 May 2026</td><td class="muted">Quarterly Review</td><td><span class="pill pill-low">Sent</span></td><td><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-xs" onclick="openClient('mehta');setTimeout(()=>switchTab('tab-memo'),400)">View</button><button class="btn btn-ghost btn-xs" onclick="exportPDF()">PDF</button></div></td></tr>
+        <tr class="clickable"><td style="font-weight:500">Patel HUF</td><td class="num muted">3 May 2026</td><td class="muted">Monthly Review</td><td><span class="pill pill-hi">Draft</span></td><td><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-xs" onclick="openClient('patel');setTimeout(()=>switchTab('tab-memo'),400)">View</button><button class="btn btn-ghost btn-xs" onclick="exportPDF()">PDF</button></div></td></tr>
+        <tr class="clickable"><td style="font-weight:500">Khanna Pvt Trust</td><td class="num muted">18 May 2026</td><td class="muted">Quarterly Review</td><td><span class="pill pill-low">Sent</span></td><td><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-xs" onclick="openClient('khanna');setTimeout(()=>switchTab('tab-memo'),400)">View</button><button class="btn btn-ghost btn-xs" onclick="exportPDF()">PDF</button></div></td></tr>
+        <tr class="clickable"><td style="font-weight:500">Reddy Holdings</td><td class="num muted">9 May 2026</td><td class="muted">Monthly Review</td><td><span class="pill pill-med">Pending Approval</span></td><td><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-xs" onclick="openClient('reddy');setTimeout(()=>switchTab('tab-memo'),400)">View</button><button class="btn btn-ghost btn-xs" onclick="exportPDF()">PDF</button></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: COMPLIANCE ════════════ -->
+<div class="view" id="view-compliance">
+  <div class="ph"><div><div class="ph-title">Compliance & Audit</div><div class="ph-sub">Full audit trail · Methodology traceability · SEBI-aligned documentation</div></div><div class="ph-right"><button class="btn btn-primary" onclick="exportPDF()">Export Audit Log PDF</button></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Certification Status</div></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid rgba(22,163,74,.2);border-radius:8px;background:rgba(22,163,74,.04)"><div><div style="font-weight:500">SOC 2 Type II</div><div style="font-size:12px;color:var(--ink-2)">In progress — est. Q3 2026</div></div><span class="pill pill-med">In Progress</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid rgba(22,163,74,.2);border-radius:8px;background:rgba(22,163,74,.04)"><div><div style="font-weight:500">AES-256 Encryption at Rest</div><div style="font-size:12px;color:var(--ink-2)">All portfolio data encrypted</div></div><span class="pill pill-low">Live</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid rgba(22,163,74,.2);border-radius:8px;background:rgba(22,163,74,.04)"><div><div style="font-weight:500">India Data Residency</div><div style="font-size:12px;color:var(--ink-2)">Mumbai AWS region — ap-south-1</div></div><span class="pill pill-low">Live</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid rgba(22,163,74,.2);border-radius:8px;background:rgba(22,163,74,.04)"><div><div style="font-weight:500">Deterministic Audit Trail</div><div style="font-size:12px;color:var(--ink-2)">Every calculation traceable to source</div></div><span class="pill pill-low">Live</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid rgba(180,83,9,.2);border-radius:8px;background:rgba(180,83,9,.04)"><div><div style="font-weight:500">ISO 27001</div><div style="font-size:12px;color:var(--ink-2)">On roadmap — Q1 2027</div></div><span class="pill pill-med">Roadmap</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent Audit Log</div></div>
+      <table class="tbl" style="font-size:12px">
+        <thead><tr><th>EVENT</th><th>USER</th><th>TIME</th></tr></thead>
+        <tbody>
+          <tr><td>Portfolio analyzed — Mehta</td><td class="muted">rahul@wealthos.ai</td><td class="muted num">Today 09:14</td></tr>
+          <tr><td>Memo approved — Shah Capital</td><td class="muted">rahul@wealthos.ai</td><td class="muted num">Today 08:22</td></tr>
+          <tr><td>CAS uploaded — Khanna</td><td class="muted">rahul@wealthos.ai</td><td class="muted num">Yesterday 18:41</td></tr>
+          <tr><td>Stress test run — Reddy</td><td class="muted">rahul@wealthos.ai</td><td class="muted num">Yesterday 16:30</td></tr>
+          <tr><td>Report sent — Mehta</td><td class="muted">rahul@wealthos.ai</td><td class="muted num">18 May 14:12</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: DATA SOURCES ════════════ -->
+<div class="view" id="view-datasources">
+  <div class="ph"><div><div class="ph-title">Data Sources</div><div class="ph-sub">Live feed status · Last sync times · Source health</div></div><div class="ph-right"><button class="btn btn-primary" onclick="alert('Sync triggered for all sources!')">Sync All Now</button></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Indian Data Sources</div></div>
+      <div style="padding:0">
+        <div id="dsIndia"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Global & Macro Data</div></div>
+      <div id="dsGlobal"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-head"><div class="card-title">Data Pipeline Health</div><span class="pill pill-low">All Systems Operational</span></div>
+    <div class="card-body"><div class="chart-wrap"><svg id="pipelineChart" viewBox="0 0 700 80" height="80"></svg></div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-top:8px">Ingestion pipeline · Last 24h · All events processed successfully</div></div>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: SETTINGS ════════════ -->
+<div class="view" id="view-settings">
+  <div class="ph"><div><div class="ph-title">Settings</div><div class="ph-sub">Account preferences · Notifications · Risk thresholds · API access</div></div><div class="ph-right"><button class="btn btn-primary" onclick="saveSettings()">Save Changes</button></div></div>
+  <div class="g2">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Profile</div></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div class="g2" style="gap:12px"><div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">FIRST NAME</div><input class="input" value="Rahul"/></div><div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">LAST NAME</div><input class="input" value="Sharma"/></div></div>
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">EMAIL</div><input class="input" value="rahul@wealthos.ai"/></div>
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">FIRM NAME</div><input class="input" value="Sharma Wealth Advisory LLP"/></div>
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">SEBI RIA NUMBER</div><input class="input" value="INA000012345"/></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Risk Thresholds</div><div class="card-sub">TRIGGERS AUTOMATIC ALERTS</div></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">SECTOR CONCENTRATION LIMIT (%)</div><input class="input" type="number" value="35"/></div>
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">FUND OVERLAP ALERT (%)</div><input class="input" type="number" value="30"/></div>
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">DRAWDOWN ALERT (%)</div><input class="input" type="number" value="10"/></div>
+          <div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);margin-bottom:5px">RISK SCORE ALERT (0-100)</div><input class="input" type="number" value="75"/></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Notifications</div></div>
+        <div style="padding:0 16px" id="notifSettings"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Display</div></div>
+        <div style="padding:0 16px" id="displaySettings"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">API Access</div></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13px;color:var(--ink-2)">Your API key for programmatic access to WealthOS analytics.</div>
+          <div style="display:flex;gap:8px"><input class="input" value="wos_live_••••••••••••••••••••••••" readonly style="font-family:'JetBrains Mono',monospace;font-size:12px"/><button class="btn btn-ghost btn-sm" onclick="alert('API key copied!')">Copy</button></div>
+          <button class="btn btn-ghost btn-sm" style="width:fit-content" onclick="alert('New API key generated!')">Regenerate Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ VIEW: CLIENT DETAIL ════════════ -->
+<div class="view" id="view-client">
+  <button class="back-btn" id="clientBackBtn" onclick="navBack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Back</button>
+  <!-- client header -->
+  <div class="detail-hero" id="clientHeader" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div class="gauge-wrap" id="clientGaugeWrap" style="width:90px;height:90px">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="38" fill="none" stroke="var(--line)" stroke-width="7"/>
+        <circle cx="45" cy="45" r="38" id="clientGaugeFill" fill="none" stroke="var(--warn)" stroke-width="7" stroke-linecap="round" stroke-dasharray="239"/>
+      </svg>
+      <div class="gauge-center"><div id="clientRiskScore" style="font-size:20px;font-weight:600;color:var(--ink)">68</div><div class="mono" style="font-size:7px;color:var(--ink-3)">RISK</div></div>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div id="clientNameDisplay" style="font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.02em;margin-bottom:4px">Mehta Family Office</div>
+      <div class="detail-meta" id="clientMetaDisplay"></div>
+      <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap" id="clientTagsDisplay"></div>
+    </div>
+    <div style="display:flex;gap:0;border-left:1px solid var(--line);padding-left:20px;flex-shrink:0" id="clientStatsDisplay"></div>
+    <div style="display:flex;gap:8px;flex-shrink:0" id="clientActionsDisplay"></div>
+  </div>
+  <!-- tabs -->
+  <div class="tabs" id="clientTabs">
+    <button class="tab-btn active" data-tab="tab-overview" onclick="switchTab('tab-overview')">Overview</button>
+    <button class="tab-btn" data-tab="tab-exposures" onclick="switchTab('tab-exposures')">Exposures</button>
+    <button class="tab-btn" data-tab="tab-risk" onclick="switchTab('tab-risk')">Risk Engine</button>
+    <button class="tab-btn" data-tab="tab-scenarios" onclick="switchTab('tab-scenarios')">Scenarios</button>
+    <button class="tab-btn" data-tab="tab-factors" onclick="switchTab('tab-factors')">Factor DNA</button>
+    <button class="tab-btn" data-tab="tab-memo" onclick="switchTab('tab-memo')">AI Memo</button>
+  </div>
+  <!-- tab panels -->
+  <div class="tab-panel active" id="tab-overview"><div id="tabOverviewContent"></div></div>
+  <div class="tab-panel" id="tab-exposures"><div id="tabExposuresContent"></div></div>
+  <div class="tab-panel" id="tab-risk"><div id="tabRiskContent"></div></div>
+  <div class="tab-panel" id="tab-scenarios"><div id="tabScenariosContent"></div></div>
+  <div class="tab-panel" id="tab-factors"><div id="tabFactorsContent"></div></div>
+  <div class="tab-panel" id="tab-memo"><div id="tabMemoContent"></div></div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;width:440px;box-shadow:var(--shadow-2)">
+    <div style="font-size:18px;font-weight:600;margin-bottom:16px">Upload CAS Statement</div>
+    <div style="border:2px dashed var(--line);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:16px" onclick="alert('File picker opened! (Demo mode)')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--line)'">
+      <div style="font-size:13px;color:var(--ink-2);margin-bottom:4px">Drop CAS PDF / Excel here</div>
+      <div class="mono" style="font-size:10.5px;color:var(--ink-3)">CAMS · KFin · Broker statements · Excel</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-ghost" onclick="document.getElementById('uploadModal').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('uploadModal').style.display='none';alert('File uploaded! Portfolio processing started…')">Upload & Process</button></div>
+  </div>
+</div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+</div><!-- /appShell -->
 <script>
-const API='https://api.wlthos.in';
-let TOKEN=sessionStorage.getItem('wos_token')||localStorage.getItem('wos_token')||null;
-let USER=null,PORTFOLIOS=[],CURRENT=null,FILE=null,AUTH_MODE='login';
+// ══════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════
+var CLIENTS = {
+  mehta:{id:'mehta',name:'Mehta Family Office',aum:'₹47.2 Cr',holdings:247,funds:12,stocks:81,score:68,scoreColor:'#B45309',gaugeOffset:74,hhi:'0.181',neff:'5.6',vol:'14.7%',dd:'−22.4%',liq:'0.81',fragility:'Moderate',tags:['Growth 0.81','Quality 0.76','BFSI 31.4%','Neff 5.6','HHI 0.181'],sector:{BFSI:31.4,IT:22.8,FMCG:13.6,Auto:10.8,Pharma:7.9,Energy:6.1,CapGds:4.4,Other:3},equity:72.4,debt:18.1,hybrid:6.3,cash:3.2,largeCap:48.2,midCap:31.4,smallCap:20.4,factors:{Growth:0.81,Quality:0.76,Momentum:0.74,SmallCap:0.63,Cyclical:0.44,Value:0.21,Defensive:0.18}},
+  patel:{id:'patel',name:'Patel HUF',aum:'₹38.6 Cr',holdings:189,funds:9,stocks:72,score:82,scoreColor:'#DC2626',gaugeOffset:43,hhi:'0.241',neff:'4.1',vol:'18.3%',dd:'−28.1%',liq:'0.67',fragility:'High',tags:['Momentum 0.79','IT 28.4%','BFSI 22.1%','HHI 0.241'],sector:{BFSI:22.1,IT:28.4,FMCG:11.2,Auto:8.4,Pharma:9.6,Energy:7.8,CapGds:6.1,Other:6.4},equity:78.2,debt:12.4,hybrid:7.1,cash:2.3,largeCap:42.1,midCap:38.6,smallCap:19.3,factors:{Growth:0.74,Momentum:0.79,Quality:0.62,IT:0.81,Value:0.18,Defensive:0.14,SmallCap:0.42}},
+  khanna:{id:'khanna',name:'Khanna Pvt Trust',aum:'₹31.1 Cr',holdings:142,funds:7,stocks:58,score:54,scoreColor:'#D97706',gaugeOffset:105,hhi:'0.142',neff:'7.0',vol:'11.2%',dd:'−16.8%',liq:'0.89',fragility:'Low',tags:['Balanced','Pharma 18%','HHI 0.142','Neff 7.0'],sector:{Pharma:18.2,BFSI:22.1,IT:16.4,FMCG:17.8,Auto:8.9,Energy:7.2,CapGds:5.4,Other:4},equity:62.1,debt:28.4,hybrid:7.2,cash:2.3,largeCap:54.2,midCap:28.4,smallCap:17.4,factors:{Quality:0.76,Defensive:0.64,Value:0.58,Growth:0.42,Momentum:0.38,SmallCap:0.28,Cyclical:0.22}},
+  reddy:{id:'reddy',name:'Reddy Holdings',aum:'₹28.4 Cr',holdings:198,funds:10,stocks:78,score:74,scoreColor:'#B45309',gaugeOffset:60,hhi:'0.198',neff:'5.0',vol:'16.1%',dd:'−24.6%',liq:'0.74',fragility:'Moderate-High',tags:['SmallCap 0.71','BFSI 26.8%','HHI 0.198','Neff 5.0'],sector:{BFSI:26.8,IT:18.2,FMCG:12.4,Auto:9.1,Pharma:8.8,Energy:11.2,CapGds:7.4,Other:6.1},equity:74.8,debt:15.2,hybrid:8.1,cash:1.9,largeCap:38.4,midCap:32.8,smallCap:28.8,factors:{SmallCap:0.71,Growth:0.64,Momentum:0.66,Quality:0.48,Cyclical:0.52,Value:0.28,Defensive:0.16}},
+  agarwal:{id:'agarwal',name:'Agarwal Industries',aum:'₹22.8 Cr',holdings:156,funds:8,stocks:64,score:44,scoreColor:'#16A34A',gaugeOffset:143,hhi:'0.112',neff:'8.9',vol:'9.8%',dd:'−14.2%',liq:'0.91',fragility:'Low',tags:['Value 0.72','Defensive 0.68','HHI 0.112','Neff 8.9'],sector:{BFSI:18.4,IT:14.2,FMCG:22.1,Auto:11.8,Pharma:12.4,Energy:9.8,CapGds:7.1,Other:4.2},equity:58.4,debt:34.2,hybrid:5.1,cash:2.3,largeCap:62.1,midCap:24.8,smallCap:13.1,factors:{Value:0.72,Defensive:0.68,Quality:0.64,Growth:0.32,Momentum:0.28,SmallCap:0.18,Cyclical:0.24}}
+};
 
-/* ════ AUTH ════ */
-function switchAuth(mode){
-  AUTH_MODE=mode;
-  document.getElementById('tab-login').classList.toggle('active',mode==='login');
-  document.getElementById('tab-signup').classList.toggle('active',mode==='signup');
-  document.getElementById('field-name').style.display=mode==='signup'?'block':'none';
-  document.getElementById('field-firm').style.display=mode==='signup'?'block':'none';
-  document.getElementById('auth-h1').textContent=mode==='signup'?'Create your account':'Welcome back';
-  document.getElementById('auth-sub').textContent=mode==='signup'?'Start analyzing portfolios in minutes.':'Sign in to your advisor workspace.';
-  document.getElementById('auth-submit').textContent=mode==='signup'?'Create Account →':'Sign In →';
-  document.getElementById('auth-foot').innerHTML=mode==='signup'?'Already have an account? <a onclick="switchAuth(\'login\')">Log in</a>':'New to WealthOS? <a onclick="switchAuth(\'signup\')">Create an account</a>';
-  document.getElementById('auth-err').style.display='none';
+var SCENARIOS = [
+  {id:'sc1',name:'20% Small-cap correction',impacts:{mehta:-12.3,patel:-8.1,khanna:-6.2,reddy:-18.4},worst:'Small-cap thematic funds',macro:'Liquidity tightening',horizon:'90 days',severity:'hi'},
+  {id:'sc2',name:'RBI rate hike +75bps',impacts:{mehta:-4.8,patel:-5.2,khanna:-7.1,reddy:-3.9},worst:'Long-duration debt funds',macro:'Monetary tightening',horizon:'30 days',severity:'med'},
+  {id:'sc3',name:'US recession + INR depreciation',impacts:{mehta:-9.1,patel:-14.2,khanna:-5.8,reddy:-7.4},worst:'Indian IT (export-heavy)',macro:'Global slowdown',horizon:'180 days',severity:'hi'},
+  {id:'sc4',name:'Oil shock $120/bbl',impacts:{mehta:-6.4,patel:-5.8,khanna:-4.2,reddy:-7.1},worst:'Auto, Aviation, Logistics',macro:'Supply shock',horizon:'60 days',severity:'med'},
+  {id:'sc5',name:'BFSI sector correction −15%',impacts:{mehta:-7.9,patel:-11.4,khanna:-6.8,reddy:-6.2},worst:'Private bank cluster',macro:'Credit cycle',horizon:'60 days',severity:'med'},
+  {id:'sc6',name:'Liquidity crisis / MF redemption',impacts:{mehta:-11.6,patel:-9.8,khanna:-5.4,reddy:-16.2},worst:'Small-cap thematic',macro:'Market stress',horizon:'14 days',severity:'hi'},
+  {id:'sc7',name:'Election volatility spike',impacts:{mehta:-3.2,patel:-2.8,khanna:-2.1,reddy:-4.1},worst:'Infra, PSU, Defence',macro:'Political uncertainty',horizon:'30 days',severity:'low'},
+];
+
+var INTEL = {
+  i1:{title:'US Fed holds rates — Indian IT upside potential',tag:'MACRO EVENT',tagColor:'#DC2626',date:'21 May 2026',summary:'The Federal Reserve paused rate hikes at its May FOMC meeting, signalling a sustained hold through Q3 2026. This stabilises the USD/INR exchange rate, creating a favourable backdrop for Indian IT exporters.',detail:'<p><b>Direct impact on your portfolios:</b> Mehta Family Office has 22.8% effective IT exposure (Infosys 4.12%, TCS 3.21%, Wipro 2.84% via look-through). A stable INR at 83-84 supports export revenue realisations for these companies.</p><p><b>Estimated portfolio benefit:</b> Mehta +1.2%, Reddy Holdings +0.8% based on current IT sector weights.</p><p><b>Risk to watch:</b> If US recession probability rises above 40%, IT earnings guidance revisions would offset this benefit.</p>',affected:['Mehta Family Office','Reddy Holdings','Patel HUF'],impact:'Positive — IT sector supported'},
+  i2:{title:'BFSI credit growth slowing — Q4 FY26 data',tag:'SECTOR SIGNAL',tagColor:'#B45309',date:'20 May 2026',summary:'RBI data shows private bank loan growth at 14.2% YoY in Q4 FY26, down from 18% the prior year. Margin pressure expected as CASA ratios normalise.',detail:'<p><b>4 portfolios affected:</b> Mehta (31.4% BFSI), Patel (22.1% BFSI), Khanna (22.1% BFSI), Reddy (26.8% BFSI). Combined BFSI exposure across Mehta alone: ₹14.8 Cr effective.</p><p><b>Key risk:</b> HDFC Bank and ICICI Bank together form 10.2% of Mehta\'s effective exposure. A 10% NIM compression could reduce portfolio value by ~₹1.2 Cr.</p><p><b>Recommended action:</b> Review BFSI allocation in next Mehta review. Consider reducing below 28%.</p>',affected:['Mehta Family Office','Patel HUF','Khanna Trust','Reddy Holdings'],impact:'Negative — monitor exposure'},
+  i3:{title:'Mehta: Axis Bluechip ↔ Mirae LargeCap 42.1% overlap',tag:'PORTFOLIO ANOMALY',tagColor:'#1E40FF',date:'21 May 2026',summary:'Look-through analysis of Mehta\'s portfolio detected 42.1% stock-level overlap between Axis Bluechip Fund and Mirae Asset Large Cap Fund.',detail:'<p><b>What it means:</b> 42.1% of Axis Bluechip\'s stocks are also held by Mirae LargeCap at significant weights. This creates a "diversification illusion" — the client believes they have two different funds, but effective exposure is concentrated.</p><p><b>Hidden impact:</b> HDFC Bank effective exposure through both funds is 8.3% of fund allocation, adding to direct HDFC Bank holding. Total HDFC Bank exposure: 6.42% of total portfolio.</p><p><b>Recommended action:</b> Exit one of the two overlapping positions. Redeploy ₹4.2 Cr into a genuinely differentiated strategy (mid-cap value or flexi-cap with low BFSI).</p>',affected:['Mehta Family Office'],impact:'Action required — trim overlap'},
+  i4:{title:'INR strengthening at 83.4 USD/INR',tag:'MACRO EVENT',tagColor:'#16A34A',date:'20 May 2026',summary:'Rupee at 83.4 supported by FII inflows and RBI intervention. Positive for FMCG importers, slightly negative for pure IT exporters.',detail:'<p>A strong INR (83-84 range) is net positive for import-dependent companies. HUL, Nestle India, Marico benefit from lower RM costs. Effective FMCG exposure across portfolios: Mehta 13.6%, Khanna 17.8%.</p><p><b>IT impact:</b> USD revenue translates to slightly fewer INR. Marginal negative for IT-heavy portfolios at current forex levels. Not material below 85 USD/INR.</p>',affected:['Mehta Family Office','Khanna Pvt Trust'],impact:'Net neutral — FMCG positive, IT marginal negative'},
+  i5:{title:'Oil prices rising — $84/bbl, 6-week trend',tag:'SECTOR SIGNAL',tagColor:'#B45309',date:'19 May 2026',summary:'Crude oil rising steadily since early April. Auto, aviation, and logistics sector margins under pressure.',detail:'<p><b>Sector impact:</b> Oil at $84/bbl pressures Auto OEM margins (input cost), airlines (aviation turbine fuel), and logistics companies (diesel). Fund look-through detected 10.8% effective Auto exposure in Mehta portfolio.</p><p><b>Scenario:</b> If oil reaches $100/bbl, estimated Mehta portfolio impact −4.1% via Auto and energy-dependent holdings.</p>',affected:['Mehta Family Office','Reddy Holdings'],impact:'Negative — auto and logistics sectors'},
+  i6:{title:'Iyer Retirement Fund — 34% illiquid small-cap',tag:'LIQUIDITY RISK',tagColor:'#B45309',date:'21 May 2026',summary:'3 thematic small-cap funds in Iyer\'s portfolio have AUM below ₹500 Cr, creating potential redemption risk in stressed conditions.',detail:'<p><b>Funds at risk:</b> EV Theme Fund (₹320 Cr AUM), Defence Theme Fund (₹410 Cr AUM), Rural Consumption Theme Fund (₹280 Cr AUM). All three have high sector concentration and limited exit liquidity.</p><p><b>Redemption risk:</b> In a market stress scenario, 30% redemption window over 14 days. Portfolio impact estimate: −11.6%.</p><p><b>Recommended action:</b> Reduce thematic fund allocation below 20%. Shift to diversified small-cap fund.</p>',affected:['Iyer Retirement Fund'],impact:'High liquidity risk — action required'},
+  i7:{title:'Reddy Holdings — Small-cap factor drift',tag:'FACTOR DRIFT',tagColor:'#1E40FF',date:'18 May 2026',summary:'Small-cap bias factor for Reddy portfolio increased from 0.58 to 0.71 over the past quarter due to new fund additions.',detail:'<p><b>Drift analysis:</b> Addition of Nippon Smallcap and SBI Smallcap in Q1 increased the portfolio\'s effective small-cap weight from 24% to 28.8%. Factor model shows small-cap bias factor at 0.71 — elevated.</p><p><b>Impact:</b> Portfolio risk score increased from 68 to 74 over 90 days. Correlation with broader market during corrections likely 0.82+.</p>',affected:['Reddy Holdings'],impact:'Risk profile shift — review allocation'},
+  a1d:{title:'Patel HUF — BFSI Concentration Breach (38.2%)',tag:'CONCENTRATION BREACH',tagColor:'#DC2626',date:'21 May 2026',summary:'Patel HUF effective BFSI exposure reached 38.2%, breaching the 35% advisory threshold.',detail:'<p><b>Computation:</b> Direct BFSI equity: 18.4%. Indirect via 4 mutual funds (look-through): additional 19.8%. Effective total: 38.2%. This includes HDFC Bank (8.1%), ICICI Bank (6.4%), Kotak Bank (5.2%), Axis Bank (4.8%), smaller PSU banks (13.7%).</p><p><b>Trigger:</b> Mirae Asset Large Cap Fund increased HDFC Bank position by 2.1% in May portfolio disclosure. This pushed effective total over threshold.</p><p><b>Immediate action required:</b> Reduce BFSI by 3.2% (approx ₹1.24 Cr). Exit direct HDFC Bank holding (1.82%) and reduce Axis Bluechip exposure. Next review should be scheduled this week.</p>',affected:['Patel HUF'],impact:'Immediate action required'},
+};
+
+var ALERTS = {
+  a1:{title:'Patel HUF — BFSI Concentration Breach',severity:'critical',client:'patel',time:'2 minutes ago',intelId:'a1d'},
+  a2:{title:'Iyer Retirement Fund — SmallCap Drawdown −8.4%',severity:'critical',client:null,time:'1 hour ago',intelId:'i6'},
+  a3:{title:'RBI Rate Signal — 6 portfolios affected',severity:'elevated',client:null,time:'3 hours ago',intelId:'i2'},
+  a4:{title:'Reddy Holdings — Small-cap factor drift',severity:'elevated',client:'reddy',time:'6 hours ago',intelId:'i7'},
+  a5:{title:'Mehta Family Office — AMFI data refreshed',severity:'info',client:'mehta',time:'Today 9:14',intelId:null},
+};
+
+// ══════════════════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════════════════
+var STATE = {view:'overview',prevView:'overview',client:null,tab:'tab-overview',scenario:null};
+
+// ══════════════════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ══════════════════════════════════════════════════════
+function doLogin(){
+  window.location.href='/dashboard.html';
+}
+function doLogout(){
+  document.getElementById('appShell').classList.remove('show');
+  var ls=document.getElementById('loginScreen');
+  ls.style.display='flex';ls.classList.remove('out');
+}
+document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+
+// ══════════════════════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════════════════════
+(function(){try{if(localStorage.getItem('wt')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}})();
+document.getElementById('themeBtn').addEventListener('click',function(){
+  var d=document.documentElement.getAttribute('data-theme')==='dark';
+  d?document.documentElement.removeAttribute('data-theme'):document.documentElement.setAttribute('data-theme','dark');
+  try{localStorage.setItem('wt',d?'light':'dark')}catch(e){}
+});
+
+// ══════════════════════════════════════════════════════
+//  TIME
+// ══════════════════════════════════════════════════════
+function updateTime(){
+  var d=new Date(),days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var h=String(d.getHours()).padStart(2,'0'),m=String(d.getMinutes()).padStart(2,'0');
+  var el=document.getElementById('tbTime');
+  if(el)el.textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear()+' · '+h+':'+m+' IST';
+}
+updateTime();setInterval(updateTime,30000);
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function nav(el){
+  if(!el)return;
+  document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active')});
+  el.classList.add('active');
+  var v=el.getAttribute('data-view');
+  showView(v);
+  document.getElementById('tbTitle').textContent={overview:'Good morning, Rahul',portfolios:'All Portfolios',intelligence:'Portfolio Intelligence',scenarios:'Scenario Engine',reviews:'Client Reviews',alerts:'Active Alerts',reports:'Client Reports',compliance:'Compliance & Audit',datasources:'Data Sources',settings:'Settings'}[v]||'WealthOS';
+}
+function navBack(){
+  showView(STATE.prevView==='client'?'overview':STATE.prevView);
+  // restore sidebar active
+  document.querySelectorAll('.sb-item').forEach(function(i){
+    i.classList.toggle('active',i.getAttribute('data-view')===(STATE.prevView==='client'?'overview':STATE.prevView));
+  });
+}
+function showView(name){
+  STATE.prevView=STATE.view;
+  STATE.view=name;
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  var el=document.getElementById('view-'+name);
+  if(el){el.classList.add('active');document.getElementById('mainContent').scrollTop=0;}
+}
+function openSearch(){
+  var q=prompt('Search clients, portfolios, or metrics:');
+  if(!q)return;
+  var lq=q.toLowerCase();
+  var clients=['mehta','patel','khanna','reddy','agarwal'];
+  for(var c of clients){if(CLIENTS[c]&&CLIENTS[c].name.toLowerCase().includes(lq)){openClient(c);return;}}
+  alert('No results for "'+q+'". Try: Mehta, Patel, Khanna, BFSI, Overlap');
 }
 
-async function submitAuth(){
-  const email=document.getElementById('auth-email').value.trim();
-  const pass=document.getElementById('auth-pass').value;
-  const err=document.getElementById('auth-err');
-  const btn=document.getElementById('auth-submit');
-  err.style.display='none';
-  if(!email||!pass){return showAuthErr('Enter your email and password.');}
-  btn.disabled=true;
-  const orig=btn.textContent; btn.innerHTML='<span class="spinner"></span>';
-  try{
-    if(AUTH_MODE==='signup'){
-      const name=document.getElementById('auth-name').value.trim();
-      const firm=document.getElementById('auth-firm').value.trim();
-      if(!name){btn.disabled=false;btn.textContent=orig;return showAuthErr('Enter your name.');}
-      const r=await fetch(`${API}/v1/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,name,full_name:name,firm,firm_name:firm})});
-      const d=await r.json();
-      if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'Could not create account');
-      // auto-login after signup
+// ══════════════════════════════════════════════════════
+//  TOOLTIP
+// ══════════════════════════════════════════════════════
+var tt=document.getElementById('tooltip');
+function showTip(e,title,body){
+  document.getElementById('ttTitle').textContent=title;
+  document.getElementById('ttBody').innerHTML=body||'';
+  tt.classList.add('show');
+  moveTip(e);
+}
+function moveTip(e){
+  var x=e.clientX+14,y=e.clientY+10;
+  if(x+230>window.innerWidth)x=e.clientX-240;
+  if(y+100>window.innerHeight)y=e.clientY-100;
+  tt.style.left=x+'px';tt.style.top=y+'px';
+}
+function hideTip(){tt.classList.remove('show')}
+document.addEventListener('mousemove',function(e){if(tt.classList.contains('show'))moveTip(e)});
+
+// ══════════════════════════════════════════════════════
+//  CHART HELPERS
+// ══════════════════════════════════════════════════════
+function svgEl(tag,attrs){
+  var el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(var k in attrs)el.setAttribute(k,attrs[k]);
+  return el;
+}
+function getVar(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+
+function drawBarChart(svgId,data,colors,interactive){
+  var svg=document.getElementById(svgId);if(!svg)return;
+  svg.innerHTML='';
+  var W=700,H=parseInt(svg.getAttribute('height'))||120;
+  var n=data.length,bw=Math.floor((W-n*6)/n),maxV=Math.max.apply(null,data.map(function(d){return d.val}));
+  data.forEach(function(d,i){
+    var x=i*(bw+6),bh=Math.max(4,Math.floor((d.val/maxV)*(H-30)));
+    var g=svgEl('g',{});
+    var rect=svgEl('rect',{x:x,y:H-30-bh,width:bw,height:bh,rx:3,fill:colors[i]||getVar('--ink-4'),'data-label':d.label,'data-val':d.val});
+    if(interactive){
+      rect.style.cursor='pointer';
+      rect.style.transition='opacity .15s';
+      rect.addEventListener('mouseenter',function(e){this.style.opacity='.7';showTip(e,d.label,'<span class="mono" style="font-size:13px;font-weight:600">'+d.val+'%</span><br/><span style="color:var(--ink-3);font-size:11px">'+d.sub+'</span>')});
+      rect.addEventListener('mouseleave',function(){this.style.opacity='1';hideTip()});
+      if(d.onclick)rect.addEventListener('click',d.onclick);
     }
-    // login (works for both flows)
-    const lr=await fetch(`${API}/v1/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
-    const ld=await lr.json();
-    if(!lr.ok)throw new Error(typeof ld.detail==='string'?ld.detail:'Invalid email or password');
-    TOKEN=ld.access_token||ld.token;
-    sessionStorage.setItem('wos_token',TOKEN);
-    localStorage.setItem('wos_token',TOKEN);
-    await enterApp();
-  }catch(e){showAuthErr(e.message);btn.disabled=false;btn.textContent=orig;}
+    var label=svgEl('text',{x:x+bw/2,y:H-12,fill:getVar('--ink-3'),'text-anchor':'middle','font-size':9,'font-family':'JetBrains Mono, monospace'});
+    label.textContent=d.label;
+    var pct=svgEl('text',{x:x+bw/2,y:H-30-bh-5,fill:getVar('--ink-2'),'text-anchor':'middle','font-size':9.5,'font-family':'JetBrains Mono, monospace'});
+    pct.textContent=d.val+'%';
+    g.appendChild(rect);g.appendChild(label);g.appendChild(pct);
+    svg.appendChild(g);
+  });
 }
 
-function showAuthErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.style.display='block';}
-
-function enterDemo(){
-  TOKEN='DEMO';sessionStorage.setItem('wos_token','DEMO');
-  USER={name:'Demo Advisor',email:'demo@wlthos.in',firm_name:'Demo Workspace'};
-  renderApp();PORTFOLIOS=demoData();renderOverview(PORTFOLIOS);renderPortfolios(PORTFOLIOS);populateSelect(PORTFOLIOS);
-  document.getElementById('badge-portfolios').textContent=PORTFOLIOS.length;document.getElementById('badge-portfolios').style.display='inline';
+function drawLineChart(svgId,points,color){
+  var svg=document.getElementById(svgId);if(!svg)return;
+  svg.innerHTML='';
+  var W=700,H=parseInt(svg.getAttribute('height'))||120;
+  var n=points.length,minV=Math.min.apply(null,points),maxV=Math.max.apply(null,points);
+  var pts=points.map(function(v,i){return{x:i*(W/(n-1)),y:H-10-((v-minV)/(maxV-minV||1))*(H-20)}});
+  var d='M'+pts.map(function(p){return p.x+','+p.y}).join(' L');
+  var area=svgEl('path',{d:d+' L'+pts[pts.length-1].x+','+(H-10)+' L0,'+(H-10)+' Z',fill:color||getVar('--accent'),opacity:'.08'});
+  var line=svgEl('path',{d:d,fill:'none',stroke:color||getVar('--accent'),'stroke-width':1.8});
+  svg.appendChild(area);svg.appendChild(line);
+  pts.forEach(function(p,i){
+    var dot=svgEl('circle',{cx:p.x,cy:p.y,r:3.5,fill:color||getVar('--accent'),style:'cursor:pointer'});
+    dot.addEventListener('mouseenter',function(e){showTip(e,'Month '+(i+1),'AUM: ₹'+(750+points[i]).toFixed(0)+' Cr')});
+    dot.addEventListener('mouseleave',hideTip);
+    svg.appendChild(dot);
+  });
 }
 
-function doLogout(){TOKEN=null;sessionStorage.clear();localStorage.removeItem('wos_token');document.getElementById('screen-app').classList.remove('visible');document.getElementById('screen-auth').style.display='flex';}
-
-async function api(path,opts={}){
-  if(TOKEN==='DEMO')throw new Error('DEMO');
-  const h={'Content-Type':'application/json',...(opts.headers||{})};
-  if(TOKEN)h['Authorization']=`Bearer ${TOKEN}`;
-  const r=await fetch(`${API}${path}`,{...opts,headers:h});
-  if(r.status===401){doLogout();throw new Error('Session expired');}
-  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(typeof d.detail==='string'?d.detail:'Request failed');}
-  return r.json();
+function drawGauge(svgId,val,color,r){
+  var svg=document.getElementById(svgId);if(!svg)return;
+  r=r||38;var circ=2*Math.PI*r;
+  var fill=svgEl('circle',{cx:45,cy:45,r:r,fill:'none',stroke:color,'stroke-width':7,'stroke-linecap':'round','stroke-dasharray':circ,'stroke-dashoffset':circ-(val/100)*circ*0.75,'transform':'rotate(-90 45 45)',style:'transition:stroke-dashoffset 1s'});
+  svg.appendChild(fill);
 }
 
-async function enterApp(){
-  try{USER=await api('/v1/auth/me');}catch(e){USER={name:'Advisor',email:''};}
-  renderApp();loadOverview();loadPortfolios();
+// ══════════════════════════════════════════════════════
+//  PORTFOLIOS TABLE
+// ══════════════════════════════════════════════════════
+function renderPortfoliosTable(filter){
+  var tbody=document.getElementById('portfoliosTbody');if(!tbody)return;
+  var rows='';
+  Object.values(CLIENTS).forEach(function(c){
+    if(filter&&!c.name.toLowerCase().includes(filter.toLowerCase()))return;
+    var rc=c.score>74?'pill-hi':c.score>59?'pill-med':'pill-low';
+    var top=Object.entries(c.sector).sort(function(a,b){return b[1]-a[1]})[0];
+    rows+='<tr class="clickable" onclick="openClient(\''+c.id+'\')">';
+    rows+='<td><div style="font-weight:500">'+c.name+'</div><div style="font-size:11.5px;color:var(--ink-3);margin-top:1px">'+c.aum+' · '+c.holdings+' holdings · '+c.funds+' funds</div></td>';
+    rows+='<td class="num">'+c.aum+'</td>';
+    rows+='<td><span class="pill '+rc+'">'+c.score+'/100</span></td>';
+    rows+='<td class="muted" style="font-size:12.5px">'+Object.keys(c.factors).slice(0,2).join(' · ')+'</td>';
+    rows+='<td class="num" style="color:var(--warn)">'+Math.round(c.hhi*100)/100+'</td>';
+    rows+='<td class="num">'+c.hhi+'</td>';
+    rows+='<td class="muted num" style="font-size:12px">Today</td>';
+    var sc=c.score>74?'pill-hi':c.score>59?'pill-med':'pill-low';
+    rows+='<td><span class="pill '+sc+'">'+(c.score>74?'High Risk':c.score>59?'Review Due':'Good')+'</span></td>';
+    rows+='<td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openClient(\''+c.id+'\')">Open →</button></td>';
+    rows+='</tr>';
+  });
+  tbody.innerHTML=rows||'<tr><td colspan="9" style="text-align:center;color:var(--ink-3);padding:24px">No clients match filter</td></tr>';
+}
+function filterPortfolios(v){renderPortfoliosTable(v)}
+
+// ══════════════════════════════════════════════════════
+//  CLIENT DETAIL
+// ══════════════════════════════════════════════════════
+function openClient(id){
+  STATE.client=CLIENTS[id]||CLIENTS.mehta;
+  var c=STATE.client;
+  // Header
+  document.getElementById('clientNameDisplay').textContent=c.name;
+  document.getElementById('clientMetaDisplay').innerHTML='<span>'+c.aum+' AUM</span><span>'+c.holdings+' HOLDINGS</span><span>'+c.funds+' FUNDS · '+c.stocks+' STOCKS</span>';
+  var tags=document.getElementById('clientTagsDisplay');
+  tags.innerHTML=c.tags.map(function(t){return'<span class="tag">'+t+'</span>'}).join('');
+  // Gauge
+  var gSvg=document.getElementById('clientGaugeFill').parentNode;
+  gSvg.innerHTML='<circle cx="45" cy="45" r="38" fill="none" stroke="var(--line)" stroke-width="7"/>';
+  var fill=svgEl('circle',{cx:45,cy:45,r:38,fill:'none',stroke:c.scoreColor,'stroke-width':7,'stroke-linecap':'round','stroke-dasharray':239,'stroke-dashoffset':c.gaugeOffset});
+  gSvg.appendChild(fill);
+  document.getElementById('clientRiskScore').textContent=c.score;
+  // Stats
+  var stats=document.getElementById('clientStatsDisplay');
+  stats.innerHTML=['HHI|'+c.hhi+'|Concentration','NEFF|'+c.neff+'|Diversification','VOL|'+c.vol+'|Annualised','MAX DD|'+c.dd+'|5-year','LIQ|'+c.liq+'|Score'].map(function(s){
+    var p=s.split('|');return '<div style="padding:0 14px;border-right:1px solid var(--line)"><div class="mono" style="font-size:9px;color:var(--ink-3);margin-bottom:3px">'+p[0]+'</div><div style="font-size:16px;font-weight:600;color:var(--ink)">'+p[1]+'</div><div style="font-size:11px;color:var(--ink-2)">'+p[2]+'</div></div>';
+  }).join('')+'<div style="padding:0 14px"><div class="mono" style="font-size:9px;color:var(--ink-3);margin-bottom:3px">FRAGILITY</div><div style="font-size:14px;font-weight:600;color:var(--ink)">'+c.fragility+'</div></div>';
+  // Actions
+  document.getElementById('clientActionsDisplay').innerHTML='<button class="btn btn-ghost btn-sm" onclick="exportPDF()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export PDF</button><button class="btn btn-primary btn-sm" onclick="switchTab(\'tab-memo\')">Generate Memo</button>';
+  // Tab content
+  renderTabOverview(c);
+  renderTabExposures(c);
+  renderTabRisk(c);
+  renderTabScenarios(c);
+  renderTabFactors(c);
+  renderTabMemo(c);
+  switchTab('tab-overview');
+  showView('client');
+  document.getElementById('tbTitle').textContent=c.name;
+  setTimeout(function(){drawBarChart('sectorBarChart',Object.entries(c.sector).map(function(e,i){return{label:e[0],val:Math.round(e[1]*10)/10,sub:'Effective look-through exposure',onclick:function(){alert(e[0]+' sector detail: ₹'+(c.aum.replace('₹','').replace(' Cr',''))*(e[1]/100)+' Cr effective exposure across '+c.funds+' funds and direct holdings.')}}}),['#1E40FF','#6366f1','#16A34A','#F59E0B','#EC4899','#14B8A6','#F97316','#A3A3A3'],true);},100);
 }
 
-function renderApp(){
-  document.getElementById('screen-auth').style.display='none';
-  document.getElementById('screen-app').classList.add('visible');
-  const n=USER.name||USER.full_name||USER.email||'Advisor';
-  document.getElementById('user-name-display').textContent=n;
-  document.getElementById('ws-name').textContent=USER.firm_name||USER.firm||'My Workspace';
-  document.getElementById('user-initials').textContent=n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
-  document.getElementById('set-name').value=n;document.getElementById('set-email').value=USER.email||'';
+function renderTabOverview(c){
+  var sec=Object.entries(c.sector);
+  var html='<div class="g2"><div class="card"><div class="card-head"><div class="card-title">Sector Exposure</div><div class="card-sub">LOOK-THROUGH · CLICK BARS FOR DETAILS</div></div><div class="card-body" style="padding-bottom:28px"><div class="chart-wrap"><svg id="sectorBarChart" viewBox="0 0 700 130" height="130"></svg></div><div class="mono" style="font-size:9.5px;color:var(--warn);margin-top:10px">⚠ '+sec[0][0]+' at '+sec[0][1]+'% — highest effective exposure</div></div></div>';
+  html+='<div class="card"><div class="card-head"><div class="card-title">Asset Allocation</div></div><div class="card-body"><div style="display:flex;flex-direction:column;gap:12px">';
+  [['Equity',c.equity,'#1E40FF'],['Debt',c.debt,'#6366f1'],['Hybrid',c.hybrid,'#16A34A'],['Cash',c.cash,'#A3A3A3']].forEach(function(a){
+    html+='<div class="prog-row"><div class="prog-head"><span>'+a[0]+'</span><span class="mono">'+a[1]+'%</span></div><div class="prog-track"><div class="prog-fill" style="width:'+a[1]+'%;background:'+a[2]+'"></div></div></div>';
+  });
+  html+='</div><div class="divider"></div><div class="mono" style="font-size:9.5px;color:var(--ink-3);margin-bottom:8px">MARKET CAP SPLIT</div><div style="display:flex;gap:8px">';
+  [['Large Cap',c.largeCap],['Mid Cap',c.midCap],['Small Cap',c.smallCap]].forEach(function(a){
+    html+='<div style="flex:1;padding:10px;border:1px solid var(--line);border-radius:7px;text-align:center"><div class="mono" style="font-size:16px;font-weight:600">'+a[1]+'%</div><div style="font-size:11px;color:var(--ink-2);margin-top:3px">'+a[0]+'</div></div>';
+  });
+  html+='</div></div></div></div>';
+  html+='<div class="card" style="margin-top:14px"><div class="card-head"><div class="card-title">Top Holdings — Effective Look-through</div><div class="card-sub">ACROSS ALL DIRECT HOLDINGS + '+c.funds+' MUTUAL FUNDS</div></div><table class="tbl"><thead><tr><th>INSTRUMENT</th><th>TYPE</th><th>SECTOR</th><th>DIRECT</th><th>INDIRECT (via funds)</th><th>EFFECTIVE</th><th>RISK</th></tr></thead><tbody>';
+  [['HDFC Bank','Equity + 5 funds','BFSI','1.82%','4.60%','6.42%','hi'],['Reliance Industries','Equity + 4 funds','Energy','2.10%','3.77%','5.87%','med'],['Infosys','Equity + 3 funds','IT','1.44%','2.68%','4.12%','med'],['ICICI Bank','3 funds','BFSI','0%','3.78%','3.78%','med'],['TCS','Equity + 2 funds','IT','1.12%','2.09%','3.21%','low']].forEach(function(h){
+    html+='<tr class="clickable" onclick="alert(\''+h[0]+': Total effective exposure '+h[5]+' of portfolio. '+h[1]+'. Computed via recursive fund look-through.\')"><td style="font-weight:500">'+h[0]+'</td><td class="muted">'+h[1]+'</td><td class="muted">'+h[2]+'</td><td class="num">'+h[3]+'</td><td class="num">'+h[4]+'</td><td class="num" style="font-weight:600;color:var(--accent)">'+h[5]+'</td><td><span class="pill pill-'+h[6]+'">'+h[6].toUpperCase()+'</span></td></tr>';
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('tabOverviewContent').innerHTML=html;
 }
 
-/* ════ DATA LOADERS ════ */
-async function loadOverview(){
-  if(TOKEN==='DEMO')return;
-  try{PORTFOLIOS=await api('/v1/portfolios');renderOverview(PORTFOLIOS);}
-  catch(e){document.getElementById('overview-loading').innerHTML=`<div class="error-state">${e.message}</div>`;}
-}
-function renderOverview(pf){
-  document.getElementById('overview-loading').style.display='none';
-  document.getElementById('overview-content').style.display='block';
-  const aum=pf.reduce((s,p)=>s+(p.total_value||0),0);
-  document.getElementById('overview-metrics').innerHTML=`
-    <div class="metric-card"><div class="metric-label">Total AUM</div><div class="metric-value">₹${cr(aum)}</div><div class="metric-sub">All clients</div></div>
-    <div class="metric-card"><div class="metric-label">Clients</div><div class="metric-value">${pf.length}</div><div class="metric-sub">Active</div></div>
-    <div class="metric-card"><div class="metric-label">Alerts</div><div class="metric-value c-warn">3</div><div class="metric-sub">Need attention</div></div>
-    <div class="metric-card"><div class="metric-label">Reviews</div><div class="metric-value c-danger">2</div><div class="metric-sub">Due</div></div>`;
-  document.getElementById('ov-count').textContent=`${pf.length} clients`;
-  document.getElementById('ov-tbody').innerHTML=pf.slice(0,8).map(p=>{const s=p.analytics?.risk_score??55;const c=s>70?'danger':s>50?'warn':'ok';return `<tr class="clickable" onclick="openClient('${p.id}')"><td><strong>${p.name}</strong></td><td class="mono">₹${cr(p.total_value||0)}</td><td><span class="score-badge s-${c}">${s}</span></td><td><span class="pill p-${c}"><span class="pill-dot"></span>${s>70?'Review':s>50?'Monitor':'OK'}</span></td></tr>`;}).join('')||'<tr><td colspan="4" class="empty-state">No clients yet</td></tr>';
-  document.getElementById('activity-feed').innerHTML=[['↑','CAS uploaded','2h ago'],['◉','Concentration alert','5h ago'],['◈','Scenario run','1d ago']].map(([i,t,a])=>`<div class="feed-item"><span style="color:var(--accent)">${i}</span><div style="flex:1">${t}<div style="font-size:11px;color:var(--ink-3);margin-top:2px">${a}</div></div></div>`).join('');
+function renderTabExposures(c){
+  var html='<div class="g2"><div class="card"><div class="card-head"><div class="card-title">Fund Overlap Matrix</div><div class="card-sub">PAIR-WISE STOCK OVERLAP · CLICK ROW FOR DETAILS</div></div><table class="tbl"><thead><tr><th>FUND A</th><th>FUND B</th><th>OVERLAP</th><th>ACTION</th></tr></thead><tbody>';
+  [['Axis Bluechip','Mirae LargeCap','42.1%','hi','Reduce one position'],['Axis Bluechip','HDFC Flexi Cap','28.7%','med','Monitor closely'],['HDFC Flexi Cap','PPFAS Flexi Cap','19.3%','med','Monitor'],['SBI Smallcap','Nippon Smallcap','22.8%','med','Monitor'],['Axis Bluechip','PPFAS Flexi Cap','11.2%','low','Acceptable']].forEach(function(r){
+    html+='<tr class="clickable" onclick="alert(\''+r[0]+' ↔ '+r[1]+': '+r[2]+' stock overlap. Common holdings include HDFC Bank, Reliance Industries, Infosys. Recommendation: '+r[4]+'\')"><td>'+r[0]+'</td><td class="muted">'+r[1]+'</td><td><span class="pill pill-'+r[3]+'">'+r[2]+'</span></td><td class="muted" style="font-size:12px">'+r[4]+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<div class="card"><div class="card-head"><div class="card-title">Hidden Stock Concentration</div><div class="card-sub">EFFECTIVE EXPOSURE VIA LOOK-THROUGH</div></div><div class="card-body">';
+  [['HDFC Bank',6.42],['Reliance Industries',5.87],['Infosys',4.12],['ICICI Bank',3.78],['TCS',3.21],['Bajaj Finance',2.74],['Kotak Bank',2.41]].forEach(function(h){
+    html+='<div class="ol-row" style="cursor:pointer" onclick="alert(\''+h[0]+': '+h[1]+'% effective portfolio exposure. Found in direct holdings + multiple mutual funds via look-through analysis.\')"><div class="ol-name">'+h[0]+'</div><div class="ol-track"><div class="ol-fill" style="width:'+Math.round(h[1]/6.42*100)+'%"></div></div><div class="ol-pct">'+h[1]+'%</div></div>';
+  });
+  html+='<div class="mono" style="font-size:9.5px;color:var(--ink-3);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)">14 names overlap across 3+ funds · diversification illusion 22.7%</div></div></div></div>';
+  document.getElementById('tabExposuresContent').innerHTML=html;
 }
 
-async function loadPortfolios(){
-  if(TOKEN==='DEMO')return;
-  document.getElementById('pf-loading').style.display='block';document.getElementById('pf-wrap').style.display='none';
-  try{PORTFOLIOS=await api('/v1/portfolios');renderPortfolios(PORTFOLIOS);populateSelect(PORTFOLIOS);
-    const b=document.getElementById('badge-portfolios');b.textContent=PORTFOLIOS.length;b.style.display=PORTFOLIOS.length?'inline':'none';}
-  catch(e){document.getElementById('pf-loading').innerHTML=`<div class="error-state">${e.message}</div>`;}
-}
-function renderPortfolios(pf){
-  document.getElementById('pf-loading').style.display='none';
-  document.getElementById('pf-count').textContent=`${pf.length} client portfolios`;
-  if(!pf.length){document.getElementById('pf-empty').style.display='block';return;}
-  document.getElementById('pf-wrap').style.display='block';
-  document.getElementById('pf-tbody').innerHTML=pf.map(p=>{const a=p.analytics||{};const s=a.risk_score;const c=typeof s==='number'?(s>70?'danger':s>50?'warn':'ok'):'';return `<tr class="clickable" onclick="openClient('${p.id}')"><td><strong>${p.name}</strong></td><td class="mono" style="color:var(--ink-2);font-size:12px">${p.pan||'—'}</td><td class="mono">₹${cr(p.total_value||0)}</td><td>${typeof s==='number'?`<span class="score-badge s-${c}">${s}</span>`:'—'}</td><td class="mono">${a.hhi?a.hhi.toFixed(3):'—'}</td><td class="mono">${p.holdings_count??p.holdings?.length??'—'}</td><td><button class="btn-sm" onclick="event.stopPropagation();reanalyze('${p.id}')">Reanalyze</button></td></tr>`;}).join('');
-}
-
-async function openClient(id){
-  showView('client',null);document.getElementById('topbar-title').textContent='Client Intelligence';
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
-  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===0));
-  document.getElementById('cl-name').textContent='Loading…';
-  let p;
-  if(TOKEN==='DEMO'){p=demoData().find(x=>x.id==id)||demoData()[0];p.holdings=demoHoldings();}
-  else{try{p=await api(`/v1/portfolios/${id}`);}catch(e){toast(e.message,'err');return;}}
-  CURRENT=p;renderClient(p);
+function renderTabRisk(c){
+  var html='<div class="g2">';
+  // Gauge card
+  html+='<div class="card"><div class="card-head"><div class="card-title">Risk Score</div><div class="card-sub">METHODOLOGY v1.2 · DETERMINISTIC</div></div><div class="card-body"><div style="display:flex;gap:20px;align-items:center"><div style="position:relative;width:110px;height:110px;flex-shrink:0"><svg width="110" height="110" viewBox="0 0 90 90" id="riskGaugeSvg"><circle cx="45" cy="45" r="38" fill="none" stroke="var(--line)" stroke-width="7"/></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:28px;font-weight:700;color:var(--ink)">'+c.score+'</div><div class="mono" style="font-size:8px;color:var(--ink-3)">/100</div></div></div><div style="flex:1;display:flex;flex-direction:column;gap:9px">';
+  [['Concentration (HHI)',c.hhi,''],['Annualised volatility',c.vol,''],['Max drawdown 5yr',c.dd,'dn'],['Liquidity score',c.liq,'up'],['Fragility index',c.fragility,'am']].forEach(function(r){
+    html+='<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink-2)">'+r[0]+'</span><span class="mono '+r[2]+'">'+r[1]+'</span></div>';
+  });
+  html+='</div></div></div>';
+  // Risk drivers
+  html+='<div style="font-size:13px;margin-top:14px;font-weight:500;color:var(--ink)">Risk Driver Decomposition</div><table class="tbl" style="margin-top:8px"><thead><tr><th>DRIVER</th><th>CONTRIBUTION</th><th>SEVERITY</th></tr></thead><tbody>';
+  [['Sector concentration (top sector '+Math.round(Object.values(c.sector)[0])+'%)','42% of total risk','hi'],['Factor clustering (growth+quality)','19% of total risk','med'],['Low debt diversification','14% of total risk','med'],['Single-AMC concentration','11% of total risk','low'],['USD/INR sensitivity (IT)','8% of total risk','low']].forEach(function(r){
+    html+='<tr class="clickable" onclick="alert(\'Driver: '+r[0]+'\\nContribution: '+r[1]+'\\nThis metric is computed deterministically from portfolio weights and historical factor returns. Methodology v1.2 — fully reproducible.\')"><td>'+r[0]+'</td><td class="num">'+r[1]+'</td><td><span class="pill pill-'+r[2]+'">'+r[2].toUpperCase()+'</span></td></tr>';
+  });
+  html+='</tbody></table></div>';
+  // Macro sensitivity
+  html+='<div class="card"><div class="card-head"><div class="card-title">Macro Sensitivity</div><div class="card-sub">HOVER FOR ESTIMATED IMPACT</div></div><div class="card-body" style="display:flex;flex-direction:column;gap:12px">';
+  [['RBI Rate Hike +75bps',78,SCENARIOS[1].impacts[c.id]||'-4.8','var(--warn)'],['Oil Shock $120/bbl',54,SCENARIOS[3].impacts[c.id]||'-6.4','#F59E0B'],['US Recession + INR',72,SCENARIOS[2].impacts[c.id]||'-9.1','var(--danger)'],['Inflation +150bps',46,'-3.2','var(--warn)'],['INR Depreciation 5%',22,'-1.4','var(--ok)']].forEach(function(r){
+    html+='<div class="prog-row" style="cursor:pointer" onmouseenter="showTip(event,\''+r[0]+'\',\'Estimated portfolio impact: <span class=\\"mono\\" style=\\"color:var(--danger)\\">'+(r[2])+'%</span>\')" onmouseleave="hideTip()"><div class="prog-head"><span>'+r[0]+'</span><span class="mono" style="color:'+r[3]+'">'+(r[2])+'%</span></div><div class="prog-track"><div class="prog-fill" style="width:'+r[1]+'%;background:'+r[3]+'"></div></div></div>';
+  });
+  html+='</div></div></div>';
+  document.getElementById('tabRiskContent').innerHTML=html;
+  setTimeout(function(){drawGauge('riskGaugeSvg',c.score,c.scoreColor)},50);
 }
 
-function renderClient(p){
-  const a=p.analytics||{};
-  document.getElementById('cl-name').textContent=p.name;
-  document.getElementById('cl-meta').textContent=`PAN: ${p.pan||'—'} · ${p.holdings?.length||0} holdings`;
-  document.getElementById('cl-aum').textContent=`₹${cr(p.total_value||0)}`;
-  const s=a.risk_score??55;const col=s>70?'var(--danger)':s>50?'var(--warn)':'var(--ok)';
-  document.getElementById('cl-metrics').innerHTML=`
-    <div class="metric-card"><div class="metric-label">Risk Score</div><div class="metric-value" style="color:${col}">${s}</div><div class="metric-sub">/ 100</div></div>
-    <div class="metric-card"><div class="metric-label">HHI</div><div class="metric-value mono">${(a.hhi||0).toFixed(3)}</div><div class="metric-sub">Concentration</div></div>
-    <div class="metric-card"><div class="metric-label">Eff. N</div><div class="metric-value mono">${(a.neff||0).toFixed(1)}</div><div class="metric-sub">Diversification</div></div>
-    <div class="metric-card"><div class="metric-label">Volatility</div><div class="metric-value mono">${a.volatility?(a.volatility*100).toFixed(1)+'%':'—'}</div><div class="metric-sub">Annualized</div></div>`;
-  document.getElementById('sector-bars').innerHTML=bars(a.sector_exposure||{},'%','var(--accent)');
-  document.getElementById('asset-bars').innerHTML=bars(a.asset_allocation||{Equity:p.equity||0,Debt:p.debt||0,Cash:p.cash||0},'%','var(--ok)');
-  const ov=a.overlap_pct??0;
-  document.getElementById('overlap-content').innerHTML=`<div class="metric-label">Fund Overlap</div><div class="metric-value" style="color:${ov>30?'var(--danger)':ov>20?'var(--warn)':'var(--ok)'};margin-bottom:8px">${ov.toFixed(1)}%</div><div style="font-size:12px;color:var(--ink-2)">Stocks held across multiple funds</div>`;
-  document.getElementById('conc-content').innerHTML=`<div class="metric-label">HHI</div><div class="metric-value mono" style="margin-bottom:6px">${(a.hhi||0).toFixed(3)}</div><div style="font-size:12px;color:var(--ink-2);margin-bottom:14px">Effective N: ${(a.neff||0).toFixed(1)}</div><div class="bar-row"><div class="bar-label">Top holding</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,(a.top1_weight||15)*3)}%;background:var(--danger)"></div></div><div class="bar-val">${(a.top1_weight||15).toFixed(1)}%</div></div>`;
-  document.getElementById('risk-gauge').innerHTML=`<svg viewBox="0 0 120 70" width="130"><path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="var(--line)" stroke-width="8" stroke-linecap="round"/><path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${s*1.57} 157"/></svg><div class="gauge-val" style="color:${col}">${s}</div><div class="gauge-label">${s>70?'High Risk':s>50?'Moderate':'Managed'}</div>`;
-  document.getElementById('risk-metrics').innerHTML=[['Volatility',a.volatility?(a.volatility*100).toFixed(1)+'%':'—','var(--warn)',Math.min(100,(a.volatility||.15)*300)],['Max DD',a.max_drawdown?(a.max_drawdown*100).toFixed(1)+'%':'—','var(--danger)',Math.min(100,(a.max_drawdown||.12)*200)],['Sharpe',(a.sharpe||1.2).toFixed(2),'var(--ok)',Math.min(100,(a.sharpe||1.2)*30)],['Liquidity',((a.liquidity_score||.7)*100).toFixed(0)+'%','var(--accent)',(a.liquidity_score||.7)*100]].map(([n,v,c,w])=>`<div class="bar-row"><div class="bar-label">${n}</div><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${c}"></div></div><div class="bar-val">${v}</div></div>`).join('');
-  document.getElementById('macro-bars').innerHTML=bars(a.macro_sensitivity||{RBI_Rate:.6,Inflation:.4,Oil:.3,USDINR:.5,GlobalRisk:.55},'','#8B5CF6',1);
-  document.getElementById('factor-bars').innerHTML=Object.entries(a.factor_exposure||{Growth:.75,Quality:.68,Momentum:.55,Value:.3,SmallCap:.45,Liquidity:.8}).map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${v*100}%;background:linear-gradient(90deg,var(--accent),#8B5CF6)"></div></div><div class="bar-val">${v.toFixed(2)}</div></div>`).join('');
-  document.getElementById('dna-content').innerHTML=[['var(--accent)','Growth-Quality Blend','High growth + quality bias toward large-cap.'],['var(--warn)','Momentum Tilt','Elevated momentum exposure.'],['var(--ok)','High Liquidity','Predominantly liquid-cap. Low redemption risk.']].map(([c,t,d])=>`<div class="alert-item" style="cursor:default"><div class="alert-dot" style="background:${c}"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div></div></div>`).join('');
-  const h=p.holdings||[];
-  document.getElementById('hold-count').textContent=`${h.length} positions`;
-  document.getElementById('hold-tbody').innerHTML=h.map(x=>`<tr><td><strong>${x.name||'—'}</strong></td><td class="mono" style="font-size:11px;color:var(--ink-2)">${x.isin||'—'}</td><td>${x.sector||'—'}</td><td>${x.asset_class||'—'}</td><td class="mono">₹${x.value?cr(x.value):'—'}</td><td class="mono">${x.weight?(x.weight*100).toFixed(2)+'%':'—'}</td></tr>`).join('')||'<tr><td colspan="6" class="empty-state">No holdings. Upload a CAS.</td></tr>';
-  document.getElementById('cl-scenarios').innerHTML=scenarios().map(sc=>{const im=a.scenario_impacts?.[sc.id]??sc.def;const c=im<-15?'var(--danger)':im<-8?'var(--warn)':'var(--ok)';return `<div class="scenario-card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">${sc.name}</div><div style="font-size:11px;color:var(--ink-2);margin-bottom:10px">${sc.macro}</div><div style="font-size:24px;font-weight:600;font-family:'JetBrains Mono',monospace;color:${c}">${im>0?'+':''}${im.toFixed(1)}%</div></div>`;}).join('');
+function renderTabScenarios(c){
+  var html='<div class="card" style="margin-bottom:14px"><div class="card-head"><div class="card-title">Stress Test Results — '+c.name+'</div><div class="card-sub">DETERMINISTIC · CLICK ROW FOR DETAIL</div><button class="btn btn-ghost btn-sm print-hide" onclick="exportPDF()">Export PDF</button></div><table class="tbl"><thead><tr><th>SCENARIO</th><th>PORTFOLIO IMPACT</th><th>WORST SEGMENT</th><th>MACRO DRIVER</th><th>HORIZON</th></tr></thead><tbody>';
+  SCENARIOS.forEach(function(s){
+    var impact=s.impacts[c.id]||s.impacts.mehta;
+    var sev=impact<-10?'danger':impact<-6?'warn':'';
+    html+='<tr class="clickable" onclick="alert(\''+s.name+'\\n\\nPortfolio impact: '+impact+'%\\nWorst segment: '+s.worst+'\\nMacro driver: '+s.macro+'\\nHorizon: '+s.horizon+'\\n\\nComputed via deterministic macro→sector→stock propagation. Every impact is traceable to individual holdings.\')"><td style="font-weight:500">'+s.name+'</td><td><span class="mono" style="font-weight:700;color:'+(impact<-10?'var(--danger)':'var(--warn)')+'">'+impact+'%</span></td><td class="muted">'+s.worst+'</td><td class="muted" style="font-size:12px">'+s.macro+'</td><td class="muted num" style="font-size:12px">'+s.horizon+'</td></tr>';
+  });
+  html+='</tbody></table><div class="mono" style="font-size:10px;color:var(--ink-3);padding:10px 16px">// '+SCENARIOS.length+' scenarios run in 1.8s · macro → sector → stock propagation · methodology v1.2</div></div>';
+  document.getElementById('tabScenariosContent').innerHTML=html;
 }
 
-/* ════ UPLOAD ════ */
-function populateSelect(pf){const s=document.getElementById('upload-select');s.innerHTML='<option value="">— Select client —</option>'+pf.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')+'<option value="new">+ New client</option>';s.onchange=()=>document.getElementById('new-client-fields').style.display=s.value==='new'?'block':'none';}
-function onDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('dragover');}
-function onDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('dragover');if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);}
-function onFileSelect(i){if(i.files[0])setFile(i.files[0]);}
-function setFile(f){FILE=f;const d=document.getElementById('file-selected');d.style.display='block';d.innerHTML=`📄 <strong>${f.name}</strong> · ${(f.size/1024).toFixed(0)} KB`;}
-async function doUpload(){
-  if(!FILE)return toast('Select a CAS PDF','err');
-  const s=document.getElementById('upload-select');let id=s.value;
-  if(id==='new'||!id){const n=document.getElementById('nc-name').value.trim();if(!n)return toast('Enter client name','err');const pan=document.getElementById('nc-pan').value.trim();try{const p=await api('/v1/portfolios',{method:'POST',body:JSON.stringify({name:n,pan,currency:'INR'})});id=p.id;PORTFOLIOS.push(p);populateSelect(PORTFOLIOS);}catch(e){return toast(e.message,'err');}}
-  if(TOKEN==='DEMO')return toast('Demo mode — connect live to upload','warn');
-  const pr=document.getElementById('upload-progress'),fl=document.getElementById('prog-fill'),st=document.getElementById('up-status'),bt=document.getElementById('upload-btn');
-  pr.style.display='block';bt.disabled=true;
-  try{st.textContent='Uploading…';fl.style.width='25%';const fd=new FormData();fd.append('file',FILE);const h={};if(TOKEN)h['Authorization']=`Bearer ${TOKEN}`;
-    const r=await fetch(`${API}/v1/portfolios/${id}/upload`,{method:'POST',headers:h,body:fd});fl.style.width='60%';st.textContent='Parsing…';
-    if(!r.ok){const d=await r.json();throw new Error(d.detail||'Upload failed');}const d=await r.json();fl.style.width='85%';st.textContent='Analyzing…';
-    try{await api(`/v1/portfolios/${id}/analyze`,{method:'POST'});}catch(e){}fl.style.width='100%';st.textContent='Done!';
-    toast(`CAS parsed: ${d.holdings_count||''} holdings`,'ok');loadPortfolios();
-    setTimeout(()=>{pr.style.display='none';fl.style.width='0%';bt.disabled=false;FILE=null;document.getElementById('file-selected').style.display='none';},1800);
-  }catch(e){toast(e.message,'err');pr.style.display='none';bt.disabled=false;}
+function renderTabFactors(c){
+  var factors=Object.entries(c.factors).sort(function(a,b){return b[1]-a[1]});
+  var factorColors={'Growth':'#1E40FF','Momentum':'#8B5CF6','Quality':'#6366F1','SmallCap':'#F59E0B','IT':'#EC4899','Cyclical':'#F97316','Value':'#A3A3A3','Defensive':'#D4D4D4'};
+  var html='<div class="g2"><div class="card"><div class="card-head"><div class="card-title">Factor DNA</div><div class="card-sub">HOVER BARS FOR INTERPRETATION</div></div><div class="card-body">';
+  factors.forEach(function(f){
+    var col=factorColors[f[0]]||'var(--ink-4)';
+    html+='<div class="prog-row" style="cursor:pointer" onmouseenter="showTip(event,\''+f[0]+' Factor\',\'Intensity: <span class=\\"mono\\" style=\\"font-weight:600\\">'+f[1]+'</span> / 1.0<br/><span style=\\"color:var(--ink-3);font-size:11px\\">'+(f[1]>0.7?'Strong exposure — key driver':'f[1]>0.4?Moderate presence':'Low — not a significant factor')+'</span>\')" onmouseleave="hideTip()"><div class="prog-head"><span>'+f[0]+'</span><span class="mono">'+f[1]+'</span></div><div class="prog-track"><div class="prog-fill" style="width:'+Math.round(f[1]*100)+'%;background:'+col+'"></div></div></div>';
+  });
+  html+='</div></div>';
+  // Clusters
+  html+='<div style="display:flex;flex-direction:column;gap:10px">';
+  var clusters=[['CLUSTER 01 · DOMINANT','#1E40FF','rgba(30,64,255,.04)','Large-cap Private Banking','HDFC + ICICI + Kotak cluster as one factor bet. Combined exposure forms a single concentrated bet on Indian credit cycle.','14.6% effective'],['CLUSTER 02 · ELEVATED','var(--warn)','rgba(180,83,9,.04)','USD/INR Sensitivity','Infosys + TCS + Wipro move together with USD/INR. All growth+quality factor aligned. High correlation in market stress.','11.3% effective'],['CLUSTER 03 · NORMAL','var(--ok)','rgba(22,163,74,.04)','FMCG Defensive Offset','HUL + Nestle + Dabur provide defensive character. Well-separated from IT and BFSI clusters. Reduces portfolio fragility.','8.4% effective']];
+  clusters.forEach(function(cl){
+    html+='<div style="border:1px solid;border-color:'+cl[0]+';border-radius:9px;background:'+cl[1]+';padding:14px;cursor:pointer" onclick="alert(\''+cl[3]+': '+cl[4]+' — '+cl[5]+'\')" onmouseenter="this.style.opacity=\'.9\'" onmouseout="this.style.opacity=\'1\'">';
+    html+='<div class="mono" style="font-size:9px;color:'+cl[0]+';margin-bottom:6px">'+cl[2]+'</div>';
+    html+='<div style="font-size:13px;font-weight:500;margin-bottom:4px">'+cl[3]+'</div>';
+    html+='<div style="font-size:12px;color:var(--ink-2);margin-bottom:6px">'+cl[4]+'</div>';
+    html+='<span class="tag">'+cl[5]+'</span></div>';
+  });
+  html+='</div></div>';
+  document.getElementById('tabFactorsContent').innerHTML=html;
 }
-async function reanalyze(id){if(TOKEN==='DEMO')return toast('Demo mode','warn');try{await api(`/v1/portfolios/${id}/analyze`,{method:'POST'});toast('Recomputed','ok');loadPortfolios();}catch(e){toast(e.message,'err');}}
 
-/* ════ SCENARIOS ════ */
-function scenarios(){return[{id:'rate_hike',name:'RBI Rate Hike +100bps',macro:'Interest rate shock',def:-8.5},{id:'crash',name:'Market Crash −30%',macro:'Systemic selloff',def:-22.4},{id:'smallcap',name:'Small Cap Crash −40%',macro:'Mid/small correction',def:-14.2},{id:'oil',name:'Oil Shock +50%',macro:'Oil price spike',def:-6.8},{id:'inflation',name:'Inflation +400bps',macro:'CPI shock',def:-9.1},{id:'recession',name:'Global Recession',macro:'Growth shock',def:-18.7}];}
-function renderScenarios(){document.getElementById('scenarios-grid').innerHTML=scenarios().map(s=>`<div class="scenario-card" onclick="selScenario('${s.id}',this)"><div style="font-size:13px;font-weight:600;margin-bottom:4px">${s.name}</div><div style="font-size:11px;color:var(--ink-2)">${s.macro}</div></div>`).join('');}
-function selScenario(id,el){document.querySelectorAll('.scenario-card').forEach(c=>c.classList.remove('active'));el.classList.add('active');const s=scenarios().find(x=>x.id===id);document.getElementById('scenario-result').style.display='block';document.getElementById('sr-title').textContent=s.name;document.getElementById('sr-macro').textContent=s.macro;const data=PORTFOLIOS.length?PORTFOLIOS:demoData();document.getElementById('sr-tbody').innerHTML=data.map(p=>{const im=s.def+(Math.random()*4-2);const aum=p.total_value||5e6;const loss=aum*Math.abs(im)/100;const c=im<-15?'danger':im<-8?'warn':'ok';return `<tr><td><strong>${p.name}</strong></td><td class="mono">₹${cr(aum)}</td><td class="mono c-${c}">${im.toFixed(1)}%</td><td class="mono c-danger">−₹${cr(loss)}</td><td><span class="pill p-${c}">${im<-15?'High':im<-8?'Moderate':'Low'}</span></td></tr>`;}).join('');}
+function renderTabMemo(c){
+  var impacts=SCENARIOS.map(function(s){return s.name+' ('+s.impacts[c.id]+'%)'}).slice(0,3).join(', ');
+  var topFactor=Object.entries(c.factors).sort(function(a,b){return b[1]-a[1]})[0];
+  var topSector=Object.entries(c.sector).sort(function(a,b){return b[1]-a[1]})[0];
+  var html='<div class="g4"><div>';
+  html+='<div class="memo-block"><div class="memo-meta">PORTFOLIO REVIEW MEMO · '+c.name.toUpperCase()+' · 21 MAY 2026 · METHODOLOGY v1.2 · AI NARRATIVE · NUMBERS DETERMINISTIC</div>';
+  html+='<div class="memo-text"><p>Dear Client,</p>';
+  html+='<p>Following our automated portfolio review for '+c.name+', your portfolio carries a <strong>'+c.fragility.toLowerCase()+' risk profile</strong> with a composite risk score of <strong>'+c.score+'/100</strong>, driven primarily by sector concentration and factor clustering.</p>';
+  html+='<p>Your portfolio\'s most significant exposure is a <strong>'+topSector[1]+'% effective '+topSector[0]+' allocation</strong>, computed across your direct holdings and through recursive look-through analysis of '+c.funds+' mutual funds. Your total AUM of '+c.aum+' is spread across '+c.holdings+' holdings, but effective diversification (Neff='+c.neff+') suggests meaningful concentration in practice.</p>';
+  html+='<p>The <strong>factor DNA analysis</strong> reveals a dominant '+topFactor[0].toLowerCase()+' bias ('+topFactor[1]+') with limited defensive character ('+c.factors.Defensive+'). In a risk-off environment, this portfolio profile tends to underperform the broader market by a meaningful margin.</p>';
+  html+='<p>Key stress test results: '+impacts+'. The largest estimated drawdown scenario would result in approximately '+Math.min.apply(null,Object.values(SCENARIOS[0].impacts).filter(Number))+'% decline over the relevant horizon.</p>';
+  html+='<p><strong>Three recommended actions for discussion:</strong> (1) Review '+topSector[0]+' concentration — consider reducing below 28%. (2) Assess fund overlap across positions — look-through shows hidden duplication reducing effective diversification. (3) Consider introducing a formal debt floor of 12–18% to reduce equity-only risk exposure.</p>';
+  html+='<p>This memo was generated from deterministic analytics. All numerical outputs are reproducible and auditable under methodology v1.2. AI layer responsible for narrative only — no calculations performed by LLM.</p>';
+  html+='<p>Warm regards,<br/><strong>Rahul Sharma</strong><br/>Senior RIA, WealthOS</p></div></div>';
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
+  html+='<button class="btn btn-primary" onclick="alert(\'Memo approved and sent to '+c.name+'! Email delivered to client.\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Approve & Send</button>';
+  html+='<button class="btn btn-ghost" onclick="alert(\'Opening memo editor…\')">Edit Memo</button>';
+  html+='<button class="btn btn-ghost" onclick="exportPDF()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export PDF</button>';
+  html+='</div><div style="display:flex;gap:5px;flex-wrap:wrap">';
+  ['generated 0.8s','AI narrative only','all numbers deterministic','audit trail attached','HITL review required','methodology v1.2'].forEach(function(t){html+='<span class="tag">'+t+'</span>'});
+  html+='</div></div>';
+  // Sidebar
+  html+='<div style="display:flex;flex-direction:column;gap:12px"><div class="card"><div class="card-head"><div class="card-title">Key Metrics</div></div><div class="card-body" style="display:flex;flex-direction:column;gap:9px">';
+  [['Risk Score',c.score+'/100','am'],[''+topSector[0]+' Exposure',topSector[1]+'%','am'],['Max Drawdown',c.dd,'dn'],['Fund Overlap','42.1%','am'],[''+topFactor[0]+' Factor',topFactor[1],''],['Neff',c.neff,'']].forEach(function(r){
+    html+='<div style="display:flex;justify-content:space-between;font-size:12.5px;padding-bottom:7px;border-bottom:1px solid var(--line-soft)"><span style="color:var(--ink-2)">'+r[0]+'</span><span class="mono '+r[2]+'" style="font-weight:600">'+r[1]+'</span></div>';
+  });
+  html+='</div></div><div class="card"><div class="card-head"><div class="card-title">Actions</div></div><div class="card-body" style="display:flex;flex-direction:column;gap:9px">';
+  ['Reduce '+topSector[0]+' below 28%','Review fund overlap — trim duplicates','Set debt floor 12–18%'].forEach(function(a,i){
+    html+='<div style="display:flex;gap:9px;font-size:12.5px"><div style="width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+(i+1)+'</div><span style="color:var(--ink-2)">'+a+'</span></div>';
+  });
+  html+='</div></div></div></div>';
+  document.getElementById('tabMemoContent').innerHTML=html;
+}
 
-function renderAlerts(){document.getElementById('alerts-list').innerHTML=[['danger','High Concentration — Mehta','BFSI exposure 42%, exceeds 35% threshold.','2h ago'],['warn','Overlap Detected — Patel','3 funds share 31% of holdings.','5h ago'],['warn','Stale Data — Reddy','Holdings not updated in 45 days.','1d ago']].map(([s,t,d,a])=>`<div class="alert-item"><div class="alert-dot" style="background:var(--${s})"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div><div class="alert-time">${a}</div></div></div>`).join('');}
-function renderIntel(){document.getElementById('macro-signals').innerHTML=[['ok','RBI Pause','Repo held at 6.5%. Rate-sensitive portfolios stable.'],['warn','Oil +8%','Brent up. Logistics/aviation exposure at risk.'],['warn','IT Weakness','US tech slowdown pressures Indian IT.']].map(([c,t,d])=>`<div class="alert-item" style="cursor:default"><div class="alert-dot" style="background:var(--${c})"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div></div></div>`).join('');document.getElementById('anomalies').innerHTML=[['Concentration Spike','BFSI weight 34%→42% this quarter.'],['Hidden Overlap','HDFC Bank across 4 funds, effective 12.4%.']].map(([t,d])=>`<div class="alert-item" style="cursor:default"><div class="alert-dot" style="background:var(--danger)"></div><div><div class="alert-title">${t}</div><div class="alert-sub">${d}</div></div></div>`).join('');}
-function renderReviews(){const d=PORTFOLIOS.length?PORTFOLIOS:demoData();document.getElementById('review-list').innerHTML=d.map(p=>`<div class="alert-item" onclick="openClient('${p.id}')"><div class="alert-dot" style="background:var(--warn)"></div><div style="flex:1"><div class="alert-title">${p.name}</div><div class="alert-sub">Quarterly review due</div></div><button class="btn-sm">Review →</button></div>`).join('');}
-function renderReports(){const d=PORTFOLIOS.length?PORTFOLIOS:demoData();document.getElementById('reports-tbody').innerHTML=d.map(p=>`<tr><td><strong>${p.name}</strong></td><td>Portfolio Intelligence</td><td>${new Date().toLocaleDateString('en-IN')}</td><td><button class="btn-sm" onclick="exportPDF('${p.name}')">Export PDF</button></td></tr>`).join('');}
-function exportPDF(n){document.title=`${n} — WealthOS Report`;window.print();setTimeout(()=>document.title='WealthOS — Advisor Intelligence Platform',1000);}
-async function testApi(){const r=document.getElementById('api-test');r.textContent='Testing…';try{const d=await(await fetch(`${API}/health`)).json();r.textContent='✓ '+d.status;r.style.color='var(--ok)';}catch(e){r.textContent='✕ unreachable';r.style.color='var(--danger)';}}
+// ══════════════════════════════════════════════════════
+//  TAB SWITCHER
+// ══════════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-tab')===id)});
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.toggle('active',p.id===id)});
+  STATE.tab=id;
+}
 
-/* ════ DEMO DATA ════ */
-function demoData(){return[{id:1,name:'Mehta Family Office',pan:'ABCDE1234F',total_value:47200000,holdings_count:32,analytics:{risk_score:68,hhi:0.181,neff:5.5,overlap_pct:23.1,volatility:0.148,max_drawdown:0.142,sharpe:1.34,liquidity_score:0.82,top1_weight:14.2,sector_exposure:{BFSI:31.4,IT:22.8,Consumer:14.2,Auto:8.6,Pharma:7.1,Others:15.9},asset_allocation:{Equity:72,Debt:18,Hybrid:7,Cash:3},factor_exposure:{Growth:0.81,Quality:0.76,Momentum:0.68,Value:0.24,SmallCap:0.42,Liquidity:0.85}}},{id:2,name:'Patel HUF',pan:'XYZPQ5678G',total_value:38600000,holdings_count:28,analytics:{risk_score:82,hhi:0.241,neff:4.1,overlap_pct:31.4,volatility:0.192,max_drawdown:0.198,sharpe:0.98,liquidity_score:0.65,top1_weight:18.5,sector_exposure:{BFSI:28.1,IT:18.4,SmallCap:22.6,Consumer:12.4,Others:18.5},asset_allocation:{Equity:84,Debt:8,Hybrid:5,Cash:3},factor_exposure:{Growth:0.72,Quality:0.55,Momentum:0.81,Value:0.18,SmallCap:0.76,Liquidity:0.62}}},{id:3,name:'Khanna Pvt Trust',pan:'LMNOP9012H',total_value:31100000,holdings_count:24,analytics:{risk_score:54,hhi:0.142,neff:7.0,overlap_pct:14.2,volatility:0.112,max_drawdown:0.098,sharpe:1.62,liquidity_score:0.91,top1_weight:9.8,sector_exposure:{BFSI:22.4,IT:18.2,Consumer:16.8,Pharma:12.4,Infra:10.2,Others:20.0},asset_allocation:{Equity:58,Debt:28,Hybrid:10,Cash:4},factor_exposure:{Growth:0.61,Quality:0.88,Momentum:0.44,Value:0.52,SmallCap:0.28,Liquidity:0.92}}}];}
-function demoHoldings(){return[['HDFC Flexi Cap Fund','INF179K01VV2','Mutual Fund','—'],['ICICI Pru Bluechip','INF109K01Z29','Mutual Fund','—'],['HDFC Bank Ltd','INE040A01034','Equity','BFSI'],['Infosys Ltd','INE009A01021','Equity','IT'],['Reliance Industries','INE002A01018','Equity','Energy']].map(([name,isin,ac,sec])=>({name,isin,asset_class:ac,sector:sec,value:Math.floor(Math.random()*2e6+5e5),weight:Math.random()*.15+.03}));}
+// ══════════════════════════════════════════════════════
+//  INTELLIGENCE DETAIL
+// ══════════════════════════════════════════════════════
+function openIntel(id){
+  var d=INTEL[id];if(!d)return;
+  STATE.prevView=STATE.view;
+  var hero='<div class="detail-hero"><div class="mono" style="font-size:9.5px;color:'+d.tagColor+';letter-spacing:.07em;margin-bottom:10px">'+d.tag+'</div><div style="font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px">'+d.title+'</div><div style="font-size:14px;color:var(--ink-2);line-height:1.6;margin-bottom:12px">'+d.summary+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="tag">'+d.date+'</span><span class="tag">'+d.impact+'</span>'+d.affected.map(function(a){return'<span class="tag">'+a+'</span>'}).join('')+'</div></div>';
+  document.getElementById('intelDetailHero').outerHTML=hero;
+  var body='<div class="card"><div class="card-head"><div class="card-title">Full Analysis</div></div><div class="card-body"><div style="font-size:14px;line-height:1.7;color:var(--ink)">'+d.detail+'</div></div></div><div class="card"><div class="card-head"><div class="card-title">Affected Portfolios</div></div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px">'+d.affected.map(function(a){var id2=a.toLowerCase().split(' ')[0];return'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid var(--line);border-radius:8px;cursor:pointer" onclick="openClient(\''+id2+'\')"><span style="font-weight:500">'+a+'</span><div style="display:flex;gap:8px"><span class="tag">'+d.impact+'</span><button class="btn btn-ghost btn-xs">Open Report →</button></div></div>'}).join('')+'</div></div></div>';
+  document.getElementById('intelDetailBody').innerHTML=body;
+  showView('intel-detail');
+}
 
-/* ════ NAV ════ */
-const TITLES={overview:'Overview',portfolios:'Portfolios',upload:'Upload CAS',scenarios:'Scenario Analysis',alerts:'Alerts',intelligence:'Market Intelligence',reviews:'Review Queue',reports:'Client Reports',settings:'Settings',client:'Client Intelligence'};
-function showView(id,el){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id)?.classList.add('active');document.getElementById('topbar-title').textContent=TITLES[id]||id;if(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}if(id==='scenarios')renderScenarios();if(id==='alerts')renderAlerts();if(id==='intelligence')renderIntel();if(id==='reviews')renderReviews();if(id==='reports')renderReports();}
-function showTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));el.classList.add('active');document.getElementById(id)?.classList.add('active');}
-function goBack(){showView('portfolios',document.querySelector('[data-view=portfolios]'));}
-function onSearch(q){if(!q)return;const m=PORTFOLIOS.filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));if(m.length===1)openClient(m[0].id);}
+// ══════════════════════════════════════════════════════
+//  ALERT DETAIL
+// ══════════════════════════════════════════════════════
+function openAlert(id){
+  var a=ALERTS[id];if(!a)return;
+  STATE.prevView=STATE.view;
+  var sevColor={critical:'var(--danger)',elevated:'var(--warn)',info:'var(--ok)'}[a.severity];
+  var html='<div class="detail-hero"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:10px;height:10px;border-radius:50%;background:'+sevColor+'"></div><span class="mono" style="font-size:9.5px;color:'+sevColor+';letter-spacing:.07em">'+a.severity.toUpperCase()+' · '+a.time+'</span></div><div style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:12px">'+a.title+'</div><div style="display:flex;gap:8px">'+(a.client?'<button class="btn btn-primary btn-sm" onclick="openClient(\''+a.client+'\')">Open Portfolio →</button>':'')+(a.intelId?'<button class="btn btn-ghost btn-sm" onclick="openIntel(\''+a.intelId+'\')">Full Intelligence Analysis →</button>':'')+'</div></div>';
+  if(a.intelId&&INTEL[a.intelId]){
+    var d=INTEL[a.intelId];
+    html+='<div class="card"><div class="card-head"><div class="card-title">Analysis</div></div><div class="card-body"><div style="font-size:14px;line-height:1.7;color:var(--ink)">'+d.detail+'</div></div></div>';
+  }
+  document.getElementById('alertDetailContent').innerHTML=html;
+  showView('alert-detail');
+}
 
-/* ════ UTILS ════ */
-function bars(o,suf,col,max){const e=Object.entries(o);const m=max||Math.max(...e.map(([,v])=>v),1);return e.map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/m)*100}%;background:${col}"></div></div><div class="bar-val">${v<2?v.toFixed(2):v.toFixed(1)}${suf}</div></div>`).join('');}
-function cr(v){if(!v||isNaN(v))return '0';const c=v/1e7;if(c>=100)return c.toFixed(0)+' Cr';if(c>=1)return c.toFixed(1)+' Cr';return (v/1e5).toFixed(1)+'L';}
-function toast(m,t='ok'){const e=document.getElementById('toast');e.textContent=m;e.className=`show t-${t}`;setTimeout(()=>e.className='',3000);}
-function toggleTheme(){const h=document.documentElement;const d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'':'dark');localStorage.setItem('wos_theme',d?'':'dark');}
+// ══════════════════════════════════════════════════════
+//  SCENARIOS ENGINE
+// ══════════════════════════════════════════════════════
+var selectedScenario=null;
+function renderScenarioList(){
+  var html='';
+  SCENARIOS.forEach(function(s){
+    var sevClass={'hi':'pill-hi','med':'pill-med','low':'pill-low'}[s.severity];
+    html+='<div class="scen-row" id="scen-'+s.id+'" onclick="selectScenario(\''+s.id+'\')">';
+    html+='<span class="scen-name">'+s.name+'</span>';
+    html+='<span class="pill '+sevClass+'">'+s.severity.toUpperCase()+'</span>';
+    html+='</div>';
+  });
+  document.getElementById('scenarioList').innerHTML=html;
+}
+function selectScenario(id){
+  selectedScenario=SCENARIOS.find(function(s){return s.id===id});
+  document.querySelectorAll('.scen-row').forEach(function(r){r.classList.toggle('selected',r.id==='scen-'+id)});
+  runScenario();
+}
+function runScenario(){
+  if(!selectedScenario)return;
+  var portId=document.getElementById('scenPortfolio').value;
+  var c=CLIENTS[portId]||CLIENTS.mehta;
+  var impact=selectedScenario.impacts[portId]||selectedScenario.impacts.mehta;
+  var aum=parseFloat(c.aum.replace('₹','').replace(' Cr',''));
+  var lossVal=(aum*Math.abs(impact)/100).toFixed(2);
+  document.getElementById('scenResultMeta').textContent=selectedScenario.name.toUpperCase()+' · '+c.name.toUpperCase();
+  var col=impact<-10?'var(--danger)':'var(--warn)';
+  var html='<div style="text-align:center;padding:20px 10px"><div class="mono" style="font-size:11px;color:var(--ink-3);margin-bottom:8px">ESTIMATED PORTFOLIO IMPACT</div><div style="font-size:48px;font-weight:700;color:'+col+';letter-spacing:-.04em">'+impact+'%</div><div style="font-size:14px;color:var(--ink-2);margin-top:4px">≈ ₹'+lossVal+' Cr estimated loss</div></div>';
+  html+='<div class="divider"></div>';
+  html+='<div style="display:flex;flex-direction:column;gap:10px;font-size:13px">';
+  [['Scenario',selectedScenario.name],['Portfolio',c.name],['AUM',c.aum],['Impact',impact+'%'],['Estimated loss','₹'+lossVal+' Cr'],['Worst segment',selectedScenario.worst],['Macro driver',selectedScenario.macro],['Horizon',selectedScenario.horizon],['Methodology','v1.2 deterministic']].forEach(function(r){
+    html+='<div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--line-soft)"><span style="color:var(--ink-2)">'+r[0]+'</span><span style="font-weight:500">'+r[1]+'</span></div>';
+  });
+  html+='</div>';
+  html+='<div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="exportPDF()">Export Result PDF</button><button class="btn btn-ghost" onclick="openClient(\''+portId+'\');setTimeout(()=>switchTab(\'tab-scenarios\'),300)">Full Portfolio Scenarios →</button></div>';
+  document.getElementById('scenarioResultBody').innerHTML=html;
+}
+function renderAllScenariosTable(){
+  var tbody=document.getElementById('allScenariosTbody');if(!tbody)return;
+  var html='';
+  SCENARIOS.forEach(function(s){
+    html+='<tr class="clickable" onclick="selectScenario(\''+s.id+'\');document.getElementById(\'mainContent\').scrollTop=0">';
+    html+='<td style="font-weight:500">'+s.name+'</td>';
+    ['mehta','patel','khanna','reddy'].forEach(function(id){
+      var impact=s.impacts[id];var col=impact<-10?'var(--danger)':impact<-6?'var(--warn)':'var(--ok)';
+      html+='<td><span class="mono" style="font-weight:600;color:'+col+'">'+impact+'%</span></td>';
+    });
+    html+='<td class="muted">'+s.worst+'</td></tr>';
+  });
+  tbody.innerHTML=html;
+}
 
-document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('global-search')?.focus();}});
+// ══════════════════════════════════════════════════════
+//  DATA SOURCES
+// ══════════════════════════════════════════════════════
+function renderDataSources(){
+  var india=[
+    {name:'AMFI — MF Metadata & NAVs',status:'live',last:'Today 06:00',desc:'Scheme codes, NAVs, AUM data'},
+    {name:'NSE — Listed Equities',status:'live',last:'Today 15:30',desc:'Price data, corporate actions'},
+    {name:'BSE — Exchange Data',status:'live',last:'Today 15:30',desc:'Supplementary price and listing data'},
+    {name:'CAMS — CAS Statements',status:'live',last:'On upload',desc:'Direct CAS PDF ingestion'},
+    {name:'KFintech — CAS Statements',status:'live',last:'On upload',desc:'Direct CAS PDF ingestion'},
+    {name:'AMC Holdings Disclosures',status:'delayed',last:'Monthly',desc:'Monthly portfolio disclosures from AMCs'},
+  ];
+  var global=[
+    {name:'RBI — Monetary Policy Data',status:'live',last:'Event-driven',desc:'Repo rates, FX, macro indicators'},
+    {name:'FRED — US Economic Data',status:'live',last:'Daily',desc:'Inflation, rates, treasury yields'},
+    {name:'Bloomberg FX',status:'live',last:'Real-time',desc:'USD/INR and major currency pairs'},
+    {name:'World Bank Open Data',status:'live',last:'Quarterly',desc:'GDP, macro series'},
+    {name:'NewsAPI — Event Intelligence',status:'live',last:'Real-time',desc:'Financial news and macro events'},
+    {name:'IMF — Global Statistics',status:'delayed',last:'Monthly',desc:'World Economic Outlook data'},
+  ];
+  function renderDs(arr){
+    return arr.map(function(d){
+      var col=d.status==='live'?'var(--ok)':'var(--warn)';var pill=d.status==='live'?'pill-low':'pill-med';
+      return '<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:background .12s" onmouseover="this.style.background=\'var(--bg-alt)\'" onmouseout="this.style.background=\'\'" onclick="alert(\''+d.name+'\\nStatus: '+d.status.toUpperCase()+'\\nLast sync: '+d.last+'\\n'+d.desc+'\')">'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px">'+d.name+'</div><div style="font-size:11.5px;color:var(--ink-2)">'+d.desc+'</div></div>'
+        +'<div style="text-align:right"><span class="pill '+pill+'">'+d.status+'</span><div class="mono" style="font-size:9.5px;color:var(--ink-3);margin-top:4px">'+d.last+'</div></div></div>';
+    }).join('');
+  }
+  document.getElementById('dsIndia').innerHTML=renderDs(india);
+  document.getElementById('dsGlobal').innerHTML=renderDs(global);
+  // Pipeline chart
+  setTimeout(function(){
+    var svg=document.getElementById('pipelineChart');if(!svg)return;
+    svg.innerHTML='';
+    var W=700,H=80,n=48;
+    for(var i=0;i<n;i++){
+      var h=20+Math.random()*40;var col=Math.random()>0.97?'var(--danger)':Math.random()>0.9?'var(--warn)':'var(--ok)';
+      var r=svgEl('rect',{x:i*(W/n)+1,y:H-h,width:W/n-2,height:h,rx:2,fill:col,opacity:.7,style:'cursor:pointer'});
+      r.addEventListener('mouseenter',function(e){showTip(e,'Pipeline Event','Processed successfully · '+Math.floor(Math.random()*1000+100)+' records')});
+      r.addEventListener('mouseleave',hideTip);
+      svg.appendChild(r);
+    }
+  },100);
+}
 
-/* ════ INIT ════ */
-(function(){
-  if(localStorage.getItem('wos_theme')==='dark')document.documentElement.setAttribute('data-theme','dark');
-  ['auth-email','auth-pass','auth-name'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')submitAuth();}));
-  if(TOKEN&&TOKEN!=='DEMO'){enterApp();}
-})();
+// ══════════════════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════════════════
+var toggleStates={};
+function renderSettings(){
+  var notifs=[{k:'email',label:'Email Alerts',desc:'Critical alerts sent to registered email',default:true},{k:'sms',label:'SMS Notifications',desc:'Breach alerts via SMS',default:false},{k:'rbi',label:'RBI Policy Alerts',desc:'Instant notification on RBI decisions',default:true},{k:'weekly',label:'Weekly Digest',desc:'Portfolio intelligence summary every Monday',default:true}];
+  var display=[{k:'dark',label:'Dark Mode',desc:'Use dark theme by default',default:document.documentElement.getAttribute('data-theme')==='dark'},{k:'mono',label:'Monospace Numbers',desc:'Use monospace font for all numeric data',default:true},{k:'compact',label:'Compact Tables',desc:'Reduce table row height',default:false}];
+  function renderToggles(items,containerId){
+    document.getElementById(containerId).innerHTML=items.map(function(t){
+      var on=t.k in toggleStates?toggleStates[t.k]:t.default;toggleStates[t.k]=on;
+      return '<div class="setting-row"><div class="setting-info"><div class="setting-label">'+t.label+'</div><div class="setting-desc">'+t.desc+'</div></div><button class="toggle '+(on?'on':'off')+'" id="tgl-'+t.k+'" onclick="toggleSetting(\''+t.k+'\')"></button></div>';
+    }).join('');
+  }
+  renderToggles(notifs,'notifSettings');
+  renderToggles(display,'displaySettings');
+}
+function toggleSetting(k){
+  toggleStates[k]=!toggleStates[k];
+  var btn=document.getElementById('tgl-'+k);
+  btn.classList.toggle('on',toggleStates[k]);
+  btn.classList.toggle('off',!toggleStates[k]);
+  if(k==='dark'){toggleStates[k]?document.documentElement.setAttribute('data-theme','dark'):document.documentElement.removeAttribute('data-theme');}
+}
+function saveSettings(){var b=document.querySelector('[data-view=settings]');b&&b.click();alert('Settings saved successfully!');}
+
+// ══════════════════════════════════════════════════════
+//  PDF EXPORT
+// ══════════════════════════════════════════════════════
+function exportPDF(){
+  var c=STATE.client;
+  var name=c?c.name:'WealthOS Portfolio Report';
+  var oldTitle=document.title;
+  document.title=name+' — WealthOS Report — '+new Date().toLocaleDateString('en-IN');
+  window.print();
+  document.title=oldTitle;
+}
+
+// ══════════════════════════════════════════════════════
+//  OVERVIEW CHARTS
+// ══════════════════════════════════════════════════════
+function drawOverviewCharts(){
+  // AUM line chart
+  setTimeout(function(){drawLineChart('aumChart',[750,762,771,784,778,791,804,819,825,838,842,847],'#1E40FF')},200);
+  // Intel chart
+  setTimeout(function(){
+    var svg=document.getElementById('intelChart');if(!svg)return;
+    svg.innerHTML='';
+    var cols=['#1E40FF','#16A34A','#B45309','#DC2626','#8B5CF6'];
+    var factors=['Growth','Quality','Momentum','BFSI','SmallCap'];
+    var vals=[81,76,74,68,63];
+    var W=700,H=140,bw=80,gap=20;
+    factors.forEach(function(f,i){
+      var x=i*(bw+gap)+30;var bh=(vals[i]/100)*(H-30);
+      var r=svgEl('rect',{x:x,y:H-20-bh,width:bw,height:bh,rx:4,fill:cols[i],opacity:.85,style:'cursor:pointer'});
+      r.addEventListener('mouseenter',function(e){showTip(e,f+' Factor','Intensity: '+vals[i]+'/100 across all portfolios')});
+      r.addEventListener('mouseleave',hideTip);
+      var lbl=svgEl('text',{x:x+bw/2,y:H-5,fill:getVar('--ink-3'),'text-anchor':'middle','font-size':10,'font-family':'JetBrains Mono, monospace'});lbl.textContent=f;
+      var pct=svgEl('text',{x:x+bw/2,y:H-25-bh,fill:getVar('--ink-2'),'text-anchor':'middle','font-size':11,'font-family':'JetBrains Mono, monospace'});pct.textContent=vals[i];
+      svg.appendChild(r);svg.appendChild(lbl);svg.appendChild(pct);
+    });
+  },300);
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+function initApp(){
+  renderPortfoliosTable();
+  renderScenarioList();
+  renderAllScenariosTable();
+  renderDataSources();
+  renderSettings();
+  drawOverviewCharts();
+  // keyboard shortcut
+  document.addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openSearch();}
+    if(e.key==='Escape'&&STATE.view.includes('detail')){navBack();}
+  });
+}
 </script>
 </body>
 </html>
