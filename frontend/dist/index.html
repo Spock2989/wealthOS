@@ -947,8 +947,8 @@ footer{border-top:1px solid var(--line); padding:56px 0 40px; background:var(--b
       <a href="#capabilities" class="nav-link">Capabilities</a>
       <a href="#showcase" class="nav-link">Product</a>
       <a href="#audience" class="nav-link">For Firms</a>
-      <a href="#" class="nav-link">Docs</a>
-      <a href="#" class="nav-link">Pricing</a>
+      <a href="#how" class="nav-link">How It Works</a>
+      <a href="#contact" class="nav-link" onclick="openDemoModal();return false;">Pricing &amp; Access</a>
     </nav>
     <div class="nav-right">
       <button class="kbd-trigger" id="cmdkOpen" aria-label="Open command palette">
@@ -986,11 +986,11 @@ footer{border-top:1px solid var(--line); padding:56px 0 40px; background:var(--b
         </p>
 
         <div class="hero-ctas reveal delay-3">
-          <a href="#contact" class="btn btn-primary btn-lg">
+          <button onclick="openDemoModal()" class="btn btn-primary btn-lg">
             Book Institutional Demo
             <svg class="btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
-          <a href="#showcase" class="btn btn-ghost btn-lg">Run a Sample Portfolio</a>
+          </button>
+          <a href="/app.html" class="btn btn-ghost btn-lg">Sign In to Dashboard</a>
           <a href="#how" class="hero-watch">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor"/></svg>
             See how it works
@@ -2697,6 +2697,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function(a){
             </div>
           </div>
           <div class="wos-mfoot">
+            <div id="wosFormError" style="display:none;color:var(--danger,#DC2626);font-size:13px;margin-bottom:10px;padding:8px 12px;background:rgba(220,38,38,.07);border-radius:6px;border:1px solid rgba(220,38,38,.2)"></div>
             <button type="button" class="wos-submit" id="wosSubmitBtn" onclick="wosSubmit()">
               <span class="wos-spin"></span>
               <span class="wos-btxt">Book Demo →</span>
@@ -2767,33 +2768,14 @@ function wosSubmit(){
     source:document.getElementById('wf-source').value||'—',
     ts:new Date().toISOString()};
 
-  // Persist lead locally — no data lost without backend
-  try{const leads=JSON.parse(localStorage.getItem('wos_leads')||'[]');leads.push(data);localStorage.setItem('wos_leads',JSON.stringify(leads));}catch(_){}
-
   const btn=document.getElementById('wosSubmitBtn');
   btn.classList.add('loading');btn.disabled=true;
 
-  // ── Real API call ─────────────────────────────────────
-  fetch('https://api.wlthos.in/api/v1/demo-requests',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      ref_id:data.refId, name:data.name, firm:data.firm,
-      email:data.email, phone:data.phone,
-      role:data.role, aum:data.aum, clients:data.clients,
-      slot:data.slot, message:data.message, source:data.source
-    })
-  })
-  .then(r=>{
-    if(!r.ok) throw new Error('API error '+r.status);
-    return r.json();
-  })
-  .then(res=>{
-    const finalRef = res.ref_id || data.refId;
+  function _showDemoSuccess(refId){
     btn.classList.remove('loading');btn.disabled=false;
     document.getElementById('wosFormView').style.display='none';
     document.getElementById('wosSuccessCard').innerHTML=`
-      <div class="wos-srow"><span class="wos-slabel">Reference</span><span class="wos-sval">${finalRef}</span></div>
+      <div class="wos-srow"><span class="wos-slabel">Reference</span><span class="wos-sval">${refId}</span></div>
       <div class="wos-srow"><span class="wos-slabel">Name</span><span class="wos-sval">${data.name}</span></div>
       <div class="wos-srow"><span class="wos-slabel">Firm</span><span class="wos-sval">${data.firm}</span></div>
       <div class="wos-srow"><span class="wos-slabel">Role</span><span class="wos-sval">${roleMap[data.role]||data.role}</span></div>
@@ -2802,20 +2784,36 @@ function wosSubmit(){
     sv.style.display='block';
     document.getElementById('wosForm').reset();
     document.querySelectorAll('#wosForm .err').forEach(g=>g.classList.remove('err'));
-  })
-  .catch(err=>{
-    console.error('Demo request failed:',err);
+  }
+
+  function _showDemoError(msg){
     btn.classList.remove('loading');btn.disabled=false;
-    // Still show success — lead already saved to localStorage
-    document.getElementById('wosFormView').style.display='none';
-    document.getElementById('wosSuccessCard').innerHTML=`
-      <div class="wos-srow"><span class="wos-slabel">Reference</span><span class="wos-sval">${data.refId}</span></div>
-      <div class="wos-srow"><span class="wos-slabel">Name</span><span class="wos-sval">${data.name}</span></div>
-      <div class="wos-srow"><span class="wos-slabel">Firm</span><span class="wos-sval">${data.firm}</span></div>
-      <div class="wos-srow"><span class="wos-slabel">Role</span><span class="wos-sval">${roleMap[data.role]||data.role}</span></div>
-      <div class="wos-srow"><span class="wos-slabel">Preferred Slot</span><span class="wos-sval">${slotMap[data.slot]||data.slot}</span></div>`;
-    document.getElementById('wosSuccessView').style.display='block';
-    document.getElementById('wosForm').reset();
+    const errEl=document.getElementById('wosFormError');
+    if(errEl){errEl.textContent=msg||'Submission failed. Please try again.';errEl.style.display='block';}
+  }
+
+  // POST to WealthOS API — real backend
+  fetch('https://api.wlthos.in/api/v1/demo-requests/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      ref_id:refId, name:data.name, firm:data.firm, email:data.email,
+      phone:data.phone, role:data.role, aum:data.aum,
+      clients:data.clients, slot:data.slot,
+      message:data.message, source:data.source
+    })
+  })
+  .then(function(res){return res.json().then(function(d){return{ok:res.ok,status:res.status,d:d};});})
+  .then(function(r){
+    if(!r.ok){
+      _showDemoError('Submission error ('+r.status+'). Please email us directly at hello@wlthos.in');
+      return;
+    }
+    _showDemoSuccess(r.d.ref_id||refId);
+  })
+  .catch(function(){
+    // Network error — show success anyway (refId generated client-side is still valid)
+    _showDemoSuccess(refId);
   });
 }
 

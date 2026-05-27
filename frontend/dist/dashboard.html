@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>WealthOS — Advisor Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='18' height='18' rx='3' fill='none' stroke='%230A0A0A' stroke-width='2'/%3E%3Crect x='12' y='12' width='18' height='18' rx='3' fill='%231E40FF'/%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;550;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── EXACT tokens from wealthos landing page ── */
+:root{
+  --bg:#FFFFFF;--bg-alt:#FAFAFA;--bg-warm:#FBFBF9;--surface:#FFFFFF;
+  --ink:#0A0A0A;--ink-soft:#111111;--ink-2:#525252;--ink-3:#A3A3A3;--ink-4:#D4D4D4;
+  --line:#E5E5E5;--line-soft:#EFEFEF;
+  --accent:#1E40FF;--accent-dim:rgba(30,64,255,.08);--accent-2:rgba(30,64,255,.16);
+  --ok:#16A34A;--warn:#B45309;--danger:#DC2626;
+  --radius:6px;--radius-lg:10px;
+  --shadow-1:0 1px 0 rgba(10,10,10,.02),0 1px 2px rgba(10,10,10,.03),0 4px 12px -4px rgba(10,10,10,.04),0 16px 32px -16px rgba(10,10,10,.05);
+  --shadow-2:0 1px 0 rgba(10,10,10,.03),0 2px 4px rgba(10,10,10,.04),0 8px 16px -6px rgba(10,10,10,.06),0 24px 48px -20px rgba(10,10,10,.08);
+  --ease:cubic-bezier(0.32,0.72,0,1);
+  --sidebar:224px;
+}
+[data-theme="dark"]{
+  --bg:#0A0A0A;--bg-alt:#0F0F0F;--bg-warm:#101010;--surface:#141414;
+  --ink:#FAFAFA;--ink-soft:#F5F5F5;--ink-2:#A3A3A3;--ink-3:#737373;--ink-4:#404040;
+  --line:#262626;--line-soft:#1F1F1F;
+  --accent:#5B7CFF;--accent-dim:rgba(91,124,255,.10);--accent-2:rgba(91,124,255,.22);
+  --shadow-1:0 1px 0 rgba(0,0,0,.4),0 4px 12px -4px rgba(0,0,0,.5);
+  --shadow-2:0 1px 0 rgba(0,0,0,.4),0 8px 24px -6px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-feature-settings:"ss01","ss03","cv11","calt";
+  background:var(--bg-alt);color:var(--ink);font-size:14px;line-height:1.55;
+  letter-spacing:-0.005em;-webkit-font-smoothing:antialiased;
+  height:100%;overflow:hidden;
+}
+::selection{background:var(--accent);color:#fff}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"calt" 0;letter-spacing:0}
+
+/* ── APP SHELL ── */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--bg);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  height:100vh;overflow-y:auto;overflow-x:hidden;
+  position:relative;z-index:20;
+}
+.sidebar::-webkit-scrollbar{display:none}
+.sidebar-brand{
+  display:flex;align-items:center;gap:9px;
+  padding:0 16px;height:56px;border-bottom:1px solid var(--line);
+  text-decoration:none;color:var(--ink);font-weight:550;letter-spacing:-.01em;
+  flex-shrink:0;
+}
+.brand-mark{width:18px;height:18px;position:relative;flex-shrink:0}
+.brand-mark::before,.brand-mark::after{content:"";position:absolute;inset:0;border:1px solid var(--ink);border-radius:2px}
+.brand-mark::after{transform:translate(4px,4px);border-color:var(--accent);background:var(--accent)}
+.brand-name{font-size:14px}
+.brand-name b{font-weight:600}
+.brand-suffix{color:var(--ink-3);font-weight:400;margin-left:1px;font-size:13px}
+
+.sidebar-nav{flex:1;padding:8px 8px;display:flex;flex-direction:column;gap:1px}
+.nav-section-label{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);
+  letter-spacing:.08em;padding:12px 8px 6px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:var(--radius);
+  font-size:13px;font-weight:450;color:var(--ink-2);
+  cursor:pointer;text-decoration:none;
+  transition:background .15s var(--ease),color .15s var(--ease);
+  position:relative;
+}
+.nav-item:hover{background:var(--bg-alt);color:var(--ink)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent);font-weight:500}
+.nav-item.active .nav-icon{color:var(--accent)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;color:var(--ink-3)}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:4px;bottom:4px;
+  width:2px;background:var(--accent);border-radius:0 2px 2px 0;
+}
+.nav-badge{
+  margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:1px 6px;border-radius:100px;background:var(--danger);color:#fff;
+  font-weight:500;
+}
+.nav-badge.amber{background:var(--warn)}
+
+.sidebar-footer{
+  border-top:1px solid var(--line);padding:12px 12px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.advisor-chip{
+  display:flex;align-items:center;gap:10px;padding:8px;
+  border-radius:var(--radius);cursor:pointer;
+  transition:background .15s;
+}
+.advisor-chip:hover{background:var(--bg-alt)}
+.advisor-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;flex-shrink:0;
+}
+.advisor-name{font-size:12.5px;font-weight:500;color:var(--ink)}
+.advisor-role{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);margin-top:1px}
+.theme-toggle{
+  width:28px;height:28px;border:1px solid var(--line);border-radius:6px;
+  background:var(--surface);cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;color:var(--ink-2);
+  transition:border-color .15s,color .15s;flex-shrink:0;
+}
+.theme-toggle:hover{border-color:var(--ink-3);color:var(--ink)}
+
+/* ── MAIN AREA ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* top bar */
+.topbar{
+  height:56px;border-bottom:1px solid var(--line);
+  background:var(--bg);
+  display:flex;align-items:center;gap:12px;padding:0 24px;
+  flex-shrink:0;position:relative;z-index:10;
+}
+.topbar-title{font-size:15px;font-weight:550;color:var(--ink-soft);letter-spacing:-.01em;flex:1}
+.topbar-subtitle{font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.topbar-left{display:flex;flex-direction:column}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  height:32px;padding:0 10px;
+  border:1px solid var(--line);border-radius:7px;
+  background:var(--bg-alt);font-size:13px;color:var(--ink-2);
+  cursor:pointer;transition:border-color .15s;min-width:180px;
+}
+.search-box:hover{border-color:var(--ink-3)}
+.search-box svg{opacity:.5;flex-shrink:0}
+
+/* ── CONTENT AREA ── */
+.content{flex:1;overflow-y:auto;padding:24px}
+.content::-webkit-scrollbar{width:5px}
+.content::-webkit-scrollbar-track{background:transparent}
+.content::-webkit-scrollbar-thumb{background:var(--ink-4);border-radius:3px}
+
+/* ── VIEWS (JS toggled) ── */
+.view{display:none}
+.view.active{display:block}
+
+/* ── BUTTONS (exact from landing) ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:34px;padding:0 14px;border-radius:7px;
+  font-family:inherit;font-size:13px;font-weight:500;letter-spacing:-.005em;
+  cursor:pointer;white-space:nowrap;border:1px solid transparent;
+  transition:transform .12s var(--ease),background .15s,border-color .15s,color .15s,box-shadow .2s;
+  text-decoration:none;
+}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn-primary:hover{background:#000;box-shadow:0 0 0 3px rgba(10,10,10,.06),0 4px 12px -2px rgba(10,10,10,.2)}
+[data-theme="dark"] .btn-primary{background:#fff;color:#0A0A0A}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{background:var(--bg-alt);border-color:var(--ink-3)}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-accent:hover{box-shadow:0 0 0 3px var(--accent-dim)}
+.btn-sm{height:28px;padding:0 10px;font-size:12px;border-radius:6px}
+.btn-icon{width:32px;height:32px;padding:0;border-radius:7px}
+
+/* ── CARDS ── */
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius-lg);overflow:hidden;
+}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--line);
+}
+.card-title{font-size:13.5px;font-weight:550;color:var(--ink);letter-spacing:-.008em}
+.card-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.06em}
+.card-body{padding:18px}
+.card-body-flush{padding:0}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius-lg);padding:18px;
+  transition:box-shadow .2s,border-color .2s;cursor:default;
+}
+.stat-card:hover{box-shadow:var(--shadow-1);border-color:var(--ink-4)}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.08em;margin-bottom:8px}
+.stat-val{font-size:24px;font-weight:550;color:var(--ink);letter-spacing:-.03em;line-height:1}
+.stat-sub{font-size:11.5px;color:var(--ink-2);margin-top:6px}
+.stat-delta{font-family:'JetBrains Mono',monospace;font-size:11px}
+.stat-delta.up{color:var(--ok)}
+.stat-delta.dn{color:var(--danger)}
+.stat-delta.warn{color:var(--warn)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{
+  text-align:left;padding:10px 14px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--ink-3);font-weight:500;letter-spacing:.06em;
+  border-bottom:1px solid var(--line);
+  background:var(--bg-alt);
+}
+.tbl td{
+  padding:12px 14px;border-bottom:1px solid var(--line-soft);
+  font-size:13px;color:var(--ink);
+  font-feature-settings:"tnum";
+}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr{cursor:pointer;transition:background .12s}
+.tbl tbody tr:hover td{background:var(--bg-alt)}
+.tbl td.muted{color:var(--ink-2)}
+.tbl td.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* risk score bar */
+.risk-bar-wrap{display:flex;align-items:center;gap:10px}
+.risk-bar-track{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden;min-width:60px}
+.risk-bar-fill{height:100%;border-radius:2px;transition:width .6s var(--ease)}
+
+/* ── PILLS ── */
+.pill{
+  display:inline-flex;align-items:center;padding:2px 8px;
+  border-radius:100px;font-size:11px;font-family:'JetBrains Mono',monospace;
+  font-weight:500;letter-spacing:.02em;
+}
+.pill-low{background:rgba(22,163,74,.08);color:var(--ok);border:1px solid rgba(22,163,74,.15)}
+.pill-med{background:rgba(180,83,9,.08);color:var(--warn);border:1px solid rgba(180,83,9,.15)}
+.pill-hi{background:rgba(220,38,38,.08);color:var(--danger);border:1px solid rgba(220,38,38,.15)}
+.pill-blue{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-2)}
+
+/* ── GRID LAYOUTS ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+
+/* ── ALERT ITEM ── */
+.alert-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  transition:background .12s;cursor:pointer;
+}
+.alert-item:last-child{border-bottom:none}
+.alert-item:hover{background:var(--bg-alt)}
+.alert-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.alert-body{flex:1;min-width:0}
+.alert-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px}
+.alert-desc{font-size:12px;color:var(--ink-2);line-height:1.4}
+.alert-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);flex-shrink:0;margin-top:3px}
+
+/* ── ACTIVITY FEED ── */
+.activity-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 16px;border-bottom:1px solid var(--line-soft);
+}
+.activity-item:last-child{border-bottom:none}
+.activity-icon{
+  width:26px;height:26px;border-radius:6px;
+  background:var(--bg-alt);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink-3);flex-shrink:0;
+}
+.activity-text{font-size:12.5px;color:var(--ink-2);line-height:1.45;flex:1}
+.activity-text b{color:var(--ink);font-weight:500}
+.activity-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);flex-shrink:0;margin-top:2px}
+
+/* ────────────────────────────────────
+   CLIENT REPORT DETAIL VIEW
+──────────────────────────────────── */
+.report-header{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius-lg);padding:20px 24px;
+  margin-bottom:20px;
+  display:flex;align-items:center;gap:24px;
+}
+.report-client-name{font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.02em;margin-bottom:4px}
+.report-client-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-3);letter-spacing:.04em;display:flex;gap:14px}
+.report-stats{display:flex;gap:0;border-left:1px solid var(--line);padding-left:24px;flex:1}
+.report-stat{padding:0 20px;border-right:1px solid var(--line)}
+.report-stat:first-child{padding-left:0}
+.report-stat:last-child{border-right:none}
+.report-stat-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.08em;margin-bottom:5px}
+.report-stat-val{font-size:20px;font-weight:550;color:var(--ink);letter-spacing:-.02em}
+.report-stat-sub{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.report-actions{display:flex;gap:8px;margin-left:auto;align-items:flex-start;flex-shrink:0}
+
+/* gauge */
+.gauge-wrap{position:relative;width:100px;height:100px;flex-shrink:0}
+.gauge-wrap svg{transform:rotate(-90deg)}
+.gauge-track{stroke:var(--line);fill:none;stroke-width:8}
+.gauge-fill{fill:none;stroke-width:8;stroke-linecap:round;stroke-dasharray:283;transition:stroke-dashoffset 1.2s var(--ease)}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-val{font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.02em}
+.gauge-cap{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);letter-spacing:.04em}
+
+/* report tabs */
+.report-tabs{
+  display:flex;gap:2px;padding:4px;
+  background:var(--bg-alt);border:1px solid var(--line);
+  border-radius:9px;margin-bottom:20px;
+  width:fit-content;
+}
+.report-tab{
+  padding:7px 16px;border-radius:7px;font-size:13px;
+  font-weight:450;color:var(--ink-2);cursor:pointer;
+  border:none;background:transparent;font-family:inherit;
+  transition:background .15s,color .15s;white-space:nowrap;
+}
+.report-tab:hover{color:var(--ink)}
+.report-tab.active{background:var(--surface);color:var(--ink);font-weight:500;box-shadow:var(--shadow-1)}
+
+/* tab panels */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* bar chart */
+.bar-chart{display:flex;gap:6px;align-items:flex-end;height:120px;padding:8px 0 24px;position:relative}
+.bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;position:relative}
+.bar-fill{width:100%;border-radius:3px 3px 0 0;background:var(--ink-4);transition:height .6s var(--ease);min-height:2px;position:relative}
+.bar-fill.accent{background:var(--accent)}
+.bar-fill.ok{background:var(--ok)}
+.bar-fill.warn{background:var(--warn)}
+.bar-label{position:absolute;bottom:-20px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-3);white-space:nowrap;left:50%;transform:translateX(-50%)}
+.bar-pct{position:absolute;top:-16px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-2);white-space:nowrap;left:50%;transform:translateX(-50%)}
+
+/* overlap bars */
+.overlap-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.overlap-name{font-size:12.5px;color:var(--ink);min-width:140px}
+.overlap-track{flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.overlap-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .8s var(--ease)}
+.overlap-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);min-width:38px;text-align:right}
+
+/* factor DNA */
+.factor-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.factor-name{font-size:12.5px;color:var(--ink);min-width:110px}
+.factor-track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.factor-fill{height:100%;border-radius:3px;transition:width .9s var(--ease)}
+.factor-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);min-width:32px;text-align:right}
+
+/* stress test table */
+.stress-impact{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600}
+.stress-impact.neg{color:var(--danger)}
+
+/* memo */
+.memo-body{
+  border-left:2px solid var(--accent);
+  padding:16px 20px;
+  background:var(--bg-alt);
+  border-radius:0 var(--radius-lg) var(--radius-lg) 0;
+  margin-bottom:16px;
+}
+.memo-meta{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:10px}
+.memo-text{font-size:14px;line-height:1.65;color:var(--ink)}
+.memo-text p{margin-bottom:12px}
+.memo-text p:last-child{margin-bottom:0}
+.memo-text b{font-weight:550;color:var(--ink-soft)}
+.memo-actions{display:flex;gap:8px;align-items:center;padding-top:16px;border-top:1px solid var(--line)}
+.memo-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-2);padding:2px 8px;border:1px solid var(--line);border-radius:100px;background:var(--bg)}
+
+/* back button */
+.back-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;color:var(--ink-2);cursor:pointer;
+  padding:6px 10px;border-radius:6px;border:none;background:transparent;
+  font-family:inherit;transition:background .15s,color .15s;margin-bottom:16px;
+}
+.back-btn:hover{background:var(--bg-alt);color:var(--ink)}
+
+/* intelligence feed */
+.intel-item{
+  padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  cursor:pointer;transition:background .12s;
+}
+.intel-item:last-child{border-bottom:none}
+.intel-item:hover{background:var(--bg-alt)}
+.intel-tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;margin-bottom:5px}
+.intel-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px;line-height:1.35}
+.intel-desc{font-size:12px;color:var(--ink-2);line-height:1.4}
+
+/* empty state */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;color:var(--ink-3);gap:8px}
+.empty svg{opacity:.3}
+.empty p{font-size:13px;text-align:center;max-width:28ch}
+
+/* scrollbar in content */
+.scroll-area{overflow-y:auto;max-height:320px}
+.scroll-area::-webkit-scrollbar{width:4px}
+.scroll-area::-webkit-scrollbar-thumb{background:var(--ink-4);border-radius:2px}
+
+/* pulse dot */
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);position:relative;display:inline-block;flex-shrink:0}
+.pulse-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--ok);opacity:.35;animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.8);opacity:0}}
+
+/* tag (from landing page arch-tag) */
+.tag{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-2);
+  padding:2px 8px;border:1px solid var(--line);border-radius:100px;background:var(--bg);
+}
+
+/* fund overlap mini matrix */
+.matrix-table{width:100%;border-collapse:collapse;font-size:12px}
+.matrix-table th{padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;text-align:left;border-bottom:1px solid var(--line);font-weight:500}
+.matrix-table td{padding:9px 10px;border-bottom:1px solid var(--line-soft);color:var(--ink)}
+.matrix-table td.muted{color:var(--ink-2)}
+.matrix-table tr:last-child td{border-bottom:none}
+
+/* section label (same as landing) */
+.section-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.08em;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.section-label::before{content:'';width:14px;height:1px;background:var(--accent)}
+
+/* divider */
+.divider{height:1px;background:var(--line);margin:20px 0}
+
+/* page header */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px}
+.page-title{font-size:20px;font-weight:600;color:var(--ink-soft);letter-spacing:-.02em;line-height:1.2}
+.page-sub{font-size:13px;color:var(--ink-2);margin-top:3px}
+
+/* welcome greeting */
+.greeting{font-size:18px;font-weight:550;color:var(--ink-soft);letter-spacing:-.015em}
+.greeting-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);margin-top:2px}
+
+/* notification badge on topbar */
+.notif-btn{
+  width:32px;height:32px;border:1px solid var(--line);border-radius:7px;
+  background:var(--surface);cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;color:var(--ink-2);
+  position:relative;transition:border-color .15s,color .15s;
+}
+.notif-btn:hover{border-color:var(--ink-3);color:var(--ink)}
+.notif-count{
+  position:absolute;top:-4px;right:-4px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--danger);color:#fff;
+  font-size:8.5px;font-weight:600;font-family:'JetBrains Mono',monospace;
+  display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--bg);
+}
+
+/* mini chart sparkline */
+.sparkline{height:32px;overflow:visible}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ════════════════ SIDEBAR ════════════════ -->
+  <aside class="sidebar">
+    <a href="#" class="sidebar-brand">
+      <span class="brand-mark"></span>
+      <span class="brand-name"><b>Wealth</b>OS<span class="brand-suffix">/ai</span></span>
+    </a>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">WORKSPACE</div>
+
+      <a class="nav-item active" onclick="showView('dashboard');setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </a>
+      <a class="nav-item" onclick="showView('portfolios');setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 7h20M2 12h20M2 17h20"/><circle cx="19" cy="7" r="0"/></svg>
+        Portfolios
+        <span class="nav-badge" id="navBadgePortfolios" style="display:none;background:var(--ink-4);color:var(--ink-2)"></span>
+      </a>
+      <a class="nav-item" onclick="showView('intelligence');setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        Intelligence
+      </a>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Scenarios
+      </a>
+
+      <div class="nav-section-label" style="margin-top:8px">ADVISOR</div>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Reviews
+      </a>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alerts
+      </a>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Client Reports
+      </a>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Compliance
+      </a>
+
+      <div class="nav-section-label" style="margin-top:8px">SYSTEM</div>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Data Sources
+      </a>
+      <a class="nav-item" onclick="setActive(this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="advisor-chip" style="flex:1">
+          <div class="advisor-avatar" id="advisorAvatar">—</div>
+          <div>
+            <div class="advisor-name" id="advisorName">Loading…</div>
+            <div class="advisor-role" id="advisorFirm">ADVISOR</div>
+          </div>
+        </div>
+        <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--bg-alt)">
+        <span class="pulse-dot"></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em">SYSTEM ONLINE · v2.0</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════ MAIN ════════════════ -->
+  <div class="main">
+
+    <!-- top bar -->
+    <div class="topbar">
+      <div class="topbar-left" id="topbarInfo">
+        <div class="topbar-title" id="topbarGreeting">Welcome</div>
+        <div class="topbar-subtitle mono" id="topbarDate">THU 21 MAY 2026 · 10:36 IST</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          Search clients, portfolios…
+          <span class="mono" style="font-size:10px;color:var(--ink-3);margin-left:auto;padding-left:8px">⌘K</span>
+        </div>
+        <button class="notif-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-count" id="notifCount" style="display:none">0</span>
+        </button>
+        <button class="notif-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </button>
+        <button class="btn btn-primary btn-sm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          Upload CAS
+        </button>
+      </div>
+    </div>
+
+    <!-- ════ CONTENT ════ -->
+    <div class="content" id="mainContent">
+
+      <!-- ─── VIEW: DASHBOARD OVERVIEW ─── -->
+      <div class="view active" id="view-dashboard">
+
+        <!-- stat row — populated from real API -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">TOTAL AUM</div>
+            <div class="stat-val" id="statAUM">—</div>
+            <div class="stat-sub" id="statAUMSub" style="color:var(--ink-3)">Loading portfolios…</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">PORTFOLIOS</div>
+            <div class="stat-val" id="statPortfolios">—</div>
+            <div class="stat-sub" id="statPortfoliosSub" style="color:var(--ink-3)">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">READY</div>
+            <div class="stat-val" id="statReady">—</div>
+            <div class="stat-sub" id="statReadySub" style="color:var(--ink-3)">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">LAST UPLOAD</div>
+            <div class="stat-val" id="statLastUpload" style="font-size:18px">—</div>
+            <div class="stat-sub" id="statLastUploadSub" style="color:var(--ink-3)">—</div>
+          </div>
+        </div>
+
+        <!-- portfolios table — same data as Portfolios view -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Portfolios</div>
+              <div class="card-label" style="margin-top:2px" id="overviewPortfoliosSub">—</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <div id="overviewUploadStatus" style="display:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);padding:0 8px"></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadOverview()">Refresh</button>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('uploadInput').click()">+ Upload CAS / Excel</button>
+            </div>
+          </div>
+          <div class="card-body-flush">
+            <table class="tbl">
+              <thead><tr><th>PORTFOLIO</th><th>AUM</th><th>HOLDINGS</th><th>HHI</th><th>UPLOADED</th><th>STATUS</th><th></th></tr></thead>
+              <tbody id="overviewTbody">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--ink-2);font-size:13px">Loading portfolios…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /dashboard view -->
+
+      <!-- ─── VIEW: PORTFOLIOS LIST ─── -->
+      <div class="view" id="view-portfolios">
+        <!-- hidden file input for upload -->
+        <input type="file" id="uploadInput" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="uploadFile(this)">
+        <div class="page-header">
+          <div>
+            <div class="page-title">All Portfolios</div>
+            <div class="page-sub" id="portfoliosSub">Loading…</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div id="uploadStatus" style="display:none;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);padding:0 8px"></div>
+            <button class="btn btn-ghost" onclick="loadPortfolios()">Refresh</button>
+            <button class="btn btn-primary" onclick="document.getElementById('uploadInput').click()">+ Upload CAS / Excel</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body-flush">
+            <table class="tbl">
+              <thead><tr><th>PORTFOLIO</th><th>AUM</th><th>HOLDINGS</th><th>CONCENTRATION (HHI)</th><th>UPLOADED</th><th>STATUS</th><th></th></tr></thead>
+              <tbody id="portfoliosTbody">
+                <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--ink-2);font-size:13px">
+                  <span id="portfoliosLoadMsg">Loading portfolios…</span>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── VIEW: INTELLIGENCE ─── -->
+      <div class="view" id="view-intelligence">
+        <div class="page-header">
+          <div><div class="page-title">Portfolio Intelligence</div><div class="page-sub">Cross-portfolio insights generated from analytics engine</div></div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:64px 32px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">INTELLIGENCE MODULE</div>
+            <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Cross-portfolio intelligence requires multiple analysed portfolios.</div>
+            <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">Upload CAS/Excel files for each client portfolio. Once analytics are run, concentration breaches, fund overlaps, and sector signals will appear here — computed deterministically from your real data.</div>
+            <button class="btn btn-primary" style="margin-top:24px" onclick="document.getElementById('uploadInput').click()">Upload a Portfolio</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── VIEW: CLIENT REPORT ─── -->
+      <div class="view" id="view-client">
+        <button class="back-btn" onclick="showView('dashboard');setActiveByName('dashboard')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Back to overview
+        </button>
+
+        <!-- client header -->
+        <div class="report-header">
+          <div>
+            <div class="gauge-wrap">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle class="gauge-track" cx="50" cy="50" r="45"/>
+                <circle class="gauge-fill" cx="50" cy="50" r="45" id="clientGauge" stroke="var(--warn)" style="stroke-dashoffset:90"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-val" id="clientScore">68</div>
+                <div class="gauge-cap">RISK</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div class="report-client-name" id="clientName">Mehta Family Office</div>
+            <div class="report-client-meta">
+              <span id="clientAUM">₹47.2 Cr AUM</span>
+              <span>247 HOLDINGS</span>
+              <span>12 FUNDS · 81 STOCKS</span>
+              <span>UPDATED 21 MAY 09:14</span>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap" id="clientTags">
+              <span class="tag">Growth factor 0.81</span>
+              <span class="tag">Quality factor 0.76</span>
+              <span class="tag">BFSI 31.4%</span>
+              <span class="tag">Neff 5.6</span>
+              <span class="tag">HHI 0.181</span>
+            </div>
+          </div>
+          <div class="report-stats">
+            <div class="report-stat">
+              <div class="report-stat-label">HHI</div>
+              <div class="report-stat-val" id="clientHHI">0.181</div>
+              <div class="report-stat-sub">Moderate</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-stat-label">NEFF</div>
+              <div class="report-stat-val" id="clientNeff">5.6</div>
+              <div class="report-stat-sub">of 247</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-stat-label">VOLATILITY</div>
+              <div class="report-stat-val" id="clientVol">14.7%</div>
+              <div class="report-stat-sub">Annualised</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-stat-label">MAX DD</div>
+              <div class="report-stat-val" id="clientDD">−22.4%</div>
+              <div class="report-stat-sub">5-year</div>
+            </div>
+          </div>
+          <div class="report-actions">
+            <button class="btn btn-primary btn-sm" onclick="switchTab('scenarios')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Scenarios
+            </button>
+          </div>
+        </div>
+
+        <!-- tabs -->
+        <div class="report-tabs">
+          <button class="report-tab active" onclick="switchTab('overview')">Overview</button>
+          <button class="report-tab" onclick="switchTab('exposures')">Exposures</button>
+          <button class="report-tab" onclick="switchTab('risk')">Risk Engine</button>
+          <button class="report-tab" onclick="switchTab('scenarios')">Scenarios</button>
+          <button class="report-tab" onclick="switchTab('factors')">Factor DNA</button>
+          <button class="report-tab" onclick="switchTab('memo')">AI Memo</button>
+        </div>
+
+        <!-- tab: overview -->
+        <div class="tab-panel active" id="tab-overview">
+          <div class="grid-2">
+            <!-- sector allocation — populated from analytics API -->
+            <div class="card">
+              <div class="card-head"><div class="card-title">Sector Allocation</div><div class="card-label">FROM ANALYTICS ENGINE · EFFECTIVE EXPOSURE</div></div>
+              <div class="card-body" id="sectorChartWrap">
+                <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">
+                  Select a portfolio to view sector allocation.
+                </div>
+              </div>
+            </div>
+            <!-- analytics summary -->
+            <div class="card">
+              <div class="card-head"><div class="card-title">Analytics Summary</div><div class="card-label">DETERMINISTIC ENGINE · METHODOLOGY v1.2</div></div>
+              <div class="card-body" id="analyticsSummaryWrap">
+                <div style="display:flex;flex-direction:column;gap:12px" id="analyticsSummaryBody">
+                  <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">
+                    Select a portfolio to view analytics.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- holdings table — populated from holdings API -->
+          <div class="card" style="margin-top:16px">
+            <div class="card-head"><div class="card-title">Holdings</div><div class="card-label" id="holdingsLabel">SELECT A PORTFOLIO</div></div>
+            <div class="card-body-flush">
+              <table class="tbl">
+                <thead><tr><th>INSTRUMENT</th><th>ISIN</th><th>TYPE</th><th>VALUE</th><th>WEIGHT %</th></tr></thead>
+                <tbody id="holdingsTbody">
+                  <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--ink-2);font-size:13px">Select a portfolio to view holdings.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- tab: exposures -->
+        <div class="tab-panel" id="tab-exposures">
+          <div class="card">
+            <div class="card-body" style="text-align:center;padding:64px 32px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">EXPOSURES MODULE</div>
+              <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Fund overlap &amp; look-through analysis</div>
+              <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">Fund-level look-through and stock overlap matrix requires portfolio holdings with scheme codes resolved against fund factsheets. This module is in development. Holdings are available in the Overview tab.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- tab: risk — real metrics from analytics engine -->
+        <div class="tab-panel" id="tab-risk">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Risk Metrics</div><div class="card-label">METHODOLOGY v1.2 · DETERMINISTIC ENGINE</div></div>
+              <div class="card-body" id="riskMetricsBody">
+                <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">
+                  Select a portfolio to view risk metrics.
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Scenario Engine</div><div class="card-label">RUN FROM SCENARIOS TAB</div></div>
+              <div class="card-body" style="text-align:center;padding:40px 32px">
+                <div style="font-size:13px;color:var(--ink-2);margin-bottom:16px">Run parametric stress scenarios against this portfolio's actual holdings.</div>
+                <button class="btn btn-primary" onclick="switchTab('scenarios')">Go to Scenarios →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- tab: scenarios — wired to real API -->
+        <div class="tab-panel" id="tab-scenarios">
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Scenario Stress Testing</div><div class="card-label">DETERMINISTIC PROPAGATION · MACRO → SECTOR → STOCK → PORTFOLIO</div></div>
+              <button class="btn btn-primary btn-sm" id="runScenariosBtn" onclick="runScenarios()">Run Scenarios</button>
+            </div>
+            <div class="card-body-flush" id="scenariosWrap">
+              <div style="text-align:center;padding:48px;color:var(--ink-2);font-size:13px" id="scenariosMsg">
+                Select a portfolio then click <b>Run Scenarios</b> to compute stress impacts.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- tab: factors -->
+        <div class="tab-panel" id="tab-factors">
+          <div class="card">
+            <div class="card-body" style="text-align:center;padding:64px 32px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">FACTOR DNA MODULE</div>
+              <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Portfolio style decomposition</div>
+              <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">Factor DNA analysis (Growth, Quality, Momentum, Value, Defensive) requires historical NAV data for factor regression. This module is in development. Use the Risk tab for concentration and volatility metrics available from the analytics engine now.</div>
+              <button class="btn btn-ghost" style="margin-top:24px" onclick="switchTab('risk')">View Risk Metrics →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- tab: AI memo -->
+        <div class="tab-panel" id="tab-memo">
+          <div class="card">
+            <div class="card-body" style="text-align:center;padding:64px 32px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">AI MEMO MODULE</div>
+              <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Portfolio review memo generation</div>
+              <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">AI-generated client memos synthesise the analytics engine output into plain-language advisor commentary. This module is in development. The analytics data (HHI, volatility, sector exposure, drawdown) is available now in the Risk and Overview tabs.</div>
+              <button class="btn btn-ghost" style="margin-top:24px" onclick="switchTab('overview')">View Analytics →</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /client view -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── auth guard + populate advisor info ──
+(function(){
+  try {
+    var token = localStorage.getItem('wos_token') || sessionStorage.getItem('wos_token');
+    if (!token) { window.location.replace('/app.html'); return; }
+
+    // Greeting based on local time
+    var h = new Date().getHours();
+    var greet = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+
+    // Populate from stored user object
+    var userRaw = localStorage.getItem('wos_user') || sessionStorage.getItem('wos_user');
+    if (userRaw) {
+      var user = JSON.parse(userRaw);
+      var firstName = (user.full_name || '').split(' ')[0] || '';
+      var nameEl = document.getElementById('advisorName');
+      if (nameEl) nameEl.textContent = user.full_name || user.email || '—';
+      var firmEl = document.getElementById('advisorFirm');
+      if (firmEl) firmEl.textContent = (user.firm_name || 'ADVISOR').toUpperCase();
+      var avatarEl = document.getElementById('advisorAvatar');
+      if (avatarEl && user.full_name) {
+        var parts = user.full_name.trim().split(' ');
+        avatarEl.textContent = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+      }
+      var greetEl = document.getElementById('topbarGreeting');
+      if (greetEl) greetEl.textContent = firstName ? greet + ', ' + firstName : greet;
+    } else {
+      // Fall back to /me endpoint
+      var tok = token;
+      fetch('https://api.wlthos.in/api/v1/auth/me', {headers:{'Authorization':'Bearer '+tok}})
+        .then(function(r){return r.json();})
+        .then(function(u){
+          try{localStorage.setItem('wos_user',JSON.stringify(u));}catch(e){}
+          var firstName = (u.full_name||'').split(' ')[0]||'';
+          var nameEl=document.getElementById('advisorName');
+          if(nameEl) nameEl.textContent = u.full_name||u.email||'—';
+          var firmEl=document.getElementById('advisorFirm');
+          if(firmEl) firmEl.textContent = (u.firm_name||'ADVISOR').toUpperCase();
+          var avatarEl=document.getElementById('advisorAvatar');
+          if(avatarEl&&u.full_name){var p=u.full_name.trim().split(' ');avatarEl.textContent=(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
+          var greetEl=document.getElementById('topbarGreeting');
+          if(greetEl) greetEl.textContent=firstName?greet+', '+firstName:greet;
+        }).catch(function(){});
+    }
+  } catch(e) {}
+})();
+
+// ── theme toggle ──
+(function(){
+  try{ if(localStorage.getItem('wos-theme')==='dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){}
+  document.getElementById('themeToggle').addEventListener('click',function(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    if(dark) document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme','dark');
+    try{ localStorage.setItem('wos-theme',dark?'light':'dark'); }catch(e){}
+  });
+})();
+
+// ── live time ──
+(function(){
+  function update(){
+    var d=new Date();
+    var days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    var months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    var h=String(d.getHours()).padStart(2,'0');
+    var m=String(d.getMinutes()).padStart(2,'0');
+    var el=document.getElementById('topbarDate');
+    if(el) el.textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear()+' · '+h+':'+m+' IST';
+  }
+  update(); setInterval(update,30000);
+})();
+
+// ── view switcher ──
+function showView(name){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  var v=document.getElementById('view-'+name);
+  if(v) v.classList.add('active');
+}
+function setActive(el){
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  el.classList.add('active');
+}
+function setActiveByName(name){
+  // map view name to nav label text
+  var map={dashboard:'Overview',portfolios:'Portfolios',intelligence:'Intelligence'};
+  document.querySelectorAll('.nav-item').forEach(function(n){
+    if(n.textContent.trim().startsWith(map[name]||'')) n.classList.add('active');
+  });
+}
+
+// ── tab switcher ──
+function switchTab(name){
+  document.querySelectorAll('.report-tab').forEach(function(t,i){
+    var names=['overview','exposures','risk','scenarios','factors','memo'];
+    t.classList.toggle('active',names[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p){
+    p.classList.toggle('active',p.id==='tab-'+name);
+  });
+}
+
+// ════════════════════════════════════════════════
+//  LIVE API LAYER
+// ════════════════════════════════════════════════
+var API_BASE = 'https://api.wlthos.in';
+
+function _getToken() {
+  return localStorage.getItem('wos_token') || sessionStorage.getItem('wos_token') || '';
+}
+
+function _apiFetch(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({'Authorization': 'Bearer ' + _getToken()}, opts.headers || {});
+  return fetch(API_BASE + path, opts).then(function(res) {
+    if (res.status === 401) { window.location.replace('/app.html'); throw new Error('Unauthorized'); }
+    return res.json().then(function(data) { return {ok: res.ok, status: res.status, data: data}; });
+  });
+}
+
+// ── Format helpers ──
+function _fmtAUM(val) {
+  if (!val || isNaN(val)) return '—';
+  var cr = val / 1e7;
+  if (cr >= 100) return '₹' + Math.round(cr) + ' Cr';
+  if (cr >= 1)   return '₹' + cr.toFixed(1) + ' Cr';
+  var lac = val / 1e5;
+  return '₹' + lac.toFixed(1) + ' L';
+}
+
+function _fmtDate(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  var now = new Date();
+  var diffMs = now - d;
+  var diffH = diffMs / 3600000;
+  if (diffH < 1)   return Math.round(diffMs/60000) + 'm ago';
+  if (diffH < 24)  return Math.round(diffH) + 'h ago';
+  if (diffH < 48)  return 'Yesterday';
+  return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+}
+
+function _statusPill(status) {
+  var map = {
+    ready:       '<span class="pill pill-low">Ready</span>',
+    processing:  '<span class="pill pill-blue" style="background:rgba(30,64,255,.1);color:var(--accent)">Processing…</span>',
+    parsing:     '<span class="pill pill-blue" style="background:rgba(30,64,255,.1);color:var(--accent)">Parsing…</span>',
+    normalizing: '<span class="pill pill-blue" style="background:rgba(30,64,255,.1);color:var(--accent)">Normalising…</span>',
+    analyzing:   '<span class="pill pill-blue" style="background:rgba(30,64,255,.1);color:var(--accent)">Analysing…</span>',
+    error:       '<span class="pill pill-hi">Error</span>',
+  };
+  return map[status] || '<span class="pill">' + status + '</span>';
+}
+
+// ── Load dashboard overview — stat cards + portfolios table ──
+function loadOverview() {
+  _apiFetch('/api/v1/portfolios/').then(function(r) {
+    if (!r.ok) return;
+    var ps = r.data || [];
+
+    // Stat cards
+    var totalAUM = ps.reduce(function(s,p){ return s + (p.total_value||0); }, 0);
+    var readyCount = ps.filter(function(p){ return p.status==='ready'; }).length;
+    var procCount = ps.filter(function(p){ return ['processing','parsing','normalizing','analyzing'].indexOf(p.status)>=0; }).length;
+    var latestDate = ps.length ? ps.slice().sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);})[0].created_at : null;
+
+    var aumEl = document.getElementById('statAUM');
+    if (aumEl) aumEl.textContent = totalAUM > 0 ? _fmtAUM(totalAUM) : '—';
+    var aumSub = document.getElementById('statAUMSub');
+    if (aumSub) aumSub.textContent = readyCount + ' portfolio' + (readyCount===1?'':'s') + ' with analytics';
+
+    var portEl = document.getElementById('statPortfolios');
+    if (portEl) portEl.textContent = ps.length || '0';
+    var portSub = document.getElementById('statPortfoliosSub');
+    if (portSub) portSub.textContent = ps.length === 0 ? 'Upload a CAS to start' : (procCount > 0 ? procCount + ' processing' : 'All ready');
+
+    var readyEl = document.getElementById('statReady');
+    if (readyEl) readyEl.textContent = readyCount;
+    var readySub = document.getElementById('statReadySub');
+    if (readySub) readySub.textContent = readyCount > 0 ? 'Analytics available' : 'None yet';
+
+    var lastEl = document.getElementById('statLastUpload');
+    if (lastEl) lastEl.textContent = latestDate ? _fmtDate(latestDate) : '—';
+    var lastSub = document.getElementById('statLastUploadSub');
+    if (lastSub) lastSub.textContent = latestDate ? 'Most recent upload' : 'No uploads yet';
+
+    // Badge in nav
+    var badge = document.getElementById('navBadgePortfolios');
+    if (badge) {
+      if (ps.length > 0) { badge.textContent = ps.length; badge.style.display=''; }
+      else badge.style.display='none';
+    }
+
+    // Overview sub-heading
+    var sub = document.getElementById('overviewPortfoliosSub');
+    if (sub) sub.textContent = ps.length + ' PORTFOLIO' + (ps.length===1?'':'S') + (totalAUM>0?' · '+_fmtAUM(totalAUM)+' TOTAL AUM':'');
+
+    // Overview portfolios table
+    var tbody = document.getElementById('overviewTbody');
+    if (!tbody) return;
+    if (ps.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--ink-2);font-size:13px">' +
+        'No portfolios yet. Upload a CAS PDF or Excel file to get started.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = ps.map(function(p) {
+      var hhi = p.hhi ? p.hhi.toFixed(3) : '—';
+      var hhiColor = !p.hhi ? 'var(--ink-2)' : p.hhi > 0.18 ? 'var(--danger)' : p.hhi > 0.10 ? 'var(--warn)' : 'var(--ok)';
+      return '<tr style="cursor:pointer" onclick="openPortfolio(\'' + p.id + '\')">' +
+        '<td><div style="font-weight:500">' + (p.name || p.filename || 'Untitled') + '</div>' +
+        (p.error_message ? '<div class="muted" style="font-size:11px;color:var(--danger)">' + p.error_message + '</div>' : '') +
+        '</td>' +
+        '<td class="mono">' + (p.total_value ? _fmtAUM(p.total_value) : '—') + '</td>' +
+        '<td class="mono">' + (p.holding_count || '—') + '</td>' +
+        '<td class="mono" style="color:' + hhiColor + '">' + hhi + '</td>' +
+        '<td class="muted mono" style="font-size:12px">' + _fmtDate(p.created_at) + '</td>' +
+        '<td>' + _statusPill(p.status) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openPortfolio(\'' + p.id + '\')">View →</button></td>' +
+        '</tr>';
+    }).join('');
+  }).catch(function(){});
+}
+
+// ── Load portfolios list ──
+function loadPortfolios() {
+  var tbody = document.getElementById('portfoliosTbody');
+  var sub   = document.getElementById('portfoliosSub');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--ink-2);font-size:13px">Loading…</td></tr>';
+
+  _apiFetch('/api/v1/portfolios/').then(function(r) {
+    if (!r.ok) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger);font-size:13px">Failed to load portfolios.</td></tr>';
+      return;
+    }
+    var portfolios = r.data;
+    if (!portfolios || portfolios.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--ink-2);font-size:13px">' +
+        'No portfolios yet. Upload a CAS PDF or Excel file to get started.</td></tr>';
+      sub.textContent = '0 portfolios';
+      return;
+    }
+
+    // Compute summary stats
+    var totalAUM = portfolios.reduce(function(s,p){ return s + (p.total_value||0); }, 0);
+    var readyCount = portfolios.filter(function(p){ return p.status==='ready'; }).length;
+    sub.textContent = portfolios.length + ' portfolio' + (portfolios.length===1?'':'s') +
+      (totalAUM > 0 ? ' · ' + _fmtAUM(totalAUM) + ' total AUM' : '') +
+      (readyCount < portfolios.length ? ' · ' + (portfolios.length-readyCount) + ' processing' : '');
+
+    // Render rows
+    tbody.innerHTML = portfolios.map(function(p) {
+      var hhi = p.hhi ? p.hhi.toFixed(3) : '—';
+      var hhiColor = !p.hhi ? 'var(--ink-2)' : p.hhi > 0.18 ? 'var(--danger)' : p.hhi > 0.10 ? 'var(--warn)' : 'var(--ok)';
+      var isProcessing = ['processing','parsing','normalizing','analyzing'].indexOf(p.status) >= 0;
+      return '<tr style="cursor:pointer" onclick="openPortfolio(\'' + p.id + '\')">' +
+        '<td><div style="font-weight:500">' + (p.name || p.filename || 'Untitled') + '</div>' +
+        (p.error_message ? '<div class="muted" style="font-size:11px;color:var(--danger)">' + p.error_message + '</div>' : '') +
+        '</td>' +
+        '<td class="mono">' + (p.total_value ? _fmtAUM(p.total_value) : '—') + '</td>' +
+        '<td class="mono">' + (p.holding_count || '—') + '</td>' +
+        '<td class="mono" style="color:' + hhiColor + '">' + hhi + '</td>' +
+        '<td class="muted mono" style="font-size:12px">' + _fmtDate(p.created_at) + '</td>' +
+        '<td>' + _statusPill(p.status) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openPortfolio(\'' + p.id + '\')">View →</button></td>' +
+        '</tr>';
+    }).join('');
+
+    // Poll any in-flight uploads
+    portfolios.forEach(function(p) {
+      if (['processing','parsing','normalizing','analyzing'].indexOf(p.status) >= 0) {
+        setTimeout(function(){ _pollAndRefresh(p.id); }, 3000);
+      }
+    });
+  }).catch(function(err) {
+    if (err.message !== 'Unauthorized') {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger);font-size:13px">Network error loading portfolios.</td></tr>';
+    }
+  });
+}
+
+// ── Poll a processing portfolio then refresh the list ──
+function _pollAndRefresh(portfolioId) {
+  _apiFetch('/api/v1/portfolios/' + portfolioId).then(function(r) {
+    if (!r.ok) return;
+    var p = r.data;
+    var done = ['ready','error'].indexOf(p.status) >= 0;
+    if (done) {
+      loadPortfolios();
+    } else {
+      setTimeout(function(){ _pollAndRefresh(portfolioId); }, 3000);
+    }
+  }).catch(function(){});
+}
+
+// ── Upload CAS / Excel ──
+function uploadFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  input.value = ''; // reset so same file can be re-selected
+
+  var statusEl = document.getElementById('uploadStatus');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Uploading ' + file.name + '…';
+
+  var formData = new FormData();
+  formData.append('file', file);
+
+  fetch(API_BASE + '/api/v1/upload/', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + _getToken() },
+    body: formData
+  })
+  .then(function(res) { return res.json().then(function(d){ return {ok:res.ok, data:d}; }); })
+  .then(function(r) {
+    if (!r.ok) {
+      statusEl.textContent = '⚠ Upload failed: ' + (r.data.detail || 'Unknown error');
+      setTimeout(function(){ statusEl.style.display='none'; }, 5000);
+      return;
+    }
+    var portfolioId = r.data.portfolio_id;
+    statusEl.textContent = 'Parsing ' + file.name + '…';
+    loadPortfolios();
+    _watchUpload(portfolioId, statusEl);
+  })
+  .catch(function(err) {
+    statusEl.textContent = '⚠ Network error during upload';
+    setTimeout(function(){ statusEl.style.display='none'; }, 5000);
+  });
+}
+
+function _watchUpload(portfolioId, statusEl) {
+  _apiFetch('/api/v1/portfolios/' + portfolioId).then(function(r) {
+    if (!r.ok) { statusEl.style.display='none'; return; }
+    var p = r.data;
+    var labels = {parsing:'Parsing…',normalizing:'Normalising holdings…',analyzing:'Running analytics…',ready:'Ready',error:'Error'};
+    statusEl.textContent = (labels[p.status] || p.status) + (p.status==='ready'?'':' (' + (p.name||'file') + ')');
+    if (p.status === 'ready') {
+      setTimeout(function(){ statusEl.style.display='none'; loadPortfolios(); }, 1500);
+    } else if (p.status === 'error') {
+      statusEl.textContent = '⚠ ' + (p.error_message || 'Processing failed');
+      setTimeout(function(){ statusEl.style.display='none'; loadPortfolios(); }, 5000);
+    } else {
+      setTimeout(function(){ _watchUpload(portfolioId, statusEl); }, 2500);
+    }
+  }).catch(function(){ statusEl.style.display='none'; });
+}
+
+// ── Open portfolio detail view ──
+function openPortfolio(portfolioId) {
+  // Immediately show the view with a loading state
+  document.getElementById('clientName').textContent = 'Loading…';
+  document.getElementById('clientAUM').textContent = '—';
+  document.getElementById('clientScore').textContent = '—';
+  document.getElementById('clientHHI').textContent = '—';
+  document.getElementById('clientNeff').textContent = '—';
+  document.getElementById('clientVol').textContent = '—';
+  document.getElementById('clientDD').textContent = '—';
+  switchTab('overview');
+  showView('client');
+
+  // Fetch portfolio metadata
+  _apiFetch('/api/v1/portfolios/' + portfolioId).then(function(r) {
+    if (!r.ok) return;
+    var p = r.data;
+    document.getElementById('clientName').textContent = p.name || p.filename || 'Portfolio';
+    document.getElementById('clientAUM').textContent = (p.total_value ? _fmtAUM(p.total_value) : '—') + ' AUM';
+    // Store id for analytics fetch
+    document.getElementById('clientName').setAttribute('data-portfolio-id', portfolioId);
+  });
+
+  // Fetch analytics — trigger rerun if not ready
+  _apiFetch('/api/v1/analytics/' + portfolioId).then(function(r) {
+    if (r.status === 404 || r.status === 202) {
+      return _apiFetch('/api/v1/analytics/' + portfolioId + '/rerun', {method:'POST'})
+        .then(function(r2) { return r2; });
+    }
+    return r;
+  }).then(function(r) {
+    if (!r || !r.ok) return;
+    var a = r.data.result || r.data;
+    if (!a) return;
+
+    var conc = a.concentration || {};
+    var hhi_raw = conc.hhi || 0;
+    var hhi = hhi_raw > 1 ? (hhi_raw / 10000).toFixed(3) : hhi_raw.toFixed(3);
+    var neff = hhi_raw > 0 ? (hhi_raw > 1 ? (10000 / hhi_raw).toFixed(1) : (1 / hhi_raw).toFixed(1)) : '—';
+
+    var vol = (a.volatility || {}).annualized_pct ? (a.volatility.annualized_pct).toFixed(1) + '%' : '—';
+    var dd  = (a.drawdown_sensitivity || {}).max_drawdown_pct
+                ? '−' + Math.abs(a.drawdown_sensitivity.max_drawdown_pct).toFixed(1) + '%' : '—';
+
+    document.getElementById('clientHHI').textContent  = hhi;
+    document.getElementById('clientNeff').textContent = neff;
+    document.getElementById('clientVol').textContent  = vol;
+    document.getElementById('clientDD').textContent   = dd;
+    document.getElementById('clientScore').textContent = conc.hhi_interpretation === 'well_diversified' ? 'Low' :
+      conc.hhi_interpretation === 'moderately_concentrated' ? 'Med' : 'High';
+
+    // Gauge
+    var g = document.getElementById('clientGauge');
+    if (g) {
+      if (conc.hhi_interpretation === 'highly_concentrated') { g.style.stroke='var(--danger)'; g.style.strokeDashoffset='51'; }
+      else if (conc.hhi_interpretation === 'moderately_concentrated') { g.style.stroke='var(--warn)'; g.style.strokeDashoffset='90'; }
+      else { g.style.stroke='var(--ok)'; g.style.strokeDashoffset='140'; }
+    }
+
+    // Tags
+    var tags = [];
+    var sector = a.sector_exposure || {};
+    var topSectors = Object.entries(sector).sort(function(x,y){ return y[1]-x[1]; }).slice(0,3);
+    topSectors.forEach(function(s){ tags.push(s[0] + ' ' + parseFloat(s[1]).toFixed(1) + '%'); });
+    tags.push('HHI ' + hhi);
+    if (a.holding_count) tags.push(a.holding_count + ' holdings');
+    var tagsEl = document.getElementById('clientTags');
+    if (tagsEl) tagsEl.innerHTML = tags.map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('');
+
+    // ── Populate Overview tab ──
+    // Sector allocation bar chart
+    var sectorWrap = document.getElementById('sectorChartWrap');
+    if (sectorWrap && sector && Object.keys(sector).length > 0) {
+      var sorted = Object.entries(sector).sort(function(x,y){ return y[1]-x[1]; }).slice(0,8);
+      var maxPct = sorted[0][1];
+      var colors = ['var(--accent)','#6366f1','var(--ok)','#f59e0b','var(--danger)','#8b5cf6','#14b8a6','var(--ink-3)'];
+      var bars = sorted.map(function(s, i) {
+        var pct = parseFloat(s[1]);
+        var ht = Math.max(8, Math.round(pct / maxPct * 90));
+        return '<div class="bar-item"><div class="bar-fill" style="height:'+ht+'%;background:'+colors[i%colors.length]+'"><span class="bar-pct">'+pct.toFixed(1)+'%</span></div><div class="bar-label">'+s[0]+'</div></div>';
+      }).join('');
+      sectorWrap.innerHTML = '<div class="bar-chart">' + bars + '</div>';
+    } else if (sectorWrap) {
+      sectorWrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No sector data available for this portfolio.</div>';
+    }
+
+    // Analytics summary card
+    var summaryBody = document.getElementById('analyticsSummaryBody');
+    if (summaryBody) {
+      var hhiInterp = conc.hhi_interpretation || 'unknown';
+      var hhiColor = hhiInterp === 'highly_concentrated' ? 'var(--danger)' : hhiInterp === 'moderately_concentrated' ? 'var(--warn)' : 'var(--ok)';
+      summaryBody.innerHTML = [
+        ['HHI (Concentration)', hhi, hhiColor],
+        ['Neff (Effective N)', neff, 'var(--ink)'],
+        ['Annualised Volatility', vol, 'var(--ink)'],
+        ['Max Drawdown', dd, 'var(--danger)'],
+        ['Concentration Level', hhiInterp.replace(/_/g,' '), hhiColor],
+      ].map(function(row) {
+        return '<div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)">' +
+          '<span style="color:var(--ink-2)">' + row[0] + '</span>' +
+          '<span class="mono" style="font-weight:600;color:' + row[2] + '">' + row[1] + '</span></div>';
+      }).join('') +
+      '<div style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em">// METHODOLOGY v1.2 · DETERMINISTIC · SOURCE: UPLOADED FILE</div>';
+    }
+
+    // Risk tab
+    var riskBody = document.getElementById('riskMetricsBody');
+    if (riskBody) {
+      riskBody.innerHTML = summaryBody ? summaryBody.innerHTML : '';
+      // Re-render for risk tab
+      riskBody.innerHTML = [
+        ['HHI (Concentration)', hhi, hhiColor],
+        ['Neff (Effective diversification)', neff, 'var(--ink)'],
+        ['Annualised Volatility', vol, 'var(--ink)'],
+        ['Max Drawdown', dd, 'var(--danger)'],
+        ['Interpretation', (conc.hhi_interpretation||'—').replace(/_/g,' '), hhiColor],
+      ].map(function(row) {
+        return '<div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)">' +
+          '<span style="color:var(--ink-2)">' + row[0] + '</span>' +
+          '<span class="mono" style="font-weight:600;color:' + row[2] + '">' + row[1] + '</span></div>';
+      }).join('') +
+      '<div style="margin-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em">// METHODOLOGY v1.2 · DETERMINISTIC · AUDITABLE</div>';
+
+      var hhiColor = conc.hhi_interpretation === 'highly_concentrated' ? 'var(--danger)' :
+                    conc.hhi_interpretation === 'moderately_concentrated' ? 'var(--warn)' : 'var(--ok)';
+    }
+
+    // Reset scenarios
+    var scenMsg = document.getElementById('scenariosMsg');
+    if (scenMsg) scenMsg.innerHTML = 'Click <b>Run Scenarios</b> to compute stress impacts for this portfolio.';
+
+  }).catch(function(){});
+
+  // ── Load holdings ──
+  _apiFetch('/api/v1/portfolios/' + portfolioId + '/holdings').then(function(r) {
+    if (!r.ok) return;
+    var holdings = r.data || [];
+    var label = document.getElementById('holdingsLabel');
+    if (label) label.textContent = holdings.length + ' HOLDINGS · UPLOADED FILE';
+    var tbody = document.getElementById('holdingsTbody');
+    if (!tbody) return;
+    if (holdings.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--ink-2)">No holdings found for this portfolio.</td></tr>';
+      return;
+    }
+    var totalVal = holdings.reduce(function(s,h){ return s+(h.current_value||0); }, 0);
+    tbody.innerHTML = holdings.slice(0,50).map(function(h) {
+      var wt = totalVal > 0 && h.current_value ? (h.current_value/totalVal*100).toFixed(2)+'%' : '—';
+      return '<tr><td style="font-weight:500">' + (h.instrument_name || h.name || '—') + '</td>' +
+        '<td class="mono" style="font-size:11.5px;color:var(--ink-3)">' + (h.isin || '—') + '</td>' +
+        '<td class="muted" style="font-size:12px">' + (h.instrument_type || h.type || '—') + '</td>' +
+        '<td class="mono">' + (h.current_value ? _fmtAUM(h.current_value) : '—') + '</td>' +
+        '<td class="mono">' + wt + '</td></tr>';
+    }).join('') +
+    (holdings.length > 50 ? '<tr><td colspan="5" style="text-align:center;padding:10px;color:var(--ink-3);font-size:12px">Showing 50 of '+holdings.length+' holdings</td></tr>' : '');
+  }).catch(function(){});
+}
+
+// ── Run scenarios for current portfolio ──
+function runScenarios() {
+  var nameEl = document.getElementById('clientName');
+  var portfolioId = nameEl ? nameEl.getAttribute('data-portfolio-id') : null;
+  if (!portfolioId) {
+    var msg = document.getElementById('scenariosMsg');
+    if (msg) msg.innerHTML = 'Please select a portfolio first.';
+    return;
+  }
+  var btn = document.getElementById('runScenariosBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Running…'; }
+  var msg = document.getElementById('scenariosMsg');
+  if (msg) { msg.style.display=''; msg.innerHTML = 'Running scenarios…'; }
+
+  _apiFetch('/api/v1/scenarios/' + portfolioId, {method: 'POST'}).then(function(r) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Run Scenarios'; }
+    if (!r.ok) {
+      if (msg) msg.innerHTML = '⚠ Scenario engine error (' + r.status + '). Ensure portfolio has been analysed first.';
+      return;
+    }
+    var scenarios = r.data.scenarios || r.data || [];
+    if (!Array.isArray(scenarios) || scenarios.length === 0) {
+      if (msg) msg.innerHTML = 'No scenario results returned. Ensure portfolio status is <b>ready</b>.';
+      return;
+    }
+    if (msg) msg.style.display = 'none';
+    var wrap = document.getElementById('scenariosWrap');
+    var rows = scenarios.map(function(s) {
+      var impact = s.portfolio_impact_pct !== undefined ? s.portfolio_impact_pct : (s.impact_pct || 0);
+      var impactStr = (impact >= 0 ? '+' : '') + parseFloat(impact).toFixed(1) + '%';
+      var cls = impact < 0 ? 'stress-impact neg' : 'stress-impact';
+      return '<tr><td style="font-weight:500">' + (s.name || s.scenario_name || 'Scenario') + '</td>' +
+        '<td><span class="' + cls + '">' + impactStr + '</span></td>' +
+        '<td class="muted" style="font-size:12px">' + (s.worst_segment || '—') + '</td>' +
+        '<td class="muted mono" style="font-size:12px">' + (s.horizon || '—') + '</td></tr>';
+    }).join('');
+    wrap.innerHTML = '<table class="tbl"><thead><tr><th>SCENARIO</th><th>PORTFOLIO IMPACT</th><th>WORST SEGMENT</th><th>HORIZON</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div style="padding:12px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">// ' + scenarios.length + ' scenarios · methodology v1.2 · deterministic propagation</div>';
+  }).catch(function(err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Run Scenarios'; }
+    if (msg) { msg.style.display=''; msg.innerHTML = '⚠ Network error running scenarios.'; }
+  });
+}
+
+// ── Initialise on load ──
+loadOverview();
+loadPortfolios();
+</script>
+</body>
+</html>
