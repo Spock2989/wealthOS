@@ -15,6 +15,13 @@ echo "════════════════════════�
 echo "  WealthOS Deploy — $(date '+%Y-%m-%d %H:%M')"
 echo "═══════════════════════════════════════════"
 
+# ── 0. Clear any git lock files (prevents "index.lock" errors) ──
+echo ""
+echo "▶ [0/4] Clearing git locks..."
+rm -f .git/HEAD.lock .git/index.lock .git/MERGE_HEAD.lock \
+       .git/CHERRY_PICK_HEAD.lock .git/REBASE_HEAD.lock 2>/dev/null || true
+echo "   ✓ Locks cleared"
+
 # ── 1. Git commit all changes ───────────────────
 echo ""
 echo "▶ [1/4] Committing changes to git..."
@@ -24,7 +31,7 @@ git add -A 2>/dev/null || true
 
 CHANGED=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
 if [ "$CHANGED" -gt "0" ]; then
-  git commit -m "phase 1-3+6: landing real API, auth register, dashboard real data, demo backend — $(date '+%Y-%m-%d')" 2>/dev/null || true
+  git commit -m "wealthos: deploy $(date '+%Y-%m-%d %H:%M')" 2>/dev/null || true
   echo "   ✓ Committed $CHANGED files"
 else
   echo "   ✓ Nothing new to commit (already up to date)"

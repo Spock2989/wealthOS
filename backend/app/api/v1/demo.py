@@ -99,6 +99,26 @@ def submit_demo(body: DemoRequestIn, db: Session = Depends(get_db)):
     db.add(lead)
     db.commit()
     db.refresh(lead)
+
+    # Fire email alert — best-effort, never blocks response
+    try:
+        from app.services.email_service import alert_new_demo_request
+        alert_new_demo_request(
+            ref_id  = lead.ref_id,
+            name    = lead.name,
+            firm    = lead.firm,
+            email   = lead.email,
+            phone   = lead.phone,
+            role    = lead.role or "",
+            aum     = lead.aum or "",
+            clients = lead.clients or "",
+            slot    = lead.preferred_slot or "",
+            message = lead.message or "",
+            source  = lead.source or "",
+        )
+    except Exception:
+        pass  # email never fails the request
+
     return {"status": "ok", "ref_id": lead.ref_id}
 
 

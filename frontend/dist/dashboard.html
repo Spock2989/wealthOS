@@ -453,14 +453,142 @@ body{
 
 /* mini chart sparkline */
 .sparkline{height:32px;overflow:visible}
+
+/* ──────────────────────────────────────────
+   MOBILE HAMBURGER
+────────────────────────────────────────── */
+.mob-menu-btn{
+  display:none;width:36px;height:36px;border:1px solid var(--line);
+  border-radius:7px;background:var(--surface);cursor:pointer;
+  align-items:center;justify-content:center;color:var(--ink-2);
+  flex-shrink:0;
+}
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:19;backdrop-filter:blur(2px)}
+.mob-overlay.open{display:block}
+
+/* ──────────────────────────────────────────
+   MOBILE RESPONSIVE
+   Breakpoints: 768px (tablet) / 480px (phone)
+────────────────────────────────────────── */
+@media (max-width:768px){
+  /* sidebar slides in/out */
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;z-index:20;
+    transform:translateX(-100%);transition:transform .28s var(--ease);
+    width:240px;
+  }
+  .sidebar.mob-open{transform:translateX(0);box-shadow:var(--shadow-2)}
+
+  /* show hamburger in topbar */
+  .mob-menu-btn{display:inline-flex}
+
+  /* content fills full width */
+  .main{width:100%;overflow-x:hidden}
+
+  /* topbar adjustments */
+  .topbar{padding:0 14px;gap:8px}
+  .search-box{display:none}
+  .topbar-subtitle{display:none}
+
+  /* content padding */
+  .content{padding:16px}
+
+  /* stat grid: 2 cols on tablet */
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+
+  /* report header — column stack; gauge absolutely pinned top-right */
+  .report-header{
+    position:relative;
+    flex-direction:column;align-items:stretch;
+    gap:0;padding:16px;
+  }
+  /* gauge: lifted out of flow, anchored to card top-right corner */
+  .report-header > div:first-child{
+    position:absolute;top:16px;right:16px;
+    order:unset;margin-left:0;padding-left:0;
+  }
+  /* name + meta + tags: right-padded to never run under the gauge */
+  .report-header > div:nth-child(2){
+    order:unset;flex:unset;min-width:0;
+    padding-right:86px;
+    margin-bottom:14px;
+  }
+  /* stats: 2-column grid — HHI|NEFF on row1, VOL|MaxDD on row2 */
+  .report-stats{
+    order:unset;
+    display:grid;grid-template-columns:1fr 1fr;gap:0;
+    border-left:none;border-top:1px solid var(--line);
+    padding:12px 0 0;margin-top:0;width:auto;
+  }
+  .report-stat{
+    padding:10px 10px 10px 0;border-right:none;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .report-stat:nth-child(3),.report-stat:nth-child(4){border-bottom:none}
+  /* actions: full width at bottom */
+  .report-actions{order:unset;margin-left:0;width:100%;margin-top:14px;}
+
+  /* tabs scroll horizontally */
+  .report-tabs{width:100%;overflow-x:auto;flex-wrap:nowrap;border-radius:7px}
+  .report-tab{padding:7px 12px;font-size:12px}
+
+  /* 2-col grids collapse */
+  .grid-2,.grid-3{grid-template-columns:1fr}
+
+  /* table scroll */
+  .card-body-flush{overflow-x:auto}
+  .tbl{min-width:480px}
+
+  /* page header stacks */
+  .page-header{flex-direction:column;align-items:flex-start;gap:10px}
+  .page-header > div:last-child{width:100%;flex-direction:column;align-items:stretch}
+  .page-header .btn{width:100%;justify-content:center}
+}
+
+@media (max-width:480px){
+  /* 1-col stat grid on phones */
+  .stat-grid{grid-template-columns:1fr}
+  .stat-val{font-size:20px}
+
+  /* topbar */
+  .topbar{padding:0 12px}
+  .topbar-title{font-size:13px}
+
+  /* report header — gauge compact, re-anchor for 12px content padding */
+  .gauge-wrap{width:64px;height:64px}
+  .gauge-val{font-size:15px}
+  .gauge-cap{font-size:8px}
+  .report-header > div:first-child{top:14px;right:14px}
+  .report-header > div:nth-child(2){padding-right:82px}
+  .report-client-name{font-size:16px;line-height:1.25;margin-bottom:5px}
+  .report-client-meta{flex-direction:column;gap:3px;font-size:9.5px}
+  .report-stat-val{font-size:17px}
+  .report-stat-label{font-size:9px}
+
+  /* content */
+  .content{padding:12px}
+
+  /* card padding tighter */
+  .card-body{padding:14px}
+  .card-head{padding:12px 14px}
+
+  /* hide some table columns */
+  .tbl th:nth-child(2),.tbl td:nth-child(2){display:none}
+
+  /* back button full width */
+  .back-btn{width:100%;margin-bottom:12px}
+}
 </style>
 </head>
 <body>
+<!-- mobile overlay -->
+<div class="mob-overlay" id="mobOverlay" onclick="closeMobileMenu()"></div>
+
 <div class="app" id="app">
 
   <!-- ════════════════ SIDEBAR ════════════════ -->
   <aside class="sidebar">
-    <a href="#" class="sidebar-brand">
+    <a href="https://wlthos.in" class="sidebar-brand" title="Go to WealthOS home">
       <span class="brand-mark"></span>
       <span class="brand-name"><b>Wealth</b>OS<span class="brand-suffix">/ai</span></span>
     </a>
@@ -504,6 +632,13 @@ body{
         Compliance
       </a>
 
+      <div class="nav-section-label" style="margin-top:8px">ADMIN</div>
+      <a class="nav-item" onclick="showView('leads');setActive(this)" id="leadsNavItem">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Leads & Demos
+        <span class="nav-badge amber" id="navBadgeLeads" style="display:none"></span>
+      </a>
+
       <div class="nav-section-label" style="margin-top:8px">SYSTEM</div>
       <a class="nav-item" onclick="setActive(this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -516,21 +651,26 @@ body{
     </nav>
 
     <div class="sidebar-footer">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div class="advisor-chip" style="flex:1">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <div class="advisor-chip" style="flex:1;min-width:0">
           <div class="advisor-avatar" id="advisorAvatar">—</div>
-          <div>
-            <div class="advisor-name" id="advisorName">Loading…</div>
+          <div style="min-width:0">
+            <div class="advisor-name" id="advisorName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Loading…</div>
             <div class="advisor-role" id="advisorFirm">ADVISOR</div>
           </div>
         </div>
-        <button class="theme-toggle" id="themeToggle" title="Toggle theme">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        </button>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          </button>
+          <button class="theme-toggle" onclick="logOut()" title="Log out" style="color:var(--danger);border-color:rgba(220,38,38,.2)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--bg-alt)">
         <span class="pulse-dot"></span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em">SYSTEM ONLINE · v2.0</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em">API CONNECTED · v2.0</span>
       </div>
     </div>
   </aside>
@@ -540,6 +680,9 @@ body{
 
     <!-- top bar -->
     <div class="topbar">
+      <button class="mob-menu-btn" onclick="openMobileMenu()" aria-label="Open menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="topbar-left" id="topbarInfo">
         <div class="topbar-title" id="topbarGreeting">Welcome</div>
         <div class="topbar-subtitle mono" id="topbarDate">THU 21 MAY 2026 · 10:36 IST</div>
@@ -663,6 +806,34 @@ body{
         </div>
       </div>
 
+      <!-- ─── VIEW: LEADS & DEMOS ─── -->
+      <div class="view" id="view-leads">
+        <div class="topbar" style="margin-bottom:20px;border-radius:var(--radius-lg);border:1px solid var(--line);padding:0 20px">
+          <div class="topbar-left">
+            <div class="topbar-title">Leads & Demo Requests</div>
+            <div class="topbar-subtitle" style="font-family:'JetBrains Mono',monospace">INBOUND INQUIRIES · DEMO BOOKINGS · ACCOUNT SIGNUPS</div>
+          </div>
+          <div class="topbar-right">
+            <span id="leadsCount" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)"></span>
+            <button class="btn btn-ghost btn-sm" onclick="loadLeads()">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- Filter pills -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" id="leadFilterAll"   onclick="filterLeads('all')">All</button>
+          <button class="btn btn-sm btn-ghost"   id="leadFilterNew"   onclick="filterLeads('new')">New</button>
+          <button class="btn btn-sm btn-ghost"   id="leadFilterContacted" onclick="filterLeads('contacted')">Contacted</button>
+        </div>
+
+        <!-- Table -->
+        <div class="card">
+          <div id="leadsTableWrap">
+            <div style="text-align:center;padding:48px;color:var(--ink-3);font-size:13px" id="leadsMsg">Loading leads…</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ─── VIEW: CLIENT REPORT ─── -->
       <div class="view" id="view-client">
         <button class="back-btn" onclick="showView('dashboard');setActiveByName('dashboard')">
@@ -737,6 +908,7 @@ body{
           <button class="report-tab" onclick="switchTab('risk')">Risk Engine</button>
           <button class="report-tab" onclick="switchTab('scenarios')">Scenarios</button>
           <button class="report-tab" onclick="switchTab('factors')">Factor DNA</button>
+          <button class="report-tab" onclick="switchTab('xray')">Holdings X-Ray</button>
           <button class="report-tab" onclick="switchTab('memo')">AI Memo</button>
         </div>
 
@@ -780,46 +952,71 @@ body{
 
         <!-- tab: exposures -->
         <div class="tab-panel" id="tab-exposures">
-          <div class="card">
-            <div class="card-body" style="text-align:center;padding:64px 32px">
-              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">EXPOSURES MODULE</div>
-              <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Fund overlap &amp; look-through analysis</div>
-              <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">Fund-level look-through and stock overlap matrix requires portfolio holdings with scheme codes resolved against fund factsheets. This module is in development. Holdings are available in the Overview tab.</div>
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Asset Class Breakdown</div><div class="card-label">DETERMINISTIC · METHODOLOGY v1.2</div></div>
+              <div class="card-body" id="expAssetClass"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Load a portfolio to view.</div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Market Cap Exposure</div><div class="card-label">EQUITY HOLDINGS ONLY</div></div>
+              <div class="card-body" id="expMarketCap"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Load a portfolio to view.</div></div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Sector Exposure (Detailed)</div><div class="card-label">BY SECTOR · EFFECTIVE WEIGHT</div></div>
+              <div class="card-body" id="expSector"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Load a portfolio to view.</div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Liquidity &amp; Fund Overlap</div><div class="card-label">REDEEMABILITY PROFILE</div></div>
+              <div class="card-body" id="expLiquidity"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Load a portfolio to view.</div></div>
             </div>
           </div>
         </div>
 
-        <!-- tab: risk — real metrics from analytics engine -->
+        <!-- tab: risk -->
         <div class="tab-panel" id="tab-risk">
-          <div class="grid-2">
+          <div class="grid-2" style="margin-bottom:16px">
             <div class="card">
               <div class="card-head"><div class="card-title">Risk Metrics</div><div class="card-label">METHODOLOGY v1.2 · DETERMINISTIC ENGINE</div></div>
               <div class="card-body" id="riskMetricsBody">
-                <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">
-                  Select a portfolio to view risk metrics.
-                </div>
+                <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Select a portfolio to view risk metrics.</div>
               </div>
             </div>
             <div class="card">
-              <div class="card-head"><div class="card-title">Scenario Engine</div><div class="card-label">RUN FROM SCENARIOS TAB</div></div>
-              <div class="card-body" style="text-align:center;padding:40px 32px">
-                <div style="font-size:13px;color:var(--ink-2);margin-bottom:16px">Run parametric stress scenarios against this portfolio's actual holdings.</div>
-                <button class="btn btn-primary" onclick="switchTab('scenarios')">Go to Scenarios →</button>
+              <div class="card-head"><div class="card-title">Diversification Profile</div><div class="card-label">ENTROPY-BASED SCORE</div></div>
+              <div class="card-body" id="riskDiversBody">
+                <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Select a portfolio.</div>
               </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Historical Drawdown Scenarios</div><div class="card-label">ASSET-CLASS CALIBRATED · INDIA MARKET DATA</div></div>
+            <div class="card-body-flush" id="riskDrawdownBody">
+              <div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Select a portfolio to view drawdown scenarios.</div>
             </div>
           </div>
         </div>
 
-        <!-- tab: scenarios — wired to real API -->
+        <!-- tab: scenarios -->
         <div class="tab-panel" id="tab-scenarios">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-head">
+              <div><div class="card-title">Portfolio Stress Tests</div><div class="card-label">8 SCENARIOS · ASSET-CLASS CALIBRATED · DETERMINISTIC</div></div>
+              <div id="stressResilienceWrap" style="display:none"></div>
+            </div>
+            <div class="card-body-flush" id="stressWrap">
+              <div style="text-align:center;padding:48px;color:var(--ink-2);font-size:13px" id="stressMsg">Select a portfolio to view stress scenarios.</div>
+            </div>
+          </div>
           <div class="card">
             <div class="card-head">
-              <div><div class="card-title">Scenario Stress Testing</div><div class="card-label">DETERMINISTIC PROPAGATION · MACRO → SECTOR → STOCK → PORTFOLIO</div></div>
-              <button class="btn btn-primary btn-sm" id="runScenariosBtn" onclick="runScenarios()">Run Scenarios</button>
+              <div><div class="card-title">Macro Scenario Engine</div><div class="card-label">20 SCENARIOS · MACRO → SECTOR → PORTFOLIO PROPAGATION</div></div>
+              <button class="btn btn-primary btn-sm" id="runScenariosBtn" onclick="runMacroScenarios()">Run Macro Scenarios</button>
             </div>
             <div class="card-body-flush" id="scenariosWrap">
-              <div style="text-align:center;padding:48px;color:var(--ink-2);font-size:13px" id="scenariosMsg">
-                Select a portfolio then click <b>Run Scenarios</b> to compute stress impacts.
+              <div style="text-align:center;padding:36px;color:var(--ink-2);font-size:13px" id="scenariosMsg">
+                Click <b>Run Macro Scenarios</b> to propagate macro shocks through your sector weights.
               </div>
             </div>
           </div>
@@ -827,24 +1024,112 @@ body{
 
         <!-- tab: factors -->
         <div class="tab-panel" id="tab-factors">
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Style &amp; Composition DNA</div><div class="card-label">ASSET CLASS · MARKET CAP · LIQUIDITY</div></div>
+              <div class="card-body" id="factorStyleBody"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Select a portfolio.</div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Risk &amp; Liquidity Profile</div><div class="card-label">HOLDING-LEVEL SCORES</div></div>
+              <div class="card-body" id="factorRiskBody"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Select a portfolio.</div></div>
+            </div>
+          </div>
           <div class="card">
-            <div class="card-body" style="text-align:center;padding:64px 32px">
-              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">FACTOR DNA MODULE</div>
-              <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Portfolio style decomposition</div>
-              <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">Factor DNA analysis (Growth, Quality, Momentum, Value, Defensive) requires historical NAV data for factor regression. This module is in development. Use the Risk tab for concentration and volatility metrics available from the analytics engine now.</div>
-              <button class="btn btn-ghost" style="margin-top:24px" onclick="switchTab('risk')">View Risk Metrics →</button>
+            <div class="card-head"><div class="card-title">Concentration &amp; Overlap Intelligence</div><div class="card-label">TOP HOLDINGS · FUND OVERLAP · DUPLICATE ISINS</div></div>
+            <div class="card-body" id="factorConcentrationBody"><div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">Select a portfolio.</div></div>
+          </div>
+        </div>
+
+        <!-- tab: Holdings X-Ray (look-through engine) -->
+        <div class="tab-panel" id="tab-xray">
+          <!-- Header + actions -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Holdings X-Ray</div>
+                <div class="card-label">RECURSIVE FUND→STOCK LOOK-THROUGH · CROSS-FUND OVERLAP DETECTION</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span id="xrayDepthBadge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3)"></span>
+                <button class="btn btn-ghost btn-sm" id="xrayRefreshBtn" onclick="refreshXRay()">↻ Refresh from AMFI</button>
+                <button class="btn btn-primary btn-sm" id="xrayRunBtn" onclick="loadXRay()">Run X-Ray</button>
+              </div>
+            </div>
+            <div id="xrayMsg" style="text-align:center;padding:32px;color:var(--ink-2);font-size:13px">
+              Click <b>Run X-Ray</b> to decompose all funds into their underlying stock holdings.
+            </div>
+            <!-- Data quality banner — shown after load -->
+            <div id="xrayQualityBanner" style="display:none;padding:10px 18px;border-top:1px solid var(--line);background:rgba(180,83,9,.04)">
+              <span style="font-size:12px;color:var(--warn)">⚠ </span>
+              <span id="xrayQualityText" style="font-size:12px;color:var(--ink-2)"></span>
+            </div>
+          </div>
+
+          <!-- Top underlying holdings -->
+          <div class="card" style="margin-bottom:16px" id="xrayUnderlyingCard" style="display:none">
+            <div class="card-head">
+              <div class="card-title">Effective Stock Exposure</div>
+              <div class="card-label">ACROSS ALL FUNDS · RANKED BY EFFECTIVE WEIGHT</div>
+            </div>
+            <div id="xrayUnderlyingBody" class="card-body-flush"></div>
+          </div>
+
+          <!-- Cross-fund overlap -->
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="card" id="xrayOverlapCard">
+              <div class="card-head">
+                <div class="card-title">Cross-Fund Overlap</div>
+                <div class="card-label">STOCKS IN 2+ FUNDS · HIDDEN DUPLICATION</div>
+              </div>
+              <div id="xrayOverlapBody" class="card-body">
+                <div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">Run X-Ray to detect overlap.</div>
+              </div>
+            </div>
+            <div class="card" id="xrayPairCard">
+              <div class="card-head">
+                <div class="card-title">Fund vs Fund Overlap</div>
+                <div class="card-label">PAIRWISE OVERLAP MATRIX · MIN-WEIGHT METHOD</div>
+              </div>
+              <div id="xrayPairBody" class="card-body">
+                <div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">Run X-Ray to compute overlap pairs.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Post look-through sector exposure -->
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Effective Sector (Post Look-Through)</div>
+                <div class="card-label">BASED ON UNDERLYING STOCKS</div>
+              </div>
+              <div class="card-body" id="xraySectorBody">
+                <div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">Run X-Ray.</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Effective Market Cap (Post Look-Through)</div>
+                <div class="card-label">BASED ON UNDERLYING STOCKS</div>
+              </div>
+              <div class="card-body" id="xrayCapBody">
+                <div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">Run X-Ray.</div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- tab: AI memo -->
         <div class="tab-panel" id="tab-memo">
-          <div class="card">
-            <div class="card-body" style="text-align:center;padding:64px 32px">
-              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:16px">AI MEMO MODULE</div>
-              <div style="font-size:15px;color:var(--ink-2);margin-bottom:8px">Portfolio review memo generation</div>
-              <div style="font-size:13px;color:var(--ink-3);max-width:480px;margin:0 auto;line-height:1.6">AI-generated client memos synthesise the analytics engine output into plain-language advisor commentary. This module is in development. The analytics data (HHI, volatility, sector exposure, drawdown) is available now in the Risk and Overview tabs.</div>
-              <button class="btn btn-ghost" style="margin-top:24px" onclick="switchTab('overview')">View Analytics →</button>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-head">
+              <div><div class="card-title">AI Portfolio Memo</div><div class="card-label">CLAUDE · SEBI-GRADE ADVISOR NARRATIVE</div></div>
+              <button class="btn btn-primary btn-sm" id="genMemoBtn" onclick="generateMemo()">Generate Memo</button>
+            </div>
+            <div id="memoWrap">
+              <div style="text-align:center;padding:48px;color:var(--ink-2);font-size:13px" id="memoMsg">
+                Click <b>Generate Memo</b> to synthesise analytics into advisor-ready commentary.
+              </div>
             </div>
           </div>
         </div>
@@ -928,11 +1213,33 @@ body{
   update(); setInterval(update,30000);
 })();
 
+// ── mobile menu ──
+function openMobileMenu(){
+  document.querySelector('.sidebar').classList.add('mob-open');
+  document.getElementById('mobOverlay').classList.add('open');
+}
+function closeMobileMenu(){
+  document.querySelector('.sidebar').classList.remove('mob-open');
+  document.getElementById('mobOverlay').classList.remove('open');
+}
+
+// ── logout ──
+function logOut(){
+  try{
+    localStorage.removeItem('wos_token'); localStorage.removeItem('wos_user');
+    sessionStorage.removeItem('wos_token'); sessionStorage.removeItem('wos_user');
+  }catch(e){}
+  window.location.replace('/app.html');
+}
+
 // ── view switcher ──
 function showView(name){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
   var v=document.getElementById('view-'+name);
   if(v) v.classList.add('active');
+  closeMobileMenu(); // auto-close sidebar on mobile after nav
+  // Lazy-load view data on first visit
+  if(name==='leads' && typeof loadLeads==='function') loadLeads();
 }
 function setActive(el){
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
@@ -949,12 +1256,13 @@ function setActiveByName(name){
 // ── tab switcher ──
 function switchTab(name){
   document.querySelectorAll('.report-tab').forEach(function(t,i){
-    var names=['overview','exposures','risk','scenarios','factors','memo'];
+    var names=['overview','exposures','risk','scenarios','factors','xray','memo'];
     t.classList.toggle('active',names[i]===name);
   });
   document.querySelectorAll('.tab-panel').forEach(function(p){
     p.classList.toggle('active',p.id==='tab-'+name);
   });
+  if (typeof closeMobileMenu === 'function') closeMobileMenu();
 }
 
 // ════════════════════════════════════════════════
@@ -1246,9 +1554,12 @@ function openPortfolio(portfolioId) {
     var hhi = hhi_raw > 1 ? (hhi_raw / 10000).toFixed(3) : hhi_raw.toFixed(3);
     var neff = hhi_raw > 0 ? (hhi_raw > 1 ? (10000 / hhi_raw).toFixed(1) : (1 / hhi_raw).toFixed(1)) : '—';
 
-    var vol = (a.volatility || {}).annualized_pct ? (a.volatility.annualized_pct).toFixed(1) + '%' : '—';
-    var dd  = (a.drawdown_sensitivity || {}).max_drawdown_pct
-                ? '−' + Math.abs(a.drawdown_sensitivity.max_drawdown_pct).toFixed(1) + '%' : '—';
+    var _vol = a.volatility || {};
+    var vol = (_vol.estimated_annual_volatility_pct || _vol.annualized_pct)
+                ? parseFloat(_vol.estimated_annual_volatility_pct || _vol.annualized_pct).toFixed(1) + '%' : '—';
+    var _dd = a.drawdown_sensitivity || {};
+    var dd  = (_dd.worst_case_drawdown_pct || _dd.max_drawdown_pct)
+                ? '−' + Math.abs(parseFloat(_dd.worst_case_drawdown_pct || _dd.max_drawdown_pct)).toFixed(1) + '%' : '—';
 
     document.getElementById('clientHHI').textContent  = hhi;
     document.getElementById('clientNeff').textContent = neff;
@@ -1267,7 +1578,7 @@ function openPortfolio(portfolioId) {
 
     // Tags
     var tags = [];
-    var sector = a.sector_exposure || {};
+    var sector = (a.sector_exposure || {}).by_sector || {};
     var topSectors = Object.entries(sector).sort(function(x,y){ return y[1]-x[1]; }).slice(0,3);
     topSectors.forEach(function(s){ tags.push(s[0] + ' ' + parseFloat(s[1]).toFixed(1) + '%'); });
     tags.push('HHI ' + hhi);
@@ -1276,20 +1587,14 @@ function openPortfolio(portfolioId) {
     if (tagsEl) tagsEl.innerHTML = tags.map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('');
 
     // ── Populate Overview tab ──
-    // Sector allocation bar chart
+    // Sector allocation — horizontal bar chart
     var sectorWrap = document.getElementById('sectorChartWrap');
-    if (sectorWrap && sector && Object.keys(sector).length > 0) {
-      var sorted = Object.entries(sector).sort(function(x,y){ return y[1]-x[1]; }).slice(0,8);
-      var maxPct = sorted[0][1];
-      var colors = ['var(--accent)','#6366f1','var(--ok)','#f59e0b','var(--danger)','#8b5cf6','#14b8a6','var(--ink-3)'];
-      var bars = sorted.map(function(s, i) {
-        var pct = parseFloat(s[1]);
-        var ht = Math.max(8, Math.round(pct / maxPct * 90));
-        return '<div class="bar-item"><div class="bar-fill" style="height:'+ht+'%;background:'+colors[i%colors.length]+'"><span class="bar-pct">'+pct.toFixed(1)+'%</span></div><div class="bar-label">'+s[0]+'</div></div>';
-      }).join('');
-      sectorWrap.innerHTML = '<div class="bar-chart">' + bars + '</div>';
-    } else if (sectorWrap) {
-      sectorWrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No sector data available for this portfolio.</div>';
+    if (sectorWrap) {
+      if (Object.keys(sector).length > 0) {
+        sectorWrap.innerHTML = _hbarChart(sector, 10);
+      } else {
+        sectorWrap.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No sector data available.</div>';
+      }
     }
 
     // Analytics summary card
@@ -1333,16 +1638,22 @@ function openPortfolio(portfolioId) {
                     conc.hhi_interpretation === 'moderately_concentrated' ? 'var(--warn)' : 'var(--ok)';
     }
 
-    // Reset scenarios
+    // ── Populate all tabs from snapshot ──
+    _populateExposures(a);
+    _populateRisk(a);
+    _populateStressScenarios(a);
+    _populateFactorDNA(a);
+
+    // Reset macro scenarios prompt
     var scenMsg = document.getElementById('scenariosMsg');
-    if (scenMsg) scenMsg.innerHTML = 'Click <b>Run Scenarios</b> to compute stress impacts for this portfolio.';
+    if (scenMsg) scenMsg.innerHTML = 'Click <b>Run Macro Scenarios</b> to propagate macro shocks through sector weights.';
 
   }).catch(function(){});
 
   // ── Load holdings ──
   _apiFetch('/api/v1/portfolios/' + portfolioId + '/holdings').then(function(r) {
     if (!r.ok) return;
-    var holdings = r.data || [];
+    var holdings = (r.data && r.data.holdings) ? r.data.holdings : (Array.isArray(r.data) ? r.data : []);
     var label = document.getElementById('holdingsLabel');
     if (label) label.textContent = holdings.length + ' HOLDINGS · UPLOADED FILE';
     var tbody = document.getElementById('holdingsTbody');
@@ -1353,10 +1664,14 @@ function openPortfolio(portfolioId) {
     }
     var totalVal = holdings.reduce(function(s,h){ return s+(h.current_value||0); }, 0);
     tbody.innerHTML = holdings.slice(0,50).map(function(h) {
-      var wt = totalVal > 0 && h.current_value ? (h.current_value/totalVal*100).toFixed(2)+'%' : '—';
-      return '<tr><td style="font-weight:500">' + (h.instrument_name || h.name || '—') + '</td>' +
-        '<td class="mono" style="font-size:11.5px;color:var(--ink-3)">' + (h.isin || '—') + '</td>' +
-        '<td class="muted" style="font-size:12px">' + (h.instrument_type || h.type || '—') + '</td>' +
+      var wt = h.allocation_percent ? parseFloat(h.allocation_percent).toFixed(2)+'%'
+               : (totalVal > 0 && h.current_value ? (h.current_value/totalVal*100).toFixed(2)+'%' : '—');
+      var acClass = (h.asset_class||'equity').toLowerCase();
+      var acColor = acClass==='equity'?'var(--accent)':acClass==='debt'?'var(--ok)':acClass==='hybrid'?'var(--warn)':'var(--ink-3)';
+      return '<tr>' +
+        '<td style="font-weight:500">' + (h.instrument_name || h.name || '—') + '</td>' +
+        '<td class="mono" style="font-size:11px;color:var(--ink-3)">' + (h.isin || '—') + '</td>' +
+        '<td><span style="font-size:11px;padding:2px 7px;border-radius:100px;background:' + acColor.replace(')',', .1)').replace('var(','rgba(').replace('--accent','30,64,255').replace('--ok','22,163,74').replace('--warn','180,83,9').replace('--ink-3','163,163,163') + ';color:' + acColor + '">' + (h.asset_class||'—') + '</span></td>' +
         '<td class="mono">' + (h.current_value ? _fmtAUM(h.current_value) : '—') + '</td>' +
         '<td class="mono">' + wt + '</td></tr>';
     }).join('') +
@@ -1364,8 +1679,378 @@ function openPortfolio(portfolioId) {
   }).catch(function(){});
 }
 
-// ── Run scenarios for current portfolio ──
-function runScenarios() {
+// ════════════════════════════════════════════════
+//  CHART & ROW HELPERS
+// ════════════════════════════════════════════════
+
+function _rowItem(label, value, color) {
+  return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:9px 0;border-bottom:1px solid var(--line-soft)">' +
+    '<span style="color:var(--ink-2)">' + label + '</span>' +
+    '<span class="mono" style="font-weight:600;color:' + (color||'var(--ink)') + '">' + value + '</span></div>';
+}
+
+function _hbarChart(data, maxItems) {
+  var entries = Object.entries(data)
+    .filter(function(e){ return parseFloat(e[1]) > 0.01; })
+    .sort(function(a,b){ return parseFloat(b[1])-parseFloat(a[1]); })
+    .slice(0, maxItems || 10);
+  if (!entries.length) return '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No data.</div>';
+  var max = parseFloat(entries[0][1]);
+  return entries.map(function(e) {
+    var pct = parseFloat(e[1]);
+    var barW = Math.max(2, Math.round(pct/max*100));
+    var color = pct > 30 ? 'var(--danger)' : pct > 18 ? 'var(--warn)' : 'var(--accent)';
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">' +
+        '<span style="color:var(--ink-2);font-weight:450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">' + e[0] + '</span>' +
+        '<span class="mono" style="font-weight:700;color:' + color + '">' + pct.toFixed(1) + '%</span>' +
+      '</div>' +
+      '<div style="height:5px;background:var(--line);border-radius:100px;overflow:hidden">' +
+        '<div style="height:100%;width:' + barW + '%;background:' + color + ';border-radius:100px;transition:width .5s cubic-bezier(.4,0,.2,1)"></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+//  TAB POPULATE FUNCTIONS
+// ════════════════════════════════════════════════
+
+// ── Market cap key → readable display label ──
+var _MC_LABELS = {
+  'n_a':'Diversified/Multi-Cap','large_cap':'Large Cap','mid_cap':'Mid Cap',
+  'small_cap':'Small Cap','large':'Large Cap','mid':'Mid Cap','small':'Small Cap',
+  'multi':'Multi-Cap','other':'Other',
+};
+function _mcLabel(k){ return _MC_LABELS[k] || k.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}); }
+
+function _populateExposures(a) {
+  // Asset class — key is a.asset_allocation.by_class
+  var acEl = document.getElementById('expAssetClass');
+  if (acEl) {
+    var byAC = ((a.asset_allocation || {}).by_class) || {};
+    // Filter out zero values, prettify keys
+    var displayAC = {};
+    Object.entries(byAC).forEach(function(e){
+      if (parseFloat(e[1]) > 0.01) {
+        var label = e[0].charAt(0).toUpperCase() + e[0].slice(1);
+        displayAC[label] = e[1];
+      }
+    });
+    acEl.innerHTML = Object.keys(displayAC).length
+      ? _hbarChart(displayAC, 8)
+      : '<div style="color:var(--ink-3);font-size:12px;text-align:center;padding:20px">No asset class data — re-run analytics.</div>';
+  }
+
+  // Market cap — key is a.market_cap_exposure.by_cap_pct_of_portfolio
+  var mcEl = document.getElementById('expMarketCap');
+  if (mcEl) {
+    var mc = a.market_cap_exposure || {};
+    var byMC = mc.by_cap_pct_of_portfolio || mc.by_market_cap || {};
+    var displayMC = {};
+    Object.entries(byMC).forEach(function(e){
+      if (parseFloat(e[1]) > 0.01) displayMC[_mcLabel(e[0])] = e[1];
+    });
+    mcEl.innerHTML = Object.keys(displayMC).length
+      ? _hbarChart(displayMC, 6)
+      : '<div style="color:var(--ink-3);font-size:12px;text-align:center;padding:20px">No market cap data.</div>';
+  }
+
+  // Sector detailed
+  var secEl = document.getElementById('expSector');
+  if (secEl) {
+    var sector = (a.sector_exposure || {}).by_sector || {};
+    secEl.innerHTML = Object.keys(sector).length
+      ? _hbarChart(sector, 15)
+      : '<div style="color:var(--ink-3);font-size:12px;text-align:center;padding:20px">No sector data. Upload a portfolio with equity holdings.</div>';
+  }
+
+  // Liquidity + overlap
+  var liqEl = document.getElementById('expLiquidity');
+  if (liqEl) {
+    var liq = a.liquidity || {};
+    var ov  = a.fund_overlap || {};
+    var rows = '';
+    if (liq.liquid_pct !== undefined) {
+      rows += _rowItem('T+1 Liquid', parseFloat(liq.t_plus_1_redeemable_pct||liq.liquid_pct||0).toFixed(1)+'%', 'var(--ok)');
+      rows += _rowItem('Semi-liquid', parseFloat(liq.semi_liquid_pct||0).toFixed(1)+'%', 'var(--warn)');
+      rows += _rowItem('Illiquid', parseFloat(liq.illiquid_pct||0).toFixed(1)+'%', 'var(--danger)');
+      if (liq.liquid_inr) rows += _rowItem('Liquid Value', _fmtAUM(liq.liquid_inr), 'var(--ok)');
+    }
+    if (ov.total_overlap_pct_of_portfolio !== undefined) {
+      rows += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)">' +
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px">FUND OVERLAP</div>' +
+        _rowItem('Total Portfolio Overlap', parseFloat(ov.total_overlap_pct_of_portfolio||0).toFixed(1)+'%', 'var(--warn)') +
+        _rowItem('Duplicate ISINs', (ov.duplicate_isin_count||0)+'', 'var(--warn)') +
+        '</div>';
+    }
+    liqEl.innerHTML = rows || '<div style="color:var(--ink-3);font-size:12px;text-align:center;padding:20px">No liquidity data.</div>';
+  }
+}
+
+function _populateRisk(a) {
+  // Diversification
+  var diversEl = document.getElementById('riskDiversBody');
+  if (diversEl) {
+    var div = a.diversification || {};
+    var grade = div.grade || '—';
+    var gradeColors = {A:'var(--ok)',B:'var(--ok)',C:'var(--warn)',D:'var(--danger)',F:'var(--danger)'};
+    var gc = gradeColors[grade] || 'var(--ink)';
+    var gradeHtml = grade !== '—'
+      ? '<div style="display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--line-soft)">' +
+          '<span style="font-size:36px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:' + gc + '">' + grade + '</span>' +
+          '<div><div style="font-size:12px;color:var(--ink-3)">DIVERSIFICATION GRADE</div>' +
+          '<div style="font-size:13px;color:var(--ink-2)">Score: ' + (div.score||'—') + ' · Entropy: ' + (div.entropy?parseFloat(div.entropy).toFixed(3):'—') + '</div></div>' +
+        '</div>'
+      : '';
+    diversEl.innerHTML = gradeHtml +
+      _rowItem('Asset Classes', (div.asset_class_count||'—')+'', 'var(--ink)') +
+      _rowItem('Sectors', (div.sector_count||'—')+'', 'var(--ink)') +
+      '<div style="margin-top:12px;font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.04em">// ENTROPY-BASED DIVERSIFICATION · METHODOLOGY v1.2</div>';
+  }
+
+  // Historical drawdown
+  var ddEl = document.getElementById('riskDrawdownBody');
+  if (ddEl) {
+    var dd = a.drawdown_sensitivity || {};
+    var scens = dd.scenarios || {};
+    var worst = dd.worst_case_scenario || '';
+    var ddNames = {
+      '2008_global_financial_crisis': '2008 Global Financial Crisis',
+      '2020_covid_crash':             '2020 COVID Crash',
+      '2015_china_slowdown':          '2015 China Slowdown',
+    };
+    var scKeys = Object.keys(scens);
+    if (scKeys.length) {
+      var rows = scKeys.map(function(k) {
+        var s = scens[k];
+        var pct = parseFloat(s.pct||0).toFixed(1);
+        var inrVal = Math.abs(s.inr||0);
+        var isWorst = k === worst;
+        return '<tr' + (isWorst?' style="background:rgba(220,38,38,.04)"':'') + '>' +
+          '<td style="font-weight:' + (isWorst?'600':'450') + '">' + (ddNames[k]||k.replace(/_/g,' ')) + '</td>' +
+          '<td class="mono" style="color:var(--danger);font-weight:700">' + pct + '%</td>' +
+          '<td class="mono" style="color:var(--danger)">' + _fmtAUM(inrVal) + '</td>' +
+          '<td>' + (isWorst ? '<span class="pill pill-hi">Worst Case</span>' : '') + '</td></tr>';
+      }).join('');
+      ddEl.innerHTML = '<table class="tbl"><thead><tr><th>SCENARIO</th><th>IMPACT %</th><th>IMPACT ₹</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div style="padding:10px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">// ACTUAL INDIA MARKET PEAK-TO-TROUGH DRAWDOWNS · ASSET-CLASS CALIBRATED</div>';
+    } else {
+      ddEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No drawdown data available.</div>';
+    }
+  }
+}
+
+function _populateStressScenarios(a) {
+  var stressEl  = document.getElementById('stressWrap');
+  var resEl     = document.getElementById('stressResilienceWrap');
+  var stressMsg = document.getElementById('stressMsg');
+  if (!stressEl) return;
+
+  var st = a.stress_test || a.stress_scenarios || {};
+  var scenarios = st.scenarios || st || [];
+  if (!Array.isArray(scenarios)) scenarios = [];
+  var summary = st.summary || {};
+
+  if (!scenarios.length) {
+    if (stressMsg) { stressMsg.style.display=''; stressMsg.textContent = 'No stress test data. Re-run analytics.'; }
+    return;
+  }
+  if (stressMsg) stressMsg.style.display = 'none';
+
+  // Resilience badge
+  if (resEl && summary.resilience_grade) {
+    var rg = summary.resilience_grade;
+    var rgColor = {A:'var(--ok)',B:'var(--ok)',C:'var(--warn)',D:'var(--danger)',F:'var(--danger)'}[rg]||'var(--ink)';
+    resEl.style.display = '';
+    resEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="font-size:11px;color:var(--ink-3)">Resilience</span>' +
+      '<span style="font-family:\'JetBrains Mono\',monospace;font-size:22px;font-weight:700;color:' + rgColor + '">' + rg + '</span>' +
+      '<span class="mono" style="font-size:11px;color:var(--ink-2)">' + parseFloat(summary.resilience_score||0).toFixed(0) + '/100</span></div>';
+  }
+
+  var rows = scenarios.map(function(s) {
+    var impact  = parseFloat(s.portfolio_impact_pct !== undefined ? s.portfolio_impact_pct : (s.impact_pct||0));
+    var impStr  = (impact>=0?'+':'') + impact.toFixed(1) + '%';
+    var color   = impact < -20 ? 'var(--danger)' : impact < -8 ? 'var(--warn)' : impact > 0 ? 'var(--ok)' : 'var(--ink)';
+    // Engine stores display name in .label, ID in .scenario
+    var label   = s.label || s.scenario_name || s.scenario || 'Scenario';
+    var id      = s.scenario || s.scenario_name || '';
+    var isWorst = id === summary.worst_scenario;
+    var isBest  = id === summary.best_scenario;
+    // Severity pill color
+    var sev     = (s.severity||'').toLowerCase();
+    var sevColor= sev==='extreme'?'var(--danger)':sev==='high'?'var(--warn)':sev==='medium'?'var(--accent)':'var(--ink-3)';
+    // Top impacted holdings preview (up to 3)
+    var topH    = (s.top_impacted_holdings||[]).slice(0,3);
+    var holdStr = topH.length
+      ? '<div style="font-size:11px;color:var(--ink-3);margin-top:3px">' +
+          topH.map(function(h){ return (h.name||h.instrument_name||h.isin||'') + ' <span style="color:'+color+'">' + (h.impact!==undefined?parseFloat(h.impact).toFixed(1)+'%':'') + '</span>'; }).join(' · ') +
+        '</div>'
+      : '';
+    // Description
+    var descStr = s.description
+      ? '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.45">' + s.description + '</div>'
+      : '';
+    return '<tr' + (isWorst?' style="background:rgba(220,38,38,.04)"':'') + '>' +
+      '<td style="font-weight:' + (isWorst||isBest?'600':'450') + '">' +
+        label + descStr + holdStr +
+      '</td>' +
+      '<td class="mono" style="font-weight:700;color:' + color + ';vertical-align:top;padding-top:14px">' + impStr + '</td>' +
+      '<td style="font-size:12px;color:var(--ink-2);vertical-align:top;padding-top:14px">' + (s.horizon||'—') + '</td>' +
+      '<td style="vertical-align:top;padding-top:12px">' +
+        (isWorst?'<span class="pill pill-hi">Worst</span>':isBest?'<span class="pill pill-low">Best</span>':'') +
+        (s.severity ? '<span style="margin-left:4px;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+sevColor+'">' + s.severity.toUpperCase() + '</span>' : '') +
+      '</td></tr>';
+  }).join('');
+
+  stressEl.innerHTML =
+    '<table class="tbl"><thead><tr><th>SCENARIO</th><th>IMPACT</th><th>HORIZON</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div style="padding:12px 18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:20px">' +
+    (summary.worst_impact_pct !== undefined ? '<div class="mono" style="font-size:11px;color:var(--ink-3)">WORST <span style="color:var(--danger)">' + parseFloat(summary.worst_impact_pct).toFixed(1) + '%</span></div>' : '') +
+    (summary.best_impact_pct  !== undefined ? '<div class="mono" style="font-size:11px;color:var(--ink-3)">BEST <span style="color:var(--ok)">+' + parseFloat(summary.best_impact_pct).toFixed(1) + '%</span></div>' : '') +
+    '<div class="mono" style="font-size:11px;color:var(--ink-3)">// 8 SCENARIOS · ASSET-CLASS CALIBRATED · DETERMINISTIC</div></div>';
+}
+
+function _populateFactorDNA(a) {
+  // Style & Composition
+  var styleEl = document.getElementById('factorStyleBody');
+  if (styleEl) {
+    // Asset class: engine returns a.asset_allocation.by_class (not a.asset_class_breakdown)
+    var byAC = (a.asset_allocation||{}).by_class || {};
+    var mc   = a.market_cap_exposure || {};
+    var byMC = mc.by_cap_pct_of_portfolio || mc.by_market_cap || {};
+    var rows = '';
+    if (Object.keys(byAC).length) {
+      rows += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line-soft)">ASSET CLASS</div>';
+      Object.entries(byAC).forEach(function(e){
+        rows += _rowItem(e[0].charAt(0).toUpperCase()+e[0].slice(1), parseFloat(e[1]).toFixed(1)+'%', 'var(--ink)');
+      });
+    }
+    if (Object.keys(byMC).length) {
+      rows += '<div style="margin-top:14px;font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line-soft)">MARKET CAP (EQUITY)</div>';
+      Object.entries(byMC).forEach(function(e){
+        rows += _rowItem(_mcLabel(e[0]), parseFloat(e[1]).toFixed(1)+'%', 'var(--ink)');
+      });
+    }
+    styleEl.innerHTML = rows || '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No composition data. Re-run analytics.</div>';
+  }
+
+  // Risk & Liquidity
+  var riskEl = document.getElementById('factorRiskBody');
+  if (riskEl) {
+    var liq = a.liquidity || {};
+    var div = a.diversification || {};
+    var rows = '';
+    if (liq.liquid_pct !== undefined) {
+      rows += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line-soft)">LIQUIDITY</div>';
+      rows += _rowItem('T+1 Redeemable', parseFloat(liq.t_plus_1_redeemable_pct||liq.liquid_pct||0).toFixed(1)+'%', 'var(--ok)');
+      rows += _rowItem('Semi-liquid', parseFloat(liq.semi_liquid_pct||0).toFixed(1)+'%', 'var(--warn)');
+      rows += _rowItem('Illiquid', parseFloat(liq.illiquid_pct||0).toFixed(1)+'%', 'var(--danger)');
+    }
+    if (div.grade) {
+      rows += '<div style="margin-top:14px;font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line-soft)">DIVERSIFICATION</div>';
+      rows += _rowItem('Grade', div.grade, ({A:'var(--ok)',B:'var(--ok)',C:'var(--warn)',D:'var(--danger)',F:'var(--danger)'})[div.grade]||'var(--ink)');
+      rows += _rowItem('Score', (div.score||'—')+'', 'var(--ink)');
+      if (div.entropy) rows += _rowItem('Entropy', parseFloat(div.entropy).toFixed(3), 'var(--ink)');
+    }
+    riskEl.innerHTML = rows || '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No data.</div>';
+  }
+
+  // Concentration & Overlap
+  var concEl = document.getElementById('factorConcentrationBody');
+  if (concEl) {
+    var conc = a.concentration || {};
+    var ov   = a.fund_overlap   || {};
+    var rows = '';
+    if (conc.largest_holding_name) {
+      rows += _rowItem('Largest Holding', conc.largest_holding_name, 'var(--ink)');
+      rows += _rowItem('Largest Weight', parseFloat(conc.largest_holding_pct||0).toFixed(2)+'%', 'var(--ink)');
+    }
+    ['top3','top5','top10'].forEach(function(k){
+      var v = conc[k+'_weight_pct'];
+      if (v !== undefined) rows += _rowItem('Top ' + k.slice(3) + ' Holdings Weight', parseFloat(v).toFixed(1)+'%', 'var(--ink)');
+    });
+    if (ov.duplicate_isin_count !== undefined) {
+      rows += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)">';
+      rows += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:8px">FUND OVERLAP</div>';
+      rows += _rowItem('Portfolio Overlap', parseFloat(ov.total_overlap_pct_of_portfolio||0).toFixed(1)+'%', 'var(--warn)');
+      rows += _rowItem('Duplicate ISINs', (ov.duplicate_isin_count||0)+'', 'var(--warn)');
+      var pairs = ov.known_pair_overlaps || [];
+      if (pairs.length) {
+        rows += '<div style="margin-top:10px">' +
+          pairs.slice(0,5).map(function(p){
+            return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--line-soft)">' +
+              '<span style="color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%">' + p.fund_a + ' ↔ ' + p.fund_b + '</span>' +
+              '<span class="mono" style="color:var(--warn)">' + parseFloat(p.overlap_pct||0).toFixed(1)+'%</span></div>';
+          }).join('') + '</div>';
+      }
+      rows += '</div>';
+    }
+    concEl.innerHTML = rows || '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No concentration data.</div>';
+  }
+}
+
+// ════════════════════════════════════════════════
+//  AI MEMO
+// ════════════════════════════════════════════════
+
+function generateMemo() {
+  var nameEl = document.getElementById('clientName');
+  var portfolioId = nameEl ? nameEl.getAttribute('data-portfolio-id') : null;
+  if (!portfolioId) {
+    var msg = document.getElementById('memoMsg');
+    if (msg) msg.textContent = 'Please select a portfolio first.';
+    return;
+  }
+  var btn  = document.getElementById('genMemoBtn');
+  var msg  = document.getElementById('memoMsg');
+  var wrap = document.getElementById('memoWrap');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+  if (msg) { msg.style.display=''; msg.textContent = 'Generating AI memo… this takes 15–30 seconds. Analytics are being synthesised.'; }
+
+  _apiFetch('/api/v1/insights/' + portfolioId + '/generate', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({})
+  }).then(function(r) {
+    if (!r.ok) {
+      if (msg) { msg.style.display=''; msg.textContent = '⚠ Failed to generate memo ('+r.status+'). Ensure analytics have been run.'; }
+      if (btn) { btn.disabled=false; btn.textContent='Generate Memo'; }
+      return;
+    }
+    var d = r.data;
+    if (msg) msg.style.display = 'none';
+    if (btn) { btn.disabled=false; btn.textContent='Regenerate'; }
+
+    var sections = [
+      {title:'Portfolio Summary',    content: d.portfolio_summary},
+      {title:'Risk Commentary',      content: d.risk_commentary},
+      {title:'Meeting Prep Notes',   content: d.meeting_prep_notes},
+    ].filter(function(s){ return s.content; });
+
+    if (!sections.length) {
+      if (msg) { msg.style.display=''; msg.textContent='No memo content returned.'; }
+      return;
+    }
+    wrap.innerHTML = sections.map(function(s) {
+      return '<div style="padding:24px;border-bottom:1px solid var(--line-soft)">' +
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:12px">' + s.title.toUpperCase() + '</div>' +
+        '<div style="font-size:13.5px;line-height:1.75;color:var(--ink-2)">' + s.content.replace(/\n/g,'<br>') + '</div></div>';
+    }).join('') +
+    '<div style="padding:12px 24px;background:var(--bg-alt);border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">' +
+    '// MODEL: ' + (d.model||'claude') + ' · PROVIDER: ' + (d.ai_provider||'anthropic') +
+    ' · GENERATED FROM DETERMINISTIC ANALYTICS · NOT FINANCIAL ADVICE</div>';
+  }).catch(function() {
+    if (btn) { btn.disabled=false; btn.textContent='Generate Memo'; }
+    if (msg) { msg.style.display=''; msg.textContent='⚠ Network error generating memo.'; }
+  });
+}
+
+// ════════════════════════════════════════════════
+//  MACRO SCENARIO ENGINE  (20 scenarios, macro→sector propagation)
+// ════════════════════════════════════════════════
+
+function runMacroScenarios() {
   var nameEl = document.getElementById('clientName');
   var portfolioId = nameEl ? nameEl.getAttribute('data-portfolio-id') : null;
   if (!portfolioId) {
@@ -1374,38 +2059,411 @@ function runScenarios() {
     return;
   }
   var btn = document.getElementById('runScenariosBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Running…'; }
   var msg = document.getElementById('scenariosMsg');
-  if (msg) { msg.style.display=''; msg.innerHTML = 'Running scenarios…'; }
+  if (btn) { btn.disabled=true; btn.textContent='Running…'; }
+  if (msg) { msg.style.display=''; msg.innerHTML='Propagating macro shocks through sector weights…'; }
 
-  _apiFetch('/api/v1/scenarios/' + portfolioId, {method: 'POST'}).then(function(r) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Run Scenarios'; }
+  _apiFetch('/api/v1/scenarios/' + portfolioId + '/run', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({})
+  }).then(function(r) {
+    if (btn) { btn.disabled=false; btn.textContent='Run Macro Scenarios'; }
     if (!r.ok) {
-      if (msg) msg.innerHTML = '⚠ Scenario engine error (' + r.status + '). Ensure portfolio has been analysed first.';
+      if (msg) msg.innerHTML = '⚠ Scenario engine error ('+r.status+'). Portfolio needs sector exposure data — ensure holdings are analysed.';
       return;
     }
-    var scenarios = r.data.scenarios || r.data || [];
-    if (!Array.isArray(scenarios) || scenarios.length === 0) {
-      if (msg) msg.innerHTML = 'No scenario results returned. Ensure portfolio status is <b>ready</b>.';
+    var data = r.data;
+    var scenarios = data.scenarios || [];
+    if (!Array.isArray(scenarios) || !scenarios.length) {
+      if (msg) msg.innerHTML = 'No macro scenario results. Portfolio may lack sector tags — try re-running analytics.';
       return;
     }
     if (msg) msg.style.display = 'none';
     var wrap = document.getElementById('scenariosWrap');
-    var rows = scenarios.map(function(s) {
-      var impact = s.portfolio_impact_pct !== undefined ? s.portfolio_impact_pct : (s.impact_pct || 0);
-      var impactStr = (impact >= 0 ? '+' : '') + parseFloat(impact).toFixed(1) + '%';
-      var cls = impact < 0 ? 'stress-impact neg' : 'stress-impact';
-      return '<tr><td style="font-weight:500">' + (s.name || s.scenario_name || 'Scenario') + '</td>' +
-        '<td><span class="' + cls + '">' + impactStr + '</span></td>' +
-        '<td class="muted" style="font-size:12px">' + (s.worst_segment || '—') + '</td>' +
-        '<td class="muted mono" style="font-size:12px">' + (s.horizon || '—') + '</td></tr>';
+
+    // Sort by impact magnitude (worst first)
+    scenarios.sort(function(a,b){ return parseFloat(a.estimated_impact_pct||0) - parseFloat(b.estimated_impact_pct||0); });
+
+    // Build story cards — one per scenario
+    var cards = scenarios.map(function(s) {
+      // KEY FIX: engine returns estimated_impact_pct, NOT portfolio_impact_pct
+      var impact  = parseFloat(s.estimated_impact_pct !== undefined ? s.estimated_impact_pct : (s.impact_pct||0));
+      var impStr  = (impact>=0?'+':'') + impact.toFixed(1) + '%';
+      var color   = impact < -20 ? 'var(--danger)' : impact < -10 ? 'var(--warn)' : impact > 5 ? 'var(--ok)' : 'var(--ink-2)';
+      var sev     = (s.severity||'').toLowerCase();
+      var sevColor= sev==='extreme'?'var(--danger)':sev==='high'?'var(--warn)':sev==='medium'?'var(--accent)':'var(--ink-3)';
+      var catColor= {'monetary':'var(--accent)','geopolitical':'var(--danger)','market':'var(--warn)','macro':'var(--warn)'}[(s.category||'').toLowerCase()] || 'var(--ink-3)';
+
+      // Risk band (e.g. "-15% to -5%")
+      var riskBand = s.risk_band || '';
+      var estINR   = s.estimated_impact_inr ? _fmtAUM(Math.abs(s.estimated_impact_inr)) : '';
+
+      // Affected sectors — top 4
+      var affSectors = s.affected_sectors || [];
+      var sectorHtml = affSectors.length
+        ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' +
+            affSectors.slice(0,4).map(function(sec){
+              var shock = typeof sec === 'object' ? (sec.shock||sec.impact||0) : 0;
+              var sName = typeof sec === 'object' ? (sec.sector||sec.name||'') : sec;
+              var sc    = parseFloat(shock);
+              var scColor = sc < -15 ? 'var(--danger)' : sc < -5 ? 'var(--warn)' : sc > 5 ? 'var(--ok)' : 'var(--ink-3)';
+              return '<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:var(--bg-alt);border:1px solid var(--line);color:var(--ink-2)">' +
+                sName + (sc!==0 ? ' <span style="color:'+scColor+';font-family:\'JetBrains Mono\',monospace">' + (sc>=0?'+':'') + sc.toFixed(0) + '%</span>' : '') +
+              '</span>';
+            }).join('') +
+          '</div>'
+        : '';
+
+      return '<div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-soft);align-items:start">' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+            '<span style="font-size:13.5px;font-weight:550;color:var(--ink)">' + (s.name||'Scenario') + '</span>' +
+            (s.category ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;padding:2px 7px;border-radius:4px;background:var(--bg-alt);color:'+catColor+';border:1px solid var(--line)">' + s.category.toUpperCase() + '</span>' : '') +
+            (s.severity ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9.5px;color:'+sevColor+'">' + s.severity.toUpperCase() + '</span>' : '') +
+          '</div>' +
+          (s.historical_analog
+            ? '<div style="font-size:12px;color:var(--ink-3);margin-top:4px">📎 Historical analog: <span style="color:var(--ink-2)">' + s.historical_analog + '</span></div>'
+            : '') +
+          (riskBand
+            ? '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px;font-family:\'JetBrains Mono\',monospace">Risk range: ' + riskBand + (estINR ? ' · Est. impact: ' + (impact<0?'−':'') + '₹' + estINR : '') + '</div>'
+            : '') +
+          sectorHtml +
+        '</div>' +
+        '<div style="text-align:right;min-width:72px">' +
+          '<div class="mono" style="font-size:22px;font-weight:700;color:' + color + ';line-height:1">' + impStr + '</div>' +
+          '<div style="font-size:10.5px;color:var(--ink-3);margin-top:3px">' + (s.horizon||'') + '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
-    wrap.innerHTML = '<table class="tbl"><thead><tr><th>SCENARIO</th><th>PORTFOLIO IMPACT</th><th>WORST SEGMENT</th><th>HORIZON</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<div style="padding:12px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">// ' + scenarios.length + ' scenarios · methodology v1.2 · deterministic propagation</div>';
-  }).catch(function(err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Run Scenarios'; }
-    if (msg) { msg.style.display=''; msg.innerHTML = '⚠ Network error running scenarios.'; }
+
+    // Macro sensitivity matrix (compact grid — top macro drivers)
+    var macroMatrix = data.macro_sensitivity || {};
+    var mKeys = Object.keys(macroMatrix).slice(0,9);
+    var matrixHtml = mKeys.length
+      ? '<div style="padding:16px 18px;border-top:1px solid var(--line)">' +
+          '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3);letter-spacing:.05em;margin-bottom:12px">MACRO SENSITIVITY MATRIX</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">' +
+          mKeys.map(function(ev) {
+            var m = macroMatrix[ev];
+            var pct = typeof m === 'object' ? (m.estimated_impact_pct||m.portfolio_impact_pct||m.impact_pct||0) : m;
+            var p = parseFloat(pct);
+            var color = p < -10 ? 'var(--danger)' : p < -3 ? 'var(--warn)' : p > 0 ? 'var(--ok)' : 'var(--ink-2)';
+            return '<div style="background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px">' +
+              '<div style="font-size:10px;color:var(--ink-3);margin-bottom:4px">' + ev.replace(/_/g,' ').toUpperCase() + '</div>' +
+              '<div class="mono" style="font-size:16px;font-weight:700;color:' + color + '">' + (p>=0?'+':'') + p.toFixed(1) + '%</div></div>';
+          }).join('') + '</div></div>'
+      : '';
+
+    wrap.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:0">' + cards + '</div>' +
+      matrixHtml +
+      '<div style="padding:12px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">' +
+      '// ' + scenarios.length + ' MACRO SCENARIOS · PROPAGATION: MACRO→SECTOR→PORTFOLIO · ' + (data.methodology_version||'scenario_v2.1') + '</div>';
+  }).catch(function() {
+    if (btn) { btn.disabled=false; btn.textContent='Run Macro Scenarios'; }
+    if (msg) { msg.style.display=''; msg.innerHTML='⚠ Network error running scenarios.'; }
   });
+}
+
+// ════════════════════════════════════════════════
+//  HOLDINGS X-RAY (look-through engine)
+// ════════════════════════════════════════════════
+
+function _xrayPortfolioId() {
+  var el = document.getElementById('clientName');
+  return el ? el.getAttribute('data-portfolio-id') : null;
+}
+
+function loadXRay() {
+  var portfolioId = _xrayPortfolioId();
+  if (!portfolioId) {
+    var msg = document.getElementById('xrayMsg');
+    if (msg) { msg.style.display=''; msg.innerHTML='Please select a portfolio first.'; }
+    return;
+  }
+  _runXRay(portfolioId, false);
+}
+
+function refreshXRay() {
+  var portfolioId = _xrayPortfolioId();
+  if (!portfolioId) return;
+  _runXRay(portfolioId, true);  // force_refresh → calls AMFI live
+}
+
+function _runXRay(portfolioId, forceRefresh) {
+  var runBtn     = document.getElementById('xrayRunBtn');
+  var refBtn     = document.getElementById('xrayRefreshBtn');
+  var msg        = document.getElementById('xrayMsg');
+  var depthBadge = document.getElementById('xrayDepthBadge');
+
+  if (runBtn)  { runBtn.disabled  = true; runBtn.textContent  = 'Running…'; }
+  if (refBtn)  { refBtn.disabled  = true; refBtn.textContent  = 'Fetching AMFI…'; }
+  if (msg)     { msg.style.display=''; msg.innerHTML='Decomposing funds into underlying stocks…'; }
+
+  var url = '/api/v1/lookthrough/' + portfolioId + (forceRefresh ? '/refresh' : '');
+  var method = forceRefresh ? 'POST' : 'GET';
+
+  _apiFetch(url, {method: method}).then(function(r) {
+    if (runBtn)  { runBtn.disabled=false; runBtn.textContent='Run X-Ray'; }
+    if (refBtn)  { refBtn.disabled=false; refBtn.textContent='↻ Refresh from AMFI'; }
+
+    if (!r.ok) {
+      if (msg) { msg.style.display=''; msg.innerHTML='⚠ X-Ray failed (' + r.status + '). Ensure portfolio has holdings.'; }
+      return;
+    }
+    if (msg) msg.style.display = 'none';
+    var d = r.data;
+
+    // Depth badge
+    if (depthBadge) {
+      var depthMap = {
+        'full':        { label:'FULL LOOK-THROUGH', color:'var(--ok)' },
+        'partial':     { label:'PARTIAL LOOK-THROUGH', color:'var(--warn)' },
+        'direct_only': { label:'DIRECT HOLDINGS ONLY', color:'var(--ink-3)' },
+      };
+      var depthInfo = depthMap[d.lookthrough_depth] || depthMap['direct_only'];
+      depthBadge.style.color = depthInfo.color;
+      depthBadge.textContent = depthInfo.label;
+    }
+
+    // Data quality banner
+    var dq      = d.data_quality || {};
+    var qBanner = document.getElementById('xrayQualityBanner');
+    var qText   = document.getElementById('xrayQualityText');
+    // Check if any holding was resolved from synthetic data
+    var allHoldings   = d.top_underlying_holdings || [];
+    var hasSynthetic  = allHoldings.some(function(h){
+      return (h.sources||[]).some(function(s){ return s.data_source === 'synthetic_estimated'; });
+    });
+    if ((dq.funds_without_constituents > 0 || hasSynthetic) && qBanner && qText) {
+      qBanner.style.display = '';
+      if (hasSynthetic) {
+        qText.innerHTML =
+          '<b>Estimated holdings shown</b> — AMFI live data unavailable (server IP geo-restricted). ' +
+          'Holdings are approximated from each fund\'s SEBI mandate category. ' +
+          'Sector overlap and concentration analysis remain directionally accurate. ' +
+          'Run <b>↻ Refresh from AMFI</b> once live access is available.';
+      } else {
+        var pending = (dq.funds_pending_data||[]).slice(0,3).join(', ');
+        qText.innerHTML =
+          '<b>' + dq.funds_without_constituents + ' fund(s) pending AMFI data</b> — ' +
+          'showing these as opaque positions. Click ↻ Refresh from AMFI to fetch live constituent data. ' +
+          (pending ? 'Pending: <i>' + pending + (dq.funds_pending_data.length>3?'…':'') + '</i>' : '');
+      }
+    } else if (qBanner) {
+      qBanner.style.display = 'none';
+    }
+
+    // Top underlying holdings table
+    var underlying = d.top_underlying_holdings || [];
+    var underEl = document.getElementById('xrayUnderlyingBody');
+    if (underEl) {
+      if (underlying.length) {
+        var rows = underlying.slice(0,25).map(function(h, i) {
+          var wPct = parseFloat(h.effective_weight_pct||0);
+          var barW = Math.min(wPct / Math.max(...underlying.slice(0,25).map(function(x){ return parseFloat(x.effective_weight_pct||0); })) * 100, 100);
+          var viaCount = h.vehicles_count || 1;
+          var overlapPill = viaCount > 1
+            ? '<span style="margin-left:6px;font-family:\'JetBrains Mono\',monospace;font-size:9.5px;padding:1px 6px;border-radius:4px;background:rgba(180,83,9,.08);color:var(--warn);border:1px solid rgba(180,83,9,.2)">×' + viaCount + ' funds</span>'
+            : '';
+          var color = wPct > 8 ? 'var(--danger)' : wPct > 4 ? 'var(--warn)' : 'var(--accent)';
+          return '<tr>' +
+            '<td class="mono" style="color:var(--ink-3);font-size:11px">' + (i+1) + '</td>' +
+            '<td style="max-width:240px">' +
+              '<div style="font-size:13px;font-weight:450;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (h.name||h.isin||'—') + overlapPill + '</div>' +
+              '<div style="font-size:11px;color:var(--ink-3)">' + (h.isin||'') + (h.sector?' · '+h.sector:'') + '</div>' +
+            '</td>' +
+            '<td>' +
+              '<div style="display:flex;align-items:center;gap:8px">' +
+                '<div style="flex:1;height:4px;background:var(--line);border-radius:2px;min-width:60px;overflow:hidden">' +
+                  '<div style="height:100%;border-radius:2px;width:' + barW.toFixed(1) + '%;background:' + color + '"></div>' +
+                '</div>' +
+                '<span class="mono" style="font-size:12px;font-weight:600;color:' + color + ';min-width:44px;text-align:right">' + wPct.toFixed(2) + '%</span>' +
+              '</div>' +
+            '</td>' +
+            '<td class="muted" style="font-size:12px">' + _mcLabel(h.market_cap||'') + '</td>' +
+            '</tr>';
+        }).join('');
+        underEl.innerHTML = '<table class="tbl"><thead><tr><th>#</th><th>INSTRUMENT</th><th>EFFECTIVE WEIGHT</th><th>CAP</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+          '<div style="padding:10px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">' +
+          '// ' + (d.total_underlying_positions||underlying.length) + ' UNIQUE POSITIONS · EFFECTIVE WEIGHT = FUND_WEIGHT × STOCK_WEIGHT_IN_FUND · ' + (d.methodology_version||'lookthrough_v2.0') + '</div>';
+      } else {
+        underEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No underlying positions. Constituent data may not be available yet.</div>';
+      }
+    }
+
+    // Cross-fund overlap
+    var overlap = d.cross_fund_overlap || [];
+    var ovEl = document.getElementById('xrayOverlapBody');
+    if (ovEl) {
+      if (overlap.length) {
+        ovEl.innerHTML = overlap.slice(0,12).map(function(o) {
+          var sev = o.severity === 'high' ? 'var(--danger)' : 'var(--warn)';
+          return '<div style="padding:10px 0;border-bottom:1px solid var(--line-soft)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+              '<div>' +
+                '<div style="font-size:13px;font-weight:500">' + (o.name||o.isin||'—') + '</div>' +
+                '<div style="font-size:11px;color:var(--ink-3);margin-top:2px">' + (o.sector||'') + ' · ' + o.vehicle_count + ' funds</div>' +
+                '<div style="font-size:11px;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">' +
+                  (o.vehicles||[]).slice(0,3).map(function(v){ return v.split(' ').slice(0,3).join(' '); }).join(' · ') +
+                '</div>' +
+              '</div>' +
+              '<span class="mono" style="font-size:14px;font-weight:700;color:' + sev + '">' + parseFloat(o.effective_weight_pct||0).toFixed(2) + '%</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      } else {
+        ovEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">' +
+          (d.lookthrough_depth === 'direct_only'
+            ? 'Stock-level overlap requires AMFI constituent data. Click ↻ Refresh from AMFI.'
+            : 'No significant cross-fund overlap detected.') +
+          '</div>';
+      }
+    }
+
+    // Fund pair overlap
+    var pairs = d.fund_pair_overlap || [];
+    var pairEl = document.getElementById('xrayPairBody');
+    if (pairEl) {
+      if (pairs.length) {
+        pairEl.innerHTML = pairs.map(function(p) {
+          var ov = parseFloat(p.overlap_pct||0);
+          var color = ov > 50 ? 'var(--danger)' : ov > 25 ? 'var(--warn)' : 'var(--ink-2)';
+          return '<div style="padding:10px 0;border-bottom:1px solid var(--line-soft)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<div style="flex:1;min-width:0">' +
+                '<div style="font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+                  (p.fund_a||'').split(' ').slice(0,4).join(' ') + '</div>' +
+                '<div style="font-size:11px;color:var(--ink-3)">↔ ' + (p.fund_b||'').split(' ').slice(0,4).join(' ') + '</div>' +
+                '<div style="font-size:11px;color:var(--ink-3);margin-top:2px">' + (p.shared_count||0) + ' shared holdings</div>' +
+              '</div>' +
+              '<div style="text-align:right;padding-left:12px">' +
+                '<div class="mono" style="font-size:18px;font-weight:700;color:' + color + '">' + ov.toFixed(1) + '%</div>' +
+                '<div style="font-size:10px;color:var(--ink-3)">overlap</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('') + '<div style="padding-top:10px;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">// OVERLAP = Σ MIN(weight_A, weight_B) FOR EACH SHARED STOCK</div>';
+      } else {
+        pairEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px">No fund pair data yet. Requires AMFI constituent data.</div>';
+      }
+    }
+
+    // Effective sector exposure post look-through
+    var secEl = document.getElementById('xraySectorBody');
+    if (secEl) {
+      var effSec = d.effective_sector_exposure || {};
+      secEl.innerHTML = Object.keys(effSec).length
+        ? _hbarChart(effSec, 12)
+        : '<div style="text-align:center;padding:24px;color:var(--ink-3)">No sector data.</div>';
+    }
+
+    // Effective market cap post look-through
+    var capEl = document.getElementById('xrayCapBody');
+    if (capEl) {
+      var effCap = d.effective_market_cap || {};
+      var displayCap = {};
+      Object.entries(effCap).forEach(function(e){
+        if (parseFloat(e[1]) > 0.01) displayCap[_mcLabel(e[0])] = e[1];
+      });
+      capEl.innerHTML = Object.keys(displayCap).length
+        ? _hbarChart(displayCap, 6)
+        : '<div style="text-align:center;padding:24px;color:var(--ink-3)">No cap data.</div>';
+    }
+
+  }).catch(function(err) {
+    if (runBtn)  { runBtn.disabled=false; runBtn.textContent='Run X-Ray'; }
+    if (refBtn)  { refBtn.disabled=false; refBtn.textContent='↻ Refresh from AMFI'; }
+    var msg = document.getElementById('xrayMsg');
+    if (msg) { msg.style.display=''; msg.innerHTML='⚠ Network error running X-Ray.'; }
+  });
+}
+
+// ════════════════════════════════════════════════
+//  LEADS & DEMO REQUESTS
+// ════════════════════════════════════════════════
+var _allLeads = [];
+var _leadFilter = 'all';
+
+// showView already defined above — leads loading is triggered by nav onclick
+
+function filterLeads(f) {
+  _leadFilter = f;
+  ['all','new','contacted'].forEach(function(id){
+    var btn = document.getElementById('leadFilter' + id.charAt(0).toUpperCase() + id.slice(1));
+    if (btn) btn.className = 'btn btn-sm ' + (id===f ? 'btn-primary' : 'btn-ghost');
+  });
+  _renderLeads(_allLeads);
+}
+
+function loadLeads() {
+  var wrap = document.getElementById('leadsTableWrap');
+  var msg  = document.getElementById('leadsMsg');
+  if (msg) { msg.style.display=''; msg.textContent = 'Loading…'; }
+
+  _apiFetch('/api/v1/demo-requests/?limit=200').then(function(r) {
+    if (!r.ok) {
+      if (msg) msg.textContent = '⚠ Failed to load leads (' + r.status + '). Ensure you are logged in.';
+      return;
+    }
+    _allLeads = r.data.leads || [];
+    // Update badge
+    var newCount = _allLeads.filter(function(l){ return l.status === 'new'; }).length;
+    var badge = document.getElementById('navBadgeLeads');
+    if (badge) { badge.textContent = newCount; badge.style.display = newCount ? '' : 'none'; }
+    var countEl = document.getElementById('leadsCount');
+    if (countEl) countEl.textContent = _allLeads.length + ' total · ' + newCount + ' new';
+    if (msg) msg.style.display = 'none';
+    _renderLeads(_allLeads);
+  }).catch(function() {
+    if (msg) msg.textContent = '⚠ Network error loading leads.';
+  });
+}
+
+function _renderLeads(leads) {
+  var wrap = document.getElementById('leadsTableWrap');
+  if (!wrap) return;
+  var filtered = leads.filter(function(l) {
+    if (_leadFilter === 'all') return true;
+    return l.status === _leadFilter;
+  });
+  if (!filtered.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:48px;color:var(--ink-3);font-size:13px">' +
+      (_leadFilter === 'all' ? 'No leads yet. Demo requests will appear here when someone books.' : 'No leads with status "' + _leadFilter + '".') +
+      '</div>';
+    return;
+  }
+  var roleMap = {ria:'RIA',mfd:'MFD',family_office:'Family Office',boutique:'Boutique',pms:'PMS',aif:'AIF',bank:'Bank',other:'Other'};
+  var rows = filtered.map(function(l) {
+    var statusColor = l.status === 'new' ? 'var(--ok)' : l.status === 'contacted' ? 'var(--warn)' : 'var(--ink-3)';
+    var dt = l.created_at ? new Date(l.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    return '<tr>' +
+      '<td>' +
+        '<div style="font-weight:500">' + (l.name||'—') + '</div>' +
+        '<div style="font-size:11.5px;color:var(--ink-3)">' + (l.firm||'—') + '</div>' +
+      '</td>' +
+      '<td><a href="mailto:' + l.email + '" style="color:var(--accent);text-decoration:none;font-size:13px">' + (l.email||'—') + '</a><br>' +
+        '<span style="font-size:11.5px;color:var(--ink-3)">' + (l.phone||'—') + '</span>' +
+      '</td>' +
+      '<td class="muted">' + (roleMap[l.role]||l.role||'—') + '</td>' +
+      '<td class="muted">' + (l.aum||'—') + '</td>' +
+      '<td class="muted" style="font-size:12px">' + (l.preferred_slot||'—') + '</td>' +
+      '<td>' +
+        '<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:'+statusColor+';font-weight:600">' + (l.status||'new').toUpperCase() + '</span>' +
+      '</td>' +
+      '<td class="muted mono" style="font-size:11px">' + dt + '</td>' +
+      '<td>' +
+        '<a href="mailto:' + l.email + '?subject=WealthOS+Demo+%5B' + l.ref_id + '%5D" class="btn btn-ghost btn-sm" style="font-size:11px">Reply</a>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML = '<table class="tbl">' +
+    '<thead><tr><th>NAME</th><th>CONTACT</th><th>ROLE</th><th>AUM</th><th>SLOT</th><th>STATUS</th><th>DATE</th><th></th></tr></thead>' +
+    '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+    '<div style="padding:12px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">' +
+    '// ' + filtered.length + ' LEADS · EMAIL ALERTS ACTIVE · DATA IN DB</div>';
 }
 
 // ── Initialise on load ──

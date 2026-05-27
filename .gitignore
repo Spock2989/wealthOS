@@ -72,3 +72,8 @@ htmlcov/
 # Celery
 celerybeat-schedule
 celerybeat.pid
+*.db-shm
+*.db-wal
+*.db.bak
+*.zip
+.fuse_hidden*

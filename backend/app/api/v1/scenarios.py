@@ -111,6 +111,7 @@ def _get_snapshot_or_raise(portfolio_id: str, svc: PortfolioService):
 
 # ── Run all scenarios ─────────────────────────────────────────
 @router.get("/{portfolio_id}")
+@router.post("/{portfolio_id}")          # frontend compat: POST without /run
 def get_all_scenarios(
     portfolio_id: str,
     db: Session = Depends(get_db),

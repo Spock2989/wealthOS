@@ -33,6 +33,19 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
     u = User(id=str(uuid.uuid4()), email=req.email.lower(), hashed_password=_hash(req.password),
              full_name=req.full_name, firm_name=req.firm_name)
     db.add(u); db.commit(); db.refresh(u)
+
+    # Fire email alert — best-effort, never blocks response
+    try:
+        from app.services.email_service import alert_new_signup
+        alert_new_signup(
+            user_id   = u.id,
+            email     = u.email,
+            full_name = u.full_name or u.email,
+            firm_name = u.firm_name or "",
+        )
+    except Exception:
+        pass
+
     return _out(u, _token(u.id, u.email))
 
 @router.post("/login")

@@ -5,12 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>WealthOS — Sign In</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='18' height='18' rx='2' fill='none' stroke='%230A0A0A' stroke-width='1.5'/%3E%3Crect x='12' y='12' width='18' height='18' rx='2' fill='%231E40FF'/%3E%3C/svg%3E"/>
-<!-- Exact same font stack as wlthos.in -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;550;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
-/* ── Exact design tokens from wlthos.in ── */
 :root{
   --bg:#FFFFFF;
   --bg-alt:#FAFAFA;
@@ -21,108 +19,86 @@
   --ink-3:#A3A3A3;
   --ink-4:#D4D4D4;
   --line:#E5E5E5;
-  --line-soft:#EFEFEF;
   --accent:#1E40FF;
   --accent-dim:rgba(30,64,255,.08);
   --ok:#16A34A;
   --warn:#B45309;
   --danger:#DC2626;
   --radius:6px;
-  --radius-lg:10px;
-  --shadow-1:0 1px 0 rgba(10,10,10,.02),0 1px 2px rgba(10,10,10,.03),0 4px 12px -4px rgba(10,10,10,.04),0 16px 32px -16px rgba(10,10,10,.05);
+  --shadow-1:0 1px 0 rgba(10,10,10,.02),0 1px 2px rgba(10,10,10,.03),0 4px 12px -4px rgba(10,10,10,.04);
   --shadow-2:0 1px 0 rgba(10,10,10,.03),0 2px 4px rgba(10,10,10,.04),0 8px 16px -6px rgba(10,10,10,.06),0 24px 48px -20px rgba(10,10,10,.08);
   --ease:cubic-bezier(0.32,0.72,0,1);
 }
-
-/* ── Base ── */
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-feature-settings:"ss01","ss03","cv11","calt";
-  font-variation-settings:"opsz" 14;
-  background:var(--bg-alt);
+  background:#FFFFFF;
   color:var(--ink);
-  font-size:16px;
-  line-height:1.55;
-  letter-spacing:-0.005em;
+  font-size:16px;line-height:1.55;letter-spacing:-0.005em;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  text-rendering:optimizeLegibility;
   min-height:100vh;
 }
 :focus{outline:none}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
 ::selection{background:var(--accent);color:#fff}
-.mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;font-feature-settings:"calt" 0;letter-spacing:0}
 
-/* ── Layout ── */
-.page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:#FFFFFF}
 
-/* ── Card — matches app panels on wlthos.in ── */
+.back{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:13px;color:var(--ink-3);text-decoration:none;
+  margin-bottom:20px;transition:color .15s;letter-spacing:-.005em;align-self:flex-start;
+}
+.back:hover{color:var(--ink-2)}
+
 .card{
   width:100%;max-width:390px;
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:40px;
-  box-shadow:var(--shadow-2);
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:40px;box-shadow:var(--shadow-2);
 }
 
-/* ── Brand — exact match of wlthos.in nav brand ── */
 .brand{display:flex;align-items:center;gap:9px;margin-bottom:32px;text-decoration:none;color:var(--ink)}
 .brand-mark{width:18px;height:18px;position:relative;flex-shrink:0}
-.brand-mark::before,.brand-mark::after{content:"";position:absolute;inset:0;border:1px solid var(--ink);border-radius:2px}
+.brand-mark::before,.brand-mark::after{content:"";position:absolute;inset:0;border:1.5px solid var(--ink);border-radius:2px}
 .brand-mark::after{transform:translate(4px,4px);border-color:var(--accent);background:var(--accent)}
 .brand-name{font-size:15px;font-weight:550;letter-spacing:-.01em;color:var(--ink)}
 .brand-name b{font-weight:600}
 .brand-suffix{color:var(--ink-3);font-weight:400;margin-left:2px}
 
-/* ── Page heading ── */
 .page-title{font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--ink-soft);margin-bottom:4px}
 .page-sub{font-size:13.5px;color:var(--ink-2);margin-bottom:28px;line-height:1.5}
 
-/* ── Tabs ── */
 .tabs{
-  display:flex;background:var(--bg-alt);
-  border:1px solid var(--line);border-radius:9px;
-  padding:3px;gap:2px;margin-bottom:24px;
+  display:flex;background:#EAEAEA;border:1px solid #D8D8D8;
+  border-radius:9px;padding:3px;gap:2px;margin-bottom:24px;
 }
 .tab{
   flex:1;padding:8px 12px;text-align:center;border-radius:7px;
-  font-family:'Inter',-apple-system,sans-serif;
-  font-size:13px;font-weight:500;letter-spacing:-.005em;
-  cursor:pointer;color:var(--ink-2);
-  border:none;background:transparent;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+  cursor:pointer;color:#525252;border:none;background:transparent;
   transition:background .12s var(--ease),color .12s var(--ease);
 }
-.tab.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1)}
-.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tab:hover:not(.active){background:rgba(255,255,255,.55);color:#111111;}
+.tab.active{background:#FFFFFF;color:#0A0A0A;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.10),0 0 0 0.5px rgba(0,0,0,.05);}
 
-/* ── Form elements ── */
 .field{margin-bottom:16px}
 .label{
   display:block;
-  font-family:'JetBrains Mono',ui-monospace,monospace;
-  font-size:10px;font-weight:500;
-  letter-spacing:.07em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;
   color:var(--ink-3);margin-bottom:6px;
 }
 .label-opt{color:var(--ink-4);font-family:'JetBrains Mono',monospace}
 .input-wrap{position:relative}
 .input{
-  width:100%;height:40px;
-  padding:0 13px;
-  border:1px solid var(--line);
-  border-radius:8px;
-  background:var(--bg);
-  color:var(--ink);
-  font-family:'Inter',-apple-system,sans-serif;
-  font-size:14px;
-  letter-spacing:-.005em;
-  font-feature-settings:"ss01","ss03","cv11","calt";
+  width:100%;height:40px;padding:0 13px;
+  border:1px solid var(--line);border-radius:8px;
+  background:var(--bg);color:var(--ink);
+  font-family:'Inter',sans-serif;font-size:14px;letter-spacing:-.005em;
   transition:border-color .15s,box-shadow .15s;
-  -webkit-font-smoothing:antialiased;
 }
 .input::placeholder{color:var(--ink-3)}
 .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);outline:none}
@@ -132,43 +108,30 @@ body{
   position:absolute;right:11px;top:50%;transform:translateY(-50%);
   background:none;border:none;cursor:pointer;
   color:var(--ink-3);padding:4px;display:flex;align-items:center;
-  transition:color .12s;line-height:1;
+  transition:color .12s;
 }
 .eye-btn:hover{color:var(--ink-2)}
 
-/* ── Remember / forgot row ── */
 .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.check-label{
-  display:flex;align-items:center;gap:7px;
-  font-size:13.5px;color:var(--ink-2);
-  cursor:pointer;user-select:none;
-}
+.check-label{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--ink-2);cursor:pointer;user-select:none}
 .check-label input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0}
 .link-btn{
   background:none;border:none;padding:0;
-  font-family:'Inter',-apple-system,sans-serif;
-  font-size:13.5px;letter-spacing:-.005em;
+  font-family:'Inter',sans-serif;font-size:13.5px;letter-spacing:-.005em;
   color:var(--accent);cursor:pointer;
 }
 .link-btn:hover{text-decoration:underline}
 
-/* ── Forgot box ── */
 .forgot-box{
-  display:none;
-  padding:10px 12px;
-  background:var(--accent-dim);
-  border:1px solid rgba(30,64,255,.15);
-  border-radius:var(--radius);
-  font-size:13px;color:var(--accent);
+  display:none;padding:10px 12px;
+  background:var(--accent-dim);border:1px solid rgba(30,64,255,.15);
+  border-radius:var(--radius);font-size:13px;color:var(--accent);
   margin-bottom:16px;line-height:1.5;
 }
 
-/* ── Banners ── */
 .banner{
-  display:none;
-  padding:11px 13px;border-radius:8px;
-  font-size:13.5px;font-weight:500;
-  margin-bottom:16px;line-height:1.4;
+  display:none;padding:11px 13px;border-radius:8px;
+  font-size:13.5px;font-weight:500;margin-bottom:16px;line-height:1.4;
   align-items:flex-start;gap:9px;
 }
 .banner.show{display:flex;animation:shake .35s var(--ease)}
@@ -177,61 +140,39 @@ body{
 .banner-ok.show{animation:none}
 .banner-icon{flex-shrink:0;margin-top:1px}
 
-/* ── Buttons — exact match of wlthos.in btn system ── */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   height:38px;padding:0 16px;border-radius:8px;
-  font-family:'Inter',-apple-system,sans-serif;
-  font-size:13.5px;font-weight:500;letter-spacing:-.005em;
+  font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;letter-spacing:-.005em;
   cursor:pointer;white-space:nowrap;
-  transition:transform .12s var(--ease),background .15s,border-color .15s,color .15s,box-shadow .2s;
-  border:1px solid transparent;
-  -webkit-font-smoothing:antialiased;
+  transition:transform .12s var(--ease),background .15s,box-shadow .2s;
+  border:1px solid transparent;-webkit-font-smoothing:antialiased;
 }
 .btn:active:not(:disabled){transform:translateY(1px)}
 .btn:disabled{opacity:.55;cursor:not-allowed}
-/* Primary = black, matching wlthos.in landing page exactly */
 .btn-primary{
   width:100%;height:42px;
-  background:var(--ink);color:var(--bg);
+  background:var(--ink);color:#fff;
   border-color:var(--ink);border-radius:8px;
 }
 .btn-primary:hover:not(:disabled){
-  background:#000;
-  box-shadow:0 0 0 4px rgba(10,10,10,.06),0 4px 12px -2px rgba(10,10,10,.2);
+  background:#1a1a1a;
+  box-shadow:0 4px 16px -4px rgba(10,10,10,.35);
 }
-/* Sign-in success state */
 .btn-primary.success{background:var(--ok);border-color:var(--ok)}
-.btn-primary.success:hover{background:#14913e;box-shadow:none}
 
-/* ── Spinner ── */
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{width:15px;height:15px;border:1.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-
-/* ── Shake ── */
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 
-/* ── API status ── */
 .api-status{
-  display:flex;align-items:center;gap:6px;
-  justify-content:center;margin-top:18px;
-  font-family:'JetBrains Mono',monospace;
-  font-size:11px;color:var(--ink-3);letter-spacing:.02em;
+  display:flex;align-items:center;gap:6px;justify-content:center;margin-top:18px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.02em;
 }
 .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--ink-4)}
 .dot.ok{background:var(--ok)}
 .dot.warn{background:var(--warn)}
 .dot.err{background:var(--danger)}
-
-/* ── Back link ── */
-.back{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:13px;color:var(--ink-3);
-  text-decoration:none;margin-bottom:20px;
-  transition:color .15s;letter-spacing:-.005em;
-}
-.back:hover{color:var(--ink-2)}
-.back svg{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -239,7 +180,6 @@ body{
 <div class="page">
 <div style="width:100%;max-width:390px">
 
-  <!-- Back to landing page -->
   <a href="/" class="back">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M5 12l7-7"/><path d="M5 12l7 7"/></svg>
     Back to wlthos.in
@@ -247,23 +187,20 @@ body{
 
   <div class="card">
 
-    <!-- Brand — exact match of wlthos.in nav -->
     <a href="/" class="brand" tabindex="-1">
       <span class="brand-mark"></span>
       <span class="brand-name"><b>Wealth</b>OS<span class="brand-suffix">/ai</span></span>
     </a>
 
-    <!-- Page heading -->
     <div class="page-title">Advisor Sign In</div>
     <div class="page-sub">Access your portfolio intelligence dashboard</div>
 
-    <!-- Tabs -->
     <div class="tabs" role="tablist">
       <button class="tab active" id="tabLogin" role="tab" aria-selected="true" onclick="switchTab('login')">Sign in</button>
       <button class="tab" id="tabReg" role="tab" aria-selected="false" onclick="switchTab('register')">Create account</button>
     </div>
 
-    <!-- ═══ LOGIN FORM ═══ -->
+    <!-- ═══ LOGIN ═══ -->
     <div id="formLogin" role="tabpanel">
 
       <div class="banner banner-err" id="loginErr" role="alert">
@@ -279,7 +216,6 @@ body{
         <label class="label" for="loginEmail">Email address</label>
         <input class="input" type="email" id="loginEmail" placeholder="advisor@firm.com" autocomplete="email" autocapitalize="none" spellcheck="false"/>
       </div>
-
       <div class="field">
         <label class="label" for="loginPass">Password</label>
         <div class="input-wrap">
@@ -291,10 +227,7 @@ body{
       </div>
 
       <div class="row">
-        <label class="check-label">
-          <input type="checkbox" id="rememberMe" checked/>
-          Remember me
-        </label>
+        <label class="check-label"><input type="checkbox" id="rememberMe" checked/> Remember me</label>
         <button class="link-btn" type="button" onclick="toggleForgot()">Forgot password?</button>
       </div>
 
@@ -311,9 +244,9 @@ body{
         <span id="apiText">Checking connection…</span>
       </div>
 
-    </div><!-- /formLogin -->
+    </div>
 
-    <!-- ═══ REGISTER FORM ═══ -->
+    <!-- ═══ REGISTER ═══ -->
     <div id="formReg" role="tabpanel" style="display:none">
 
       <div class="banner banner-err" id="regErr" role="alert">
@@ -356,22 +289,23 @@ body{
         <span id="apiText2">Checking connection…</span>
       </div>
 
-    </div><!-- /formReg -->
+    </div>
 
-  </div><!-- /card -->
+  </div>
 </div>
-</div><!-- /page -->
+</div>
 
 <script>
 'use strict';
 var API = 'https://api.wlthos.in';
 
-/* ── Auth guard: already logged in → skip straight to dashboard ── */
 (function(){
-  try{var t=localStorage.getItem('wos_token')||sessionStorage.getItem('wos_token');if(t)window.location.replace('/dashboard.html');}catch(e){}
+  try{
+    var t = localStorage.getItem('wos_token') || sessionStorage.getItem('wos_token');
+    if(t) window.location.replace('/dashboard.html');
+  }catch(e){}
 })();
 
-/* ── API health check ── */
 function _setStatus(state,msg){
   ['apiDot','apiDot2'].forEach(function(id){var e=document.getElementById(id);if(e)e.className='dot '+state;});
   ['apiText','apiText2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=msg;});
@@ -381,7 +315,6 @@ fetch(API+'/health',{cache:'no-store'})
   .then(function(d){_setStatus(d&&d.status==='ok'?'ok':'warn',d&&d.status==='ok'?'api.wlthos.in · online':'API degraded — try again shortly');})
   .catch(function(){_setStatus('err','Cannot reach server — check network');});
 
-/* ── Tabs ── */
 function switchTab(t){
   var il=t==='login';
   document.getElementById('formLogin').style.display=il?'':'none';
@@ -394,36 +327,32 @@ function switchTab(t){
   setTimeout(function(){var e=document.getElementById(il?'loginEmail':'regName');if(e)e.focus();},60);
 }
 
-/* ── Password toggle ── */
 function togglePw(id,btn){
   var inp=document.getElementById(id);
   var show=inp.type==='text';
   inp.type=show?'password':'text';
-  var svg=btn.querySelector('svg');
-  svg.innerHTML=show
+  btn.querySelector('svg').innerHTML=show
     ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/>'
     :'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" stroke-linecap="round" stroke-linejoin="round"/><line x1="1" y1="1" x2="23" y2="23"/>';
 }
 
-/* ── Forgot ── */
-function toggleForgot(){var b=document.getElementById('forgotBox');b.style.display=b.style.display==='none'||b.style.display===''?'block':'none';}
+function toggleForgot(){
+  var b=document.getElementById('forgotBox');
+  b.style.display=(b.style.display==='none'||b.style.display==='')?'block':'none';
+}
 
-/* ── Helpers ── */
 function _clearAll(){
   ['loginErr','loginOk','regErr','regOk'].forEach(function(id){var e=document.getElementById(id);if(e)e.className=e.className.replace(' show','');});
   document.querySelectorAll('.input.err').forEach(function(e){e.classList.remove('err');});
 }
 function _err(banId,msgId,msg){
   var b=document.getElementById(banId),m=document.getElementById(msgId);
-  if(!b||!m)return;
-  m.textContent=msg;
-  b.className=b.className.replace(' show','')+' show';
+  if(!b||!m)return;m.textContent=msg;b.className=b.className.replace(' show','')+' show';
 }
 function _ok(banId){var b=document.getElementById(banId);if(b)b.className=b.className.replace(' show','')+' show';}
 function _loading(btn,txt){btn.disabled=true;btn.innerHTML='<span class="spinner"></span> '+txt;}
 function _reset(btn,txt){btn.disabled=false;btn.textContent=txt;btn.className=btn.className.replace(' success','');}
 
-/* ── LOGIN ── */
 function doLogin(){
   _clearAll();
   var email=document.getElementById('loginEmail').value.trim();
@@ -437,8 +366,7 @@ function doLogin(){
     .then(function(res){clearTimeout(tmo);return res.json().then(function(d){return{ok:res.ok,status:res.status,data:d};});})
     .then(function(r){
       if(!r.ok){
-        var msg=(r.data&&r.data.detail)?r.data.detail:'Incorrect email or password. Please try again.';
-        _err('loginErr','loginErrMsg',msg);
+        _err('loginErr','loginErrMsg',(r.data&&r.data.detail)?r.data.detail:'Incorrect email or password. Please try again.');
         document.getElementById('loginPass').classList.add('err');
         document.getElementById('loginPass').value='';
         document.getElementById('loginPass').focus();
@@ -459,7 +387,6 @@ function doLogin(){
     });
 }
 
-/* ── REGISTER ── */
 function doRegister(){
   _clearAll();
   var name=document.getElementById('regName').value.trim();
@@ -492,14 +419,11 @@ function doRegister(){
     });
 }
 
-/* ── Keyboard ── */
 document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('loginPass').focus();});
 document.getElementById('regPass').addEventListener('keydown',function(e){if(e.key==='Enter')doRegister();});
 document.getElementById('regEmail').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('regPass').focus();});
 document.getElementById('regName').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('regEmail').focus();});
-
-/* ── Focus on load ── */
 document.getElementById('loginEmail').focus();
 </script>
 </body>

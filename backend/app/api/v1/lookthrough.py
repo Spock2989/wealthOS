@@ -1,212 +1,130 @@
 """
-WealthOS — Look-Through Engine API Route
+WealthOS — Look-Through Engine API Route  v2.0
 GET /api/v1/lookthrough/{portfolio_id}
+POST /api/v1/lookthrough/{portfolio_id}/refresh   (force AMFI refresh)
 
-What this computes from DB holdings (no external data required):
-  1. Effective sector exposure  — weighted by current_value
-  2. Effective market-cap split — weighted by current_value, equity only
-  3. Fund overlap detection     — pairs of holdings sharing the same ISIN
-  4. Hidden concentration       — any sector > threshold_pct of portfolio
-  5. Asset class breakdown      — equity / debt / hybrid / other
-  6. Top holdings by value
+What this returns:
+  1. Effective stock exposure  — recursive fund→stock decomposition
+  2. Cross-fund overlap        — stocks held via multiple funds
+  3. Fund-vs-fund overlap      — pairwise overlap matrix for all fund pairs
+  4. Direct holdings           — top holdings by value
+  5. Data quality              — which funds have constituent data vs pending
 
-NOTE on full look-through (fund → constituent stocks):
-  Full recursive decomposition requires fund holdings data from AMFI API or
-  AMC disclosures (portfolio disclosure XMLs). This route computes effective
-  exposure from the REPORTED holdings only. When AMFI integration is live,
-  this route will be upgraded to use engines/lookthrough_engine.py with
-  fund_constituents data. The current output is marked methodology_version
-  "lookthrough_v1.0_direct" to distinguish it from the full v2 decomposition.
+Look-through depth:
+  - Funds with AMFI constituent data → full recursive decomposition
+  - Funds without data              → shown as black-box with their reported
+                                       sector/cap, marked "data_pending"
+
+Data flow:
+  CAS holdings (DB) → amfi_instruments (ISIN→scheme_code)
+  → fund_constituents (cached AMFI portfolio) → lookthrough computation
 
 Output contract:
   {
     "portfolio_id": str,
     "total_value_inr": float,
     "holding_count": int,
-    "effective_sector_exposure": {sector: pct},
-    "effective_market_cap": {cap_bucket: pct_of_equity},
-    "asset_class_breakdown": {class: pct},
-    "top_holdings": [...],
-    "overlap_flags": [...],
-    "hidden_concentration": [...],
+    "lookthrough_depth": "full" | "partial" | "direct_only",
+    "top_underlying_holdings": [...],     # stocks ranked by effective weight
+    "cross_fund_overlap": [...],          # stocks in 2+ funds
+    "fund_pair_overlap": [...],           # pairwise fund overlap
+    "effective_sector_exposure": {...},   # sector breakdown post look-through
+    "effective_market_cap": {...},        # cap split post look-through
     "data_quality": {...},
-    "methodology_version": "lookthrough_v1.0_direct"
+    "methodology_version": "lookthrough_v2.0_amfi"
   }
 """
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../.."))
-
+import os
+import logging
 from collections import defaultdict
 from typing import List, Dict
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.models.holding import Holding
 from app.services.portfolio_service import PortfolioService
+from app.services.amfi_holdings_service import build_portfolio_lookthrough
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lookthrough", tags=["lookthrough"])
 
-
-# ── Deterministic computations ────────────────────────────────
-
-def _effective_sector_exposure(holdings: List[Holding], total: float) -> Dict[str, float]:
-    by_sector: Dict[str, float] = defaultdict(float)
-    for h in holdings:
-        sec = (h.sector or "Unclassified").strip()
-        by_sector[sec] += h.current_value
-    return dict(
-        sorted(
-            {k: round(v / total * 100, 2) for k, v in by_sector.items()}.items(),
-            key=lambda x: -x[1],
+# Path to SQLite DB — the amfi_instruments + fund_constituents tables live here.
+# Resolve against the backend directory so relative paths (sqlite:///wealthos.db)
+# work regardless of the process cwd.
+def _resolve_db_path() -> str:
+    raw = os.environ.get("DATABASE_URL", "wealthos.db")
+    # Strip SQLite URI prefix
+    path = raw.replace("sqlite:////", "/").replace("sqlite:///", "")
+    if not os.path.isabs(path):
+        # Relative path → anchor to this file's backend directory
+        backend_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..")
         )
-    )
+        path = os.path.join(backend_dir, path)
+    return path
+
+_DB_PATH = _resolve_db_path()
 
 
-def _effective_market_cap(holdings: List[Holding]) -> Dict[str, float]:
-    eq_holdings = [h for h in holdings if (h.asset_class or "").lower() == "equity"]
-    eq_total = sum(h.current_value for h in eq_holdings)
-    if not eq_total:
-        return {}
-    by_cap: Dict[str, float] = defaultdict(float)
-    for h in eq_holdings:
-        cap = (h.market_cap or "n_a").strip()
-        by_cap[cap] += h.current_value
-    return dict(
-        sorted(
-            {k: round(v / eq_total * 100, 2) for k, v in by_cap.items()}.items(),
-            key=lambda x: -x[1],
-        )
-    )
-
-
-def _asset_class_breakdown(holdings: List[Holding], total: float) -> Dict[str, float]:
-    by_class: Dict[str, float] = defaultdict(float)
-    for h in holdings:
-        cls = (h.asset_class or "other").strip().lower()
-        by_class[cls] += h.current_value
-    return dict(
-        sorted(
-            {k: round(v / total * 100, 2) for k, v in by_class.items()}.items(),
-            key=lambda x: -x[1],
-        )
-    )
-
-
-def _top_holdings(holdings: List[Holding], total: float, n: int = 20) -> List[Dict]:
-    sorted_h = sorted(holdings, key=lambda h: h.current_value, reverse=True)[:n]
+def _holdings_to_dicts(holdings) -> List[Dict]:
+    """Convert SQLAlchemy Holding ORM objects to plain dicts for the service layer."""
     return [
         {
-            "rank":              i + 1,
-            "instrument_name":   h.instrument_name,
-            "isin":              h.isin or "—",
-            "asset_class":       h.asset_class,
-            "sector":            h.sector or "—",
-            "market_cap":        h.market_cap or "—",
-            "current_value_inr": round(h.current_value, 2),
-            "allocation_pct":    round(h.current_value / total * 100, 3),
+            "isin":            h.isin or "",
+            "instrument_name": h.instrument_name or "",
+            "current_value":   float(h.current_value or 0),
+            "asset_class":     h.asset_class or "equity",
+            "sector":          h.sector or "",
+            "market_cap":      h.market_cap or "",
         }
-        for i, h in enumerate(sorted_h)
+        for h in holdings
     ]
 
 
-def _detect_isin_overlap(holdings: List[Holding]) -> List[Dict]:
-    """
-    Flag any ISIN that appears more than once — indicates duplicate positions
-    or cross-fund holdings of the same instrument.
-    """
-    isin_map: Dict[str, List[Holding]] = defaultdict(list)
-    for h in holdings:
-        if h.isin:
-            isin_map[h.isin].append(h)
-
-    overlaps = []
-    for isin, group in isin_map.items():
-        if len(group) > 1:
-            total_value = sum(g.current_value for g in group)
-            overlaps.append({
-                "isin":             isin,
-                "instrument_name":  group[0].instrument_name,
-                "occurrences":      len(group),
-                "combined_value":   round(total_value, 2),
-                "holdings":         [
-                    {
-                        "instrument_name": g.instrument_name,
-                        "current_value":   round(g.current_value, 2),
-                    }
-                    for g in group
-                ],
-                "flag": "DUPLICATE_ISIN",
-                "note": f"{isin} held across {len(group)} entries — verify intentional or duplicate CAS import.",
-            })
-
-    return sorted(overlaps, key=lambda x: -x["combined_value"])
+def _aggregate_sector(underlying_positions: List[Dict]) -> Dict[str, float]:
+    """Roll up effective sector exposure from look-through positions."""
+    sectors: Dict[str, float] = defaultdict(float)
+    for p in underlying_positions:
+        s = p.get("sector") or "Unclassified"
+        sectors[s] += p.get("effective_weight_pct", 0)
+    return dict(sorted(sectors.items(), key=lambda x: -x[1]))
 
 
-def _detect_hidden_concentration(
-    sector_exp: Dict[str, float],
-    threshold_pct: float = 30.0,
-) -> List[Dict]:
-    flags = []
-    for sector, pct in sector_exp.items():
-        if pct >= threshold_pct:
-            severity = "CRITICAL" if pct >= 40 else "HIGH"
-            flags.append({
-                "sector":       sector,
-                "exposure_pct": pct,
-                "threshold_pct": threshold_pct,
-                "severity":     severity,
-                "note": f"{sector} at {pct:.1f}% exceeds {threshold_pct}% concentration threshold.",
-            })
-    return sorted(flags, key=lambda x: -x["exposure_pct"])
+def _aggregate_market_cap(underlying_positions: List[Dict]) -> Dict[str, float]:
+    """Roll up effective market cap exposure from look-through positions."""
+    caps: Dict[str, float] = defaultdict(float)
+    for p in underlying_positions:
+        cap = p.get("market_cap") or "unclassified"
+        caps[cap] += p.get("effective_weight_pct", 0)
+    return {k: round(v, 2) for k, v in sorted(caps.items(), key=lambda x: -x[1])}
 
 
-def _data_quality(holdings: List[Holding]) -> Dict:
-    total = len(holdings)
-    if not total:
-        return {"total": 0, "isin_coverage_pct": 0, "sector_coverage_pct": 0}
-    with_isin   = sum(1 for h in holdings if h.isin)
-    with_sector = sum(1 for h in holdings if h.sector)
-    with_cap    = sum(1 for h in holdings if h.market_cap)
-    missing_isin = [
-        {"instrument_name": h.instrument_name, "asset_class": h.asset_class}
-        for h in holdings if not h.isin
-    ][:10]  # cap at 10 to keep payload reasonable
-    return {
-        "total_holdings":         total,
-        "isin_coverage_pct":      round(with_isin   / total * 100, 1),
-        "sector_coverage_pct":    round(with_sector / total * 100, 1),
-        "market_cap_coverage_pct":round(with_cap    / total * 100, 1),
-        "missing_isin_count":     total - with_isin,
-        "missing_isin_sample":    missing_isin,
-        "lookthrough_depth":      "direct_holdings_only",
-        "full_lookthrough_ready": False,
-        "full_lookthrough_note": (
-            "Full recursive fund→stock look-through requires AMFI portfolio disclosure "
-            "integration (Phase 2). Current output reflects reported holdings only."
-        ),
-    }
+def _determine_depth(dq: Dict) -> str:
+    """Classify look-through depth based on data coverage."""
+    total_funds = dq.get("funds_with_constituents", 0) + dq.get("funds_without_constituents", 0)
+    if total_funds == 0:
+        return "direct_only"
+    if dq.get("funds_without_constituents", 0) == 0:
+        return "full"
+    return "partial"
 
 
-# ── Route ─────────────────────────────────────────────────────
 @router.get("/{portfolio_id}")
 def get_lookthrough(
     portfolio_id: str,
-    concentration_threshold: float = 30.0,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Compute effective exposure, overlap flags, and concentration alerts
-    from the portfolio's direct holdings.
-
-    Query param `concentration_threshold` (default 30.0) controls
-    the sector exposure % at which a hidden-concentration flag fires.
+    Full portfolio look-through.
+    Uses cached AMFI constituent data where available; falls back to
+    direct holding classification where not.
     """
-    svc = PortfolioService(db)
+    svc       = PortfolioService(db)
     portfolio = svc.get(portfolio_id, current_user.id)
     if not portfolio:
         raise HTTPException(404, "Portfolio not found")
@@ -215,46 +133,81 @@ def get_lookthrough(
     if not holdings:
         raise HTTPException(422, "Portfolio has no holdings. Upload a CAS file first.")
 
-    total = sum(h.current_value for h in holdings)
+    total = sum(h.current_value for h in holdings if h.current_value)
     if total <= 0:
-        raise HTTPException(422, "Portfolio total value is zero — cannot compute exposures.")
+        raise HTTPException(422, "Portfolio total value is zero.")
 
-    sector_exp  = _effective_sector_exposure(holdings, total)
-    cap_exp     = _effective_market_cap(holdings)
-    class_exp   = _asset_class_breakdown(holdings, total)
-    top_h       = _top_holdings(holdings, total, n=20)
-    overlaps    = _detect_isin_overlap(holdings)
-    conc_flags  = _detect_hidden_concentration(sector_exp, concentration_threshold)
-    dq          = _data_quality(holdings)
+    holdings_dicts = _holdings_to_dicts(holdings)
 
-    # Summary interpretation
-    top_sector      = next(iter(sector_exp), None)
-    top_sector_pct  = sector_exp.get(top_sector, 0) if top_sector else 0
-    conc_risk_level = (
-        "CRITICAL" if top_sector_pct >= 40
-        else "HIGH"   if top_sector_pct >= 30
-        else "MEDIUM" if top_sector_pct >= 20
-        else "LOW"
-    )
+    # Run full look-through
+    report = build_portfolio_lookthrough(holdings_dicts, _DB_PATH, force_refresh=False)
+    if not report:
+        raise HTTPException(500, "Look-through computation returned empty result.")
+
+    dq    = report.get("data_quality", {})
+    depth = _determine_depth(dq)
+
+    # Post look-through sector + cap aggregation
+    eff_sector = _aggregate_sector(report.get("top_underlying_holdings", []))
+    eff_cap    = _aggregate_market_cap(report.get("top_underlying_holdings", []))
 
     return {
-        "portfolio_id":               portfolio_id,
-        "portfolio_name":             portfolio.name or portfolio.filename,
-        "total_value_inr":            round(total, 2),
-        "holding_count":              len(holdings),
-        "effective_sector_exposure":  sector_exp,
-        "effective_market_cap":       cap_exp,
-        "asset_class_breakdown":      class_exp,
-        "top_holdings":               top_h,
-        "overlap_flags":              overlaps,
-        "hidden_concentration":       conc_flags,
-        "summary": {
-            "top_sector":               top_sector,
-            "top_sector_pct":           top_sector_pct,
-            "concentration_risk_level": conc_risk_level,
-            "overlap_flag_count":       len(overlaps),
-            "concentration_flag_count": len(conc_flags),
-        },
-        "data_quality":               dq,
-        "methodology_version":        "lookthrough_v1.0_direct",
+        "portfolio_id":              portfolio_id,
+        "portfolio_name":            portfolio.name or portfolio.filename,
+        "total_value_inr":           round(total, 2),
+        "holding_count":             len(holdings),
+        "lookthrough_depth":         depth,
+        "top_underlying_holdings":   report.get("top_underlying_holdings", []),
+        "total_underlying_positions":report.get("total_underlying_positions", 0),
+        "cross_fund_overlap":        report.get("cross_fund_overlap", []),
+        "fund_pair_overlap":         report.get("fund_pair_overlap", []),
+        "effective_sector_exposure": eff_sector,
+        "effective_market_cap":      eff_cap,
+        "data_quality":              dq,
+        "methodology_version":       "lookthrough_v2.0_amfi",
+    }
+
+
+@router.post("/{portfolio_id}/refresh")
+def refresh_lookthrough(
+    portfolio_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Force-refresh AMFI constituent data for all funds in this portfolio.
+    Triggers live AMFI API calls (ignores cache). Use sparingly — AMFI
+    publishes new disclosures monthly.
+    """
+    svc       = PortfolioService(db)
+    portfolio = svc.get(portfolio_id, current_user.id)
+    if not portfolio:
+        raise HTTPException(404, "Portfolio not found")
+
+    holdings = svc.get_holdings(portfolio_id)
+    if not holdings:
+        raise HTTPException(422, "Portfolio has no holdings.")
+
+    total = sum(h.current_value for h in holdings if h.current_value)
+    if total <= 0:
+        raise HTTPException(422, "Portfolio total value is zero.")
+
+    holdings_dicts = _holdings_to_dicts(holdings)
+    report = build_portfolio_lookthrough(holdings_dicts, _DB_PATH, force_refresh=True)
+
+    dq    = report.get("data_quality", {})
+    depth = _determine_depth(dq)
+
+    return {
+        "portfolio_id":              portfolio_id,
+        "total_value_inr":           round(total, 2),
+        "lookthrough_depth":         depth,
+        "funds_refreshed":           dq.get("funds_with_constituents", 0),
+        "funds_pending":             dq.get("funds_without_constituents", 0),
+        "pending_list":              dq.get("funds_pending_data", []),
+        "top_underlying_holdings":   report.get("top_underlying_holdings", []),
+        "total_underlying_positions":report.get("total_underlying_positions", 0),
+        "cross_fund_overlap":        report.get("cross_fund_overlap", []),
+        "fund_pair_overlap":         report.get("fund_pair_overlap", []),
+        "methodology_version":       "lookthrough_v2.0_amfi",
     }
