@@ -1,0 +1,21 @@
+{
+  "format": "xlsx",
+  "broker_detected": "zerodha_console",
+  "client_id": "ZC0726",
+  "holdings_count": 12,
+  "total_value": 1272437.181,
+  "isins_sorted": [
+    "INF179KA1RQ7",
+    "INF179KA1RW5",
+    "INF200K01UM9",
+    "INF204K01K15",
+    "INF247L01445",
+    "INF769K01EZ9",
+    "INF789F01XA0",
+    "INF846K01DP8",
+    "INF846K01EH3",
+    "INF846K01EW2",
+    "INF879O01027",
+    "INF966L01689"
+  ]
+}
