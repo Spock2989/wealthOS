@@ -458,16 +458,38 @@ _TEMPLATES: Dict[str, List[Tuple[str, float]]] = {
 }
 
 
+# Categories with NO defensible Indian-equity template. Modelling these as a
+# Nifty-50 proxy invented holdings the fund cannot possibly own — a silver ETF
+# FoF was showing HDFC Bank at 8%. These return no constituents so the caller
+# marks them data_pending and the UI shows them as opaque.
+NO_TEMPLATE_CATEGORY = "no_template"
+
+
 def _detect_fund_category(fund_name: str, scheme_type: str = "") -> str:
-    """Map fund name + AMFI scheme type to one of our template keys."""
+    """
+    Map fund name + AMFI scheme type to one of our template keys.
+
+    Returns NO_TEMPLATE_CATEGORY for funds whose real holdings cannot be
+    approximated from an Indian large-cap mandate (commodity/precious-metal
+    FoFs, international/feeder funds). Those must not be modelled.
+    """
     n  = fund_name.lower()
     st = scheme_type.lower()
-    if any(x in n for x in ["elss", "tax saver", "tax saving", "tax-saver"]):
+    # Punctuation-flattened form so "U.S. Opportunities" matches "us opportunities"
+    # and "Mid-Cap" matches "mid cap". AMC naming is inconsistent on both.
+    n_flat = n.replace(".", "").replace("-", " ")
+    n_flat = " ".join(n_flat.split())
+
+    if any(x in n_flat for x in ["elss", "tax saver", "tax saving"]):
         return "elss"
-    if any(x in n for x in ["nasdaq", "us opportunities", "us equity", "global", "international", "world"]):
-        return "diversified"   # international — show Indian proxy holdings
-    if any(x in n for x in ["silver", "gold", "commodity"]):
-        return "diversified"   # commodity FoF — minimal equity via rebalancing
+    # International / feeder funds hold foreign securities, not Indian equity.
+    if any(x in n_flat for x in ["nasdaq", "us opportunities", "us equity", "global",
+                                 "international", "world", "feeder", "overseas",
+                                 "s&p 500", "msci"]):
+        return NO_TEMPLATE_CATEGORY
+    # Commodity / precious-metal FoFs hold bullion or ETF units, not equity.
+    if any(x in n_flat for x in ["silver", "gold", "commodity", "bullion"]):
+        return NO_TEMPLATE_CATEGORY
     if any(x in n for x in ["corporate bond", "bond fund", "credit risk"]) or "debt" in st:
         return "debt_corp"
     if any(x in n for x in ["large & mid", "large and mid", "large mid"]):
@@ -491,8 +513,20 @@ def generate_synthetic_portfolio(fund_name: str, scheme_type: str = "") -> List[
     composition mandated by SEBI — NOT actual portfolio disclosures from AMFI.
     Weights are representative; actual fund holdings will differ.
     Used as a fallback when AMFI live data is unavailable.
+
+    Returns [] for fund categories that cannot be honestly approximated from an
+    Indian equity mandate (commodity/precious-metal FoFs, international feeders).
+    The caller then reports the fund as data_pending rather than inventing a
+    portfolio for it.
     """
     category = _detect_fund_category(fund_name, scheme_type)
+    if category == NO_TEMPLATE_CATEGORY:
+        logger.info(
+            "No defensible template for '%s' (commodity/international) — "
+            "returning no constituents; fund will show as data_pending",
+            fund_name,
+        )
+        return []
     template = _TEMPLATES.get(category, _TEMPLATES["diversified"])
     disc_date = date.today().isoformat()
 
