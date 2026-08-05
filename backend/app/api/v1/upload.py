@@ -35,6 +35,7 @@ engine = AnalyticsEngine()
 async def upload(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    allow_duplicate: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -47,6 +48,30 @@ async def upload(
     if len(content) < 100:
         raise HTTPException(400, "File appears empty")
     svc = PortfolioService(db)
+
+    # Duplicate guard. Re-uploading the same CAS silently created a second
+    # portfolio with identical holdings ('portfolio kt.pdf' vs
+    # 'portfolio_kt.pdf' both existed in prod), doubling the dashboard.
+    # 409 rather than a hard block — a refreshed monthly CAS legitimately
+    # reuses its filename, so the caller can retry with allow_duplicate=true.
+    if not allow_duplicate:
+        existing = svc.find_by_filename(current_user.id, file.filename)
+        if existing:
+            raise HTTPException(
+                409,
+                detail={
+                    "error": "duplicate_upload",
+                    "message": (
+                        f"'{file.filename}' was already uploaded on "
+                        f"{existing.created_at:%Y-%m-%d %H:%M} UTC. "
+                        "Re-send with allow_duplicate=true to upload it again."
+                    ),
+                    "existing_portfolio_id": existing.id,
+                    "existing_created_at":   existing.created_at.isoformat() if existing.created_at else None,
+                    "existing_holding_count": svc.holding_count(existing.id),
+                },
+            )
+
     p = svc.create(advisor_id=current_user.id, name=file.filename, filename=file.filename)
     background_tasks.add_task(_pipeline, p.id, content, file.filename)
     return {"portfolio_id": p.id, "status": "processing"}

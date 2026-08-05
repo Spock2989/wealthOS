@@ -8,7 +8,14 @@ from app.models.ai_report import AIReport
 from app.normalizer.canonical_schema import CanonicalHolding
 from app.analytics.engine import AnalyticsResult
 import uuid
+import re
 from datetime import datetime
+
+
+def _flatten_filename(name: str) -> str:
+    """Lowercase and collapse separators so 'a b.pdf' == 'a_b.pdf' == 'a-b.pdf'."""
+    return re.sub(r"[\s_\-]+", " ", (name or "").strip().lower())
+
 
 class PortfolioService:
     def __init__(self, db: Session):
@@ -24,6 +31,24 @@ class PortfolioService:
 
     def get_all(self, advisor_id):
         return self.db.query(Portfolio).filter(Portfolio.advisor_id==advisor_id).order_by(Portfolio.created_at.desc()).all()
+
+    def find_by_filename(self, advisor_id, filename):
+        """
+        Return this advisor's most recent portfolio for a filename, if any.
+
+        Filenames are compared with punctuation flattened, so 'portfolio kt.pdf'
+        and 'portfolio_kt.pdf' are recognised as the same upload — that exact
+        pair produced two identical 17-holding portfolios in production.
+        """
+        if not filename:
+            return None
+        target = _flatten_filename(filename)
+        for p in (self.db.query(Portfolio)
+                      .filter(Portfolio.advisor_id == advisor_id)
+                      .order_by(Portfolio.created_at.desc()).all()):
+            if _flatten_filename(p.filename or "") == target:
+                return p
+        return None
 
     def set_status(self, portfolio_id, status, error=None):
         p = self.db.query(Portfolio).filter(Portfolio.id==portfolio_id).first()
