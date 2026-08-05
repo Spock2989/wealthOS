@@ -25,6 +25,7 @@ Output contract:
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../.."))
 
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -34,15 +35,21 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.services.portfolio_service import PortfolioService
+from app.services import macro_cache
+from app.services.macro_registry import registered_ids
 
 # Import deterministic engines (no LLM, no randomness)
 from engines.scenario_engine import (
     run_scenarios,
     run_custom_scenario,
     compute_full_macro_sensitivity_matrix,
+    build_macro_context,
+    enrich_with_macro_context,
     MACRO_SENSITIVITY,
     SCENARIOS,
 )
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/scenarios", tags=["scenarios"])
 
@@ -109,6 +116,20 @@ def _get_snapshot_or_raise(portfolio_id: str, svc: PortfolioService):
     return snap
 
 
+def _fetch_macro_context(db: Session) -> Optional[dict]:
+    """
+    Pull the latest FRED macro snapshot from DB and build a macro context dict.
+    Returns None on any failure — macro context is always optional, never blocks
+    scenario computation.
+    """
+    try:
+        snapshot = macro_cache.build_snapshot(db, registered_ids())
+        return build_macro_context(snapshot.to_dict())
+    except Exception as e:
+        log.warning("macro_context_fetch_failed: %s", e)
+        return None
+
+
 # ── Run all scenarios ─────────────────────────────────────────
 @router.get("/{portfolio_id}")
 @router.post("/{portfolio_id}")          # frontend compat: POST without /run
@@ -138,20 +159,25 @@ def get_all_scenarios(
     results = run_scenarios(sector_exp, cap_split, total_value)
     macro_matrix = compute_full_macro_sensitivity_matrix(sector_exp, total_value)
 
+    # Enrich scenarios with live FRED macro context (baseline + implied shocked levels).
+    # Gracefully degrades when FRED data is absent — scenarios still run, fields are null.
+    macro_ctx = _fetch_macro_context(db)
+    results = enrich_with_macro_context(results, macro_ctx)
+
     # Portfolio outlook — deterministic forward projection (3-6M, 1-2Y, 3-5Y)
     outlook = {}
     try:
         from engines.outlook_engine import run_outlook
         outlook = run_outlook(sector_exp, cap_split, total_value)
     except Exception as _e:
-        import logging
-        logging.getLogger(__name__).warning("outlook_engine failed: %s", _e)
+        log.warning("outlook_engine failed: %s", _e)
 
     return {
         "portfolio_id":        portfolio_id,
         "total_value_inr":     total_value,
         "scenarios":           results,
         "macro_sensitivity":   macro_matrix,
+        "macro_context":       macro_ctx,       # full snapshot header for UI
         "outlook":             outlook,
         "methodology_version": "scenario_v2.1",
         "snapshot_used_at":    snap.created_at.isoformat(),
@@ -186,6 +212,8 @@ def run_scenario(
     if not sector_exp:
         raise HTTPException(422, "No sector exposure data in snapshot.")
 
+    macro_ctx = _fetch_macro_context(db)
+
     if body.custom_shocks:
         result = run_custom_scenario(
             sector_shocks=body.custom_shocks,
@@ -194,10 +222,13 @@ def run_scenario(
             total_value=total_value,
             scenario_name=body.custom_name or "Custom Scenario",
         )
+        # Custom scenarios have no registered macro driver; enrich for consistent shape.
+        enriched = enrich_with_macro_context([result], macro_ctx)
         return {
             "portfolio_id":        portfolio_id,
             "total_value_inr":     total_value,
-            "scenario":            result,
+            "scenario":            enriched[0],
+            "macro_context":       macro_ctx,
             "methodology_version": "scenario_v2.1",
             "snapshot_used_at":    snap.created_at.isoformat(),
         }
@@ -209,10 +240,12 @@ def run_scenario(
         total_value=total_value,
         scenario_ids=body.scenario_ids,
     )
+    results = enrich_with_macro_context(results, macro_ctx)
     return {
         "portfolio_id":        portfolio_id,
         "total_value_inr":     total_value,
         "scenarios":           results,
+        "macro_context":       macro_ctx,
         "methodology_version": "scenario_v2.1",
         "snapshot_used_at":    snap.created_at.isoformat(),
     }

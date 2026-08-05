@@ -7,6 +7,15 @@ References:
   - WealthOS Definitive Builder Document v4.0 — Sections 6.12, 6.13
   - WealthOS North Star Analytics — Part 14
   - BlackRock Aladdin scenario framework
+
+FRED wiring (macro_context@1.0.0):
+  build_macro_context(snapshot_dict)  — converts a MacroSnapshot.to_dict() into
+                                        a baseline-values map for all tracked series.
+  enrich_with_macro_context(results)  — annotates each scenario result with its
+                                        primary macro driver's current baseline and
+                                        the implied absolute level under the shock.
+  Determinism contract: same snapshot_dict → byte-identical output. Never raises
+  into caller. If FRED data is absent, fields are present with null values.
 """
 
 from typing import Dict, List, Optional
@@ -666,3 +675,190 @@ def run_custom_scenario(
         "small_cap_amplifier": 0.0,
     }
     return _apply_scenario(custom, sector_exp, cap_split, total_value)
+
+
+# ════════════════════════════════════════════════════════════════
+# FRED MACRO CONTEXT — live baseline wiring
+# methodology_version: macro_context@1.0.0
+# ════════════════════════════════════════════════════════════════
+
+MACRO_CONTEXT_VERSION = "macro_context@1.0.0"
+
+# Maps each scenario ID to its primary FRED driver + how to compute
+# the implied shocked level.
+#   shock_multiplier: implied = baseline * (1 + multiplier)
+#   shock_additive:   implied = baseline + additive
+SCENARIO_MACRO_DRIVERS: Dict[str, Dict] = {
+    "oil_spike_40pct":               {"series": "DCOILWTICO",       "label": "WTI Crude (USD/bbl)",   "shock_multiplier": +0.40},
+    "oil_collapse_40pct":            {"series": "DCOILWTICO",       "label": "WTI Crude (USD/bbl)",   "shock_multiplier": -0.40},
+    "rbi_rate_hike_100bps":          {"series": "INTDSRINM193N",    "label": "RBI Rate (%)",           "shock_additive":   +1.00},
+    "rbi_rate_cut_75bps":            {"series": "INTDSRINM193N",    "label": "RBI Rate (%)",           "shock_additive":   -0.75},
+    "inr_crash_15pct":               {"series": "DEXINUS",          "label": "INR per USD",            "shock_multiplier": +0.15},
+    "inr_appreciation_8pct":         {"series": "DEXINUS",          "label": "INR per USD",            "shock_multiplier": -0.08},
+    "global_risk_off_vix_40":        {"series": "VIXCLS",           "label": "VIX",                    "shock_multiplier": +1.00},
+    "us_recession_mild":             {"series": "T10Y2Y",           "label": "US 10Y-2Y Spread (%)",   "shock_additive":   -0.50},
+    "us_recession_deep":             {"series": "DGS10",            "label": "US 10Y Yield (%)",       "shock_additive":   -1.50},
+    "india_inflation_spike":         {"series": "INDCPIALLMINMEI",  "label": "India CPI",              "shock_multiplier": +0.30},
+    "global_gold_rally_30pct":       {"series": "GOLDAMGBD228NLBM", "label": "Gold (USD/oz)",          "shock_multiplier": +0.30},
+    "credit_crisis_hy_spread_500bps":{"series": "BAMLH0A0HYM2",    "label": "US HY Spread (%)",       "shock_additive":   +5.00},
+    "us_rate_hike_cycle":            {"series": "DGS10",            "label": "US 10Y Yield (%)",       "shock_additive":   +1.00},
+    "brent_crude_shock":             {"series": "DCOILBRENTEU",     "label": "Brent Crude (USD/bbl)",  "shock_multiplier": +0.40},
+    "largecap_correction_20":        {"series": "VIXCLS",           "label": "VIX",                    "shock_multiplier": +0.60},
+    "smallcap_crash_45":             {"series": "VIXCLS",           "label": "VIX",                    "shock_multiplier": +1.50},
+}
+
+# Series always shown in the scenario-level baseline header.
+BASELINE_SERIES: List[Dict] = [
+    {"series_id": "DCOILWTICO",       "label": "WTI Crude (USD/bbl)"},
+    {"series_id": "DCOILBRENTEU",     "label": "Brent Crude (USD/bbl)"},
+    {"series_id": "DEXINUS",          "label": "INR per USD"},
+    {"series_id": "VIXCLS",           "label": "VIX"},
+    {"series_id": "INTDSRINM193N",    "label": "RBI Rate (%)"},
+    {"series_id": "DGS10",            "label": "US 10Y Yield (%)"},
+    {"series_id": "T10Y2Y",           "label": "US 10Y-2Y Spread (%)"},
+    {"series_id": "INDCPIALLMINMEI",  "label": "India CPI"},
+    {"series_id": "GOLDAMGBD228NLBM", "label": "Gold (USD/oz)"},
+    {"series_id": "BAMLH0A0HYM2",     "label": "US HY Spread (%)"},
+]
+
+
+def build_macro_context(macro_snapshot_dict: Optional[Dict]) -> Dict:
+    """
+    Build a macro context object from a FRED MacroSnapshot.to_dict().
+
+    Input shape:
+      {"series": [{"series_id": ..., "latest_value": ..., "latest_date": ...,
+                   "is_stale": ..., "units": ...}, ...], "computed_at": ...}
+
+    Output:
+      {
+        "baseline_values": {
+          "DCOILWTICO": {"label": "WTI Crude (USD/bbl)", "value": 78.5,
+                         "date": "2026-05-30", "units": "Dollars per Barrel",
+                         "is_stale": false},
+          ...                       # all BASELINE_SERIES keys always present
+        },
+        "stale_series":  ["INTDSRINM193N", ...],  # series with is_stale=True or missing
+        "has_live_data": true,       # false when no series has a non-null value
+        "methodology_version": "macro_context@1.0.0",
+        "sourced_at": "2026-05-31T04:00:00+00:00"
+      }
+
+    Always returns a complete dict. Never raises into caller.
+    """
+    baseline: Dict[str, Dict] = {}
+    stale: List[str] = []
+
+    # Build a fast lookup: series_id → snapshot entry
+    series_index: Dict[str, Dict] = {}
+    if macro_snapshot_dict and isinstance(macro_snapshot_dict.get("series"), list):
+        for s in macro_snapshot_dict["series"]:
+            if isinstance(s, dict) and s.get("series_id"):
+                series_index[s["series_id"]] = s
+
+    for entry in BASELINE_SERIES:
+        sid = entry["series_id"]
+        snap = series_index.get(sid)
+        if snap:
+            is_stale = bool(snap.get("is_stale", True))
+            baseline[sid] = {
+                "label":    entry["label"],
+                "value":    snap.get("latest_value"),
+                "date":     snap.get("latest_date"),
+                "units":    snap.get("units"),
+                "is_stale": is_stale,
+            }
+            if is_stale or snap.get("latest_value") is None:
+                stale.append(sid)
+        else:
+            baseline[sid] = {
+                "label":    entry["label"],
+                "value":    None,
+                "date":     None,
+                "units":    None,
+                "is_stale": True,
+            }
+            stale.append(sid)
+
+    has_live = any(v["value"] is not None for v in baseline.values())
+
+    return {
+        "baseline_values":     baseline,
+        "stale_series":        stale,
+        "has_live_data":       has_live,
+        "methodology_version": MACRO_CONTEXT_VERSION,
+        "sourced_at":          (macro_snapshot_dict or {}).get("computed_at"),
+    }
+
+
+def _compute_implied_level(baseline_value: Optional[float], driver_spec: Dict) -> Optional[float]:
+    """
+    Implied absolute level under the scenario shock.
+    Returns None when baseline_value is None (FRED data not yet populated).
+    """
+    if baseline_value is None:
+        return None
+    if "shock_multiplier" in driver_spec:
+        return round(baseline_value * (1.0 + driver_spec["shock_multiplier"]), 4)
+    if "shock_additive" in driver_spec:
+        return round(baseline_value + driver_spec["shock_additive"], 4)
+    return None
+
+
+def enrich_with_macro_context(
+    results: List[Dict],
+    macro_context: Optional[Dict],
+) -> List[Dict]:
+    """
+    Annotate each scenario result with its primary macro driver's live baseline
+    and the implied shocked level under that scenario.
+
+    Pure function — does not mutate inputs. Returns a new list.
+
+    Per-scenario addition:
+      "macro_driver_context": {
+        "series_id":             "DCOILWTICO",
+        "label":                 "WTI Crude (USD/bbl)",
+        "baseline_value":        78.5,
+        "baseline_date":         "2026-05-30",
+        "implied_shocked_level": 109.9,       # baseline * 1.40 for oil_spike_40pct
+        "is_stale":              false
+      }
+      or None if the scenario has no registered macro driver.
+
+    If macro_context has no live data (empty FRED cache), fields are present with
+    null values — never silently omitted so callers can distinguish "no driver"
+    from "driver exists but data not yet synced".
+    """
+    if not results:
+        return results
+
+    baseline_values: Dict[str, Dict] = {}
+    if macro_context and isinstance(macro_context.get("baseline_values"), dict):
+        baseline_values = macro_context["baseline_values"]
+
+    enriched = []
+    for r in results:
+        scenario_id = r.get("id", "")
+        driver_spec = SCENARIO_MACRO_DRIVERS.get(scenario_id)
+
+        if driver_spec:
+            sid = driver_spec["series"]
+            bv = baseline_values.get(sid, {})
+            baseline_val = bv.get("value")
+            implied = _compute_implied_level(baseline_val, driver_spec)
+
+            driver_ctx: Optional[Dict] = {
+                "series_id":             sid,
+                "label":                 driver_spec["label"],
+                "baseline_value":        baseline_val,
+                "baseline_date":         bv.get("date"),
+                "implied_shocked_level": implied,
+                "is_stale":              bv.get("is_stale", True),
+            }
+        else:
+            driver_ctx = None
+
+        enriched.append({**r, "macro_driver_context": driver_ctx})
+
+    return enriched

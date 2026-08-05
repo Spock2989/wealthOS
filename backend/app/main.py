@@ -7,9 +7,10 @@ from app.models.holding import Holding
 from app.models.analytics_snapshot import AnalyticsSnapshot
 from app.models.ai_report import AIReport
 from app.models.fund_constituent import FundConstituent  # look-through cache
+from app.models.macro_observation import MacroObservation  # FRED macro cache
 from app.database import create_tables
 from app.api.v1 import auth, upload, portfolios, analytics_routes, insights, reports, demo
-from app.api.v1 import lookthrough
+from app.api.v1 import lookthrough, macro
 app = FastAPI(title="WealthOS API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 @app.on_event("startup")
@@ -23,6 +24,7 @@ app.include_router(insights.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
 app.include_router(demo.router, prefix="/api/v1")
 app.include_router(lookthrough.router, prefix="/api/v1")
+app.include_router(macro.router, prefix="/api/v1")
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "wealthos-api", "version": "2.0.0", "db": "sqlite"}
