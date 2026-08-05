@@ -2381,6 +2381,10 @@ function _xrayPortfolioId() {
   return el ? el.getAttribute('data-portfolio-id') : null;
 }
 
+// True when the last X-Ray run included modelled (non-AMFI) constituents.
+// Drives the estimated-data disclosure in the results footer.
+var _xrayHasEstimated = false;
+
 function loadXRay() {
   var portfolioId = _xrayPortfolioId();
   if (!portfolioId) {
@@ -2433,30 +2437,43 @@ function _runXRay(portfolioId, forceRefresh) {
       depthBadge.textContent = depthInfo.label;
     }
 
-    // Data quality banner
+    // Data quality banner.
+    // Counts come from the backend's provenance split — funds_synthetic_count
+    // is modelled data, funds_real_count is genuine AMFI disclosure. Do not
+    // infer this from funds_with_constituents: that counts both.
     var dq      = d.data_quality || {};
     var qBanner = document.getElementById('xrayQualityBanner');
     var qText   = document.getElementById('xrayQualityText');
-    // Check if any holding was resolved from synthetic data
-    var allHoldings   = d.top_underlying_holdings || [];
-    var hasSynthetic  = allHoldings.some(function(h){
-      return (h.sources||[]).some(function(s){ return s.data_source === 'synthetic_estimated'; });
-    });
-    if ((dq.funds_without_constituents > 0 || hasSynthetic) && qBanner && qText) {
-      qBanner.style.display = '';
-      if (hasSynthetic) {
-        qText.innerHTML =
-          '<b>Estimated holdings shown</b> — AMFI live data unavailable (server IP geo-restricted). ' +
-          'Holdings are approximated from each fund\'s SEBI mandate category. ' +
-          'Sector overlap and concentration analysis remain directionally accurate. ' +
-          'Run <b>↻ Refresh from AMFI</b> once live access is available.';
-      } else {
-        var pending = (dq.funds_pending_data||[]).slice(0,3).join(', ');
-        qText.innerHTML =
-          '<b>' + dq.funds_without_constituents + ' fund(s) pending AMFI data</b> — ' +
-          'showing these as opaque positions. Click ↻ Refresh from AMFI to fetch live constituent data. ' +
-          (pending ? 'Pending: <i>' + pending + (dq.funds_pending_data.length>3?'…':'') + '</i>' : '');
+    var nSyn     = dq.funds_synthetic_count || 0;
+    var nPending = dq.funds_without_constituents || 0;
+    var nFunds   = (dq.funds_with_constituents || 0) + nPending;
+    _xrayHasEstimated = nSyn > 0;
+
+    if ((nSyn > 0 || nPending > 0) && qBanner && qText) {
+      qBanner.style.display = '';   // persistent while estimated data is shown
+      var parts = [];
+      if (nSyn > 0) {
+        var synNames = (dq.funds_synthetic_names || []).slice(0,3).join(', ');
+        parts.push(
+          '<b>Estimated data: ' + nSyn + ' of ' + nFunds + ' funds use modelled ' +
+          'constituents, not AMFI disclosures.</b> Holdings for these are derived ' +
+          'from each fund\'s SEBI mandate category, not its published portfolio. ' +
+          'Overlap and concentration figures that depend on them are indicative only.' +
+          (synNames ? ' Modelled: <i>' + synNames +
+            ((dq.funds_synthetic_names||[]).length > 3 ? ', …' : '') + '</i>.' : '')
+        );
       }
+      if (nPending > 0) {
+        var pending = (dq.funds_pending_data||[]).slice(0,3).join(', ');
+        parts.push(
+          '<b>' + nPending + ' fund(s) have no constituent data</b> and are shown as ' +
+          'opaque positions — no holdings are inferred for them.' +
+          (pending ? ' Pending: <i>' + pending +
+            ((dq.funds_pending_data||[]).length > 3 ? ', …' : '') + '</i>.' : '')
+        );
+      }
+      parts.push('Click <b>↻ Refresh from AMFI</b> to attempt live disclosure data.');
+      qText.innerHTML = parts.join('<br>');
     } else if (qBanner) {
       qBanner.style.display = 'none';
     }
