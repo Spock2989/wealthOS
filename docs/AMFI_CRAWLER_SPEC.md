@@ -1,7 +1,31 @@
 # AMFI Constituents Crawler — Specification
 
 **Status:** Spec only. No code written.
-**Date:** 2026-08-06
+**Date:** 2026-08-06, revised same day after Phase A
+
+> ## ✅ Phase A executed — see [`AMFI_LAYOUTS.md`](AMFI_LAYOUTS.md)
+>
+> 4 of 10 AMCs documented from real workbooks (Nippon, SBI, Mirae, DSP).
+> Corrections this forced on the spec below:
+>
+> 1. **G2's ISIN regex was wrong.** `^INE[0-9A-Z]{9}$` rejects **26.4%** of real
+>    ISINs — measured: 490 of 1,856 — every G-sec, SDL, T-bill and MF unit.
+>    Corrected to `^IN[A-Z0-9]{10}$` (1,856/1,856 match).
+> 2. **The units question in §11 is answered, and it is worse than assumed.**
+>    Nippon and Mirae express `% to NAV` as a **fraction** (0.9869); SBI
+>    expresses `% to AUM` as a **percentage** (96.17). Same month, no
+>    declaration. Units are now **per-adapter config**, never inferred.
+> 3. **Archives ARE retrievable** for Nippon (2013→), SBI (2023→) and DSP
+>    (2013→). Mirae appears current-month-only. §11 Q1 resolved.
+> 4. **A 403 does not mean blocked** — DSP 403s curl but serves a headless
+>    browser. Probe with a browser before writing an AMC off (§9 amended).
+> 5. **Never load a workbook by path.** Nippon ships XLSX named `.xls`; openpyxl
+>    rejects on extension. Sniff magic bytes, load from `BytesIO`.
+> 6. **Adapter-per-AMC is confirmed** for both fetch and parse — no two AMCs
+>    agree on header row, ISIN column, or units.
+> 7. **Playwright costs ~716 MB and is risky on this host** (1.97 GB RAM, no
+>    swap, 1 vCPU). §11 Q3 resolved — add swap first, or start with Nippon,
+>    which needs no browser.
 **Goal:** replace `generate_synthetic_portfolio()` as the primary source of fund
 constituents with real monthly portfolio disclosures. `funds_real_count` is
 currently **0**.
@@ -234,8 +258,8 @@ Gates run per sheet, after parsing, before any write.
 
 | # | Gate | Condition | On failure |
 |---|---|---|---|
-| G1 | Weight sum | `95.0 ≤ Σ weight_pct ≤ 105.0` | reject sheet |
-| G2 | ISIN format | ≥95% of equity rows match `^INE[0-9A-Z]{9}$`; underlying ISINs unique | reject sheet |
+| G1 | Weight sum | `95.0 ≤ Σ weight_pct ≤ 105.0` **after** applying the adapter's unit convention | reject sheet |
+| G2 | ISIN format | ≥95% of rows match `^IN[A-Z0-9]{10}$`; underlying ISINs unique | reject sheet |
 | G3 | Row count | `5 ≤ rows ≤ 2000` | reject sheet |
 | G4 | Disclosure date | present, parseable, within 95 days, not future | reject sheet |
 | G5 | Scheme identity | resolves to a known scheme ISIN | reject sheet |
@@ -348,9 +372,16 @@ CLAUDE.md §2.1.
 Ship adapter by adapter. Each is independently valuable and independently
 revertible.
 
-1. **ICICI Prudential first** — 3 of 17 funds here, the largest single gain.
-2. Aditya Birla SL (2 funds), then Axis, DSP, Kotak, Mirae, UTI (1 each).
-3. SBI, Nippon, HDFC — 0 funds in this portfolio, but needed for other clients.
+**Revised after Phase A.** The original order was by coverage; acquisition
+difficulty now dominates, and ICICI is currently unreachable.
+
+1. **Nippon first** — the only in-scope AMC needing **no browser**, fully
+   documented, decade-deep archive. Contributes 0 funds to `portfolio_kt.pdf`;
+   its value is proving the pipeline end to end at zero operational risk.
+2. **ICICI Prudential** once its live URL is found — 3 funds, largest gain.
+3. **SBI, Mirae, DSP** — documented, but gated on the swap/Playwright decision.
+4. **Kotak, ABSL, UTI, Axis** — gated on discovering their download endpoints.
+5. **HDFC** — blocked; stays `synthetic_estimated` unless a data agreement lands.
 
 As each lands, `funds_real_count` climbs and `funds_synthetic_count` falls. The
 existing UI needs **no change** — it already reads those counts:
@@ -414,15 +445,28 @@ cannot prove it will refuse bad data.
 
 ## 11. Open questions
 
-1. **Past-month archives** — unverified for all 10 AMCs. If only the current
-   month is retrievable, history accrues forward from launch and backfill is
-   impossible. Resolve in Phase A4 before promising any time-series feature.
-2. **HDFC's 403** — needs a decision: headless browser (fragile, arguably
-   adversarial), an official data agreement, or accept HDFC stays synthetic.
-3. **Headless browser dependency** — UTI and Mirae are client-rendered. If ≥2 of
-   10 need Playwright, that is a real operational dependency on this box and
-   should be an explicit decision, not a quiet import.
-4. **Units** — ₹ lakhs vs crores varies by AMC and is a silent 100× error class.
-   Add a gate once Phase A establishes how units are declared.
-5. **Parag Parikh** is out of scope but commonly held. Reconsider the top-10 cut
+**Resolved by Phase A** (details in [`AMFI_LAYOUTS.md`](AMFI_LAYOUTS.md)):
+
+- ~~Past-month archives~~ → **retrievable** for Nippon (2013→), SBI (2023→), DSP
+  (2013→); Mirae looks current-month-only, so start collecting Mirae now.
+- ~~Headless browser dependency~~ → **~716 MB**, and unsafe on this host as
+  configured (1.97 GB RAM, no swap, 1 vCPU). 3 of the 4 obtainable AMCs need it.
+- ~~Units~~ → **not consistent between AMCs**; per-adapter config, enforced by G1.
+
+**Still open:**
+
+1. **HDFC's 403** — persists against a real headless browser, so this is a
+   deliberate block, not a scraping gap. Decide: official data agreement, or
+   accept HDFC stays `synthetic_estimated`. No evasion.
+2. **ICICI Prudential's live URL** — AMFI's directory link 404s, as do the
+   obvious alternatives. **Highest-value unknown**: ICICI is 3 of the 17 funds,
+   the single largest coverage gain available.
+3. **Kotak, ABSL, UTI, Axis download mechanism** — all render but expose no file
+   links; the download is script-triggered. Needs XHR interception to find the
+   real endpoint.
+4. **Swap on the prod box** — required before any browser-dependent adapter runs
+   there. Blocks SBI, Mirae and DSP.
+5. **DSP inner layout** — its ZIP members are true legacy `.xls` (BIFF) and need
+   `xlrd`, which is not installed. Adds a dependency.
+6. **Parag Parikh** is out of scope but commonly held. Reconsider the top-10 cut
    against actual client portfolios rather than industry AUM.
