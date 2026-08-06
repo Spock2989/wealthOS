@@ -2431,10 +2431,15 @@ function _runXRay(portfolioId, forceRefresh) {
 
     // Depth badge
     if (depthBadge) {
+      // Only a look-through built entirely from real AMFI disclosures gets the
+      // green FULL badge. Modelled constituents are never shown as green — that
+      // badge previously sat beside the estimated-data banner contradicting it.
       var depthMap = {
-        'full':        { label:'FULL LOOK-THROUGH', color:'var(--ok)' },
-        'partial':     { label:'PARTIAL LOOK-THROUGH', color:'var(--warn)' },
-        'direct_only': { label:'DIRECT HOLDINGS ONLY', color:'var(--ink-3)' },
+        'full':              { label:'FULL LOOK-THROUGH', color:'var(--ok)' },
+        'partial':           { label:'PARTIAL LOOK-THROUGH', color:'var(--warn)' },
+        'estimated':         { label:'ESTIMATED — MODELLED CONSTITUENTS', color:'var(--warn)' },
+        'partial_estimated': { label:'PARTIAL · ESTIMATED CONSTITUENTS', color:'var(--warn)' },
+        'direct_only':       { label:'DIRECT HOLDINGS ONLY', color:'var(--ink-3)' },
       };
       var depthInfo = depthMap[d.lookthrough_depth] || depthMap['direct_only'];
       depthBadge.style.color = depthInfo.color;

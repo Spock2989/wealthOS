@@ -104,11 +104,30 @@ def _aggregate_market_cap(underlying_positions: List[Dict]) -> Dict[str, float]:
 
 
 def _determine_depth(dq: Dict) -> str:
-    """Classify look-through depth based on data coverage."""
-    total_funds = dq.get("funds_with_constituents", 0) + dq.get("funds_without_constituents", 0)
+    """
+    Classify look-through depth by BOTH coverage and provenance.
+
+    Coverage alone is not enough: a portfolio whose funds are all modelled has
+    complete coverage and zero real data. Reporting that as "full" put a green
+    FULL LOOK-THROUGH badge directly beside a banner saying the data was
+    estimated. "full" now means every constituent came from a real AMFI
+    disclosure — nothing else earns it.
+
+      direct_only       no funds at all
+      estimated         every decomposed fund is modelled
+      partial_estimated some modelled, and some funds have no data
+      partial           real data, but some funds have none
+      full              every fund decomposed from a real disclosure
+    """
+    without   = dq.get("funds_without_constituents", 0)
+    synthetic = dq.get("funds_synthetic_count", 0)
+    total_funds = dq.get("funds_with_constituents", 0) + without
+
     if total_funds == 0:
         return "direct_only"
-    if dq.get("funds_without_constituents", 0) == 0:
+    if synthetic > 0:
+        return "partial_estimated" if without > 0 else "estimated"
+    if without == 0:
         return "full"
     return "partial"
 
