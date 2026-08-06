@@ -667,6 +667,18 @@ def get_fund_constituents(
         logger.debug("No scheme_code for ISIN %s — likely an equity stock, not a fund", isin)
         return [], "not_a_fund"
 
+    # Step 1b: refuse to serve constituents for funds we cannot honestly model.
+    # This runs BEFORE the cache lookup on purpose. Commodity/international FoFs
+    # already have fabricated rows cached from before that rule existed, and a
+    # cache hit would keep serving them — a silver ETF FoF "holding" HDFC Bank.
+    # Checking here also avoids a doomed AMFI fetch on every request.
+    if _detect_fund_category(fund_name) == NO_TEMPLATE_CATEGORY:
+        logger.info(
+            "Fund '%s' is commodity/international — not modellable; "
+            "reporting as data_pending regardless of cache", fund_name,
+        )
+        return [], "not_modellable"
+
     # Step 2: check cache.
     # Provenance follows the data: a cached synthetic row is still synthetic.
     # Returning "cache" here would launder modelled data into apparent fact.
