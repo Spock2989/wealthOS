@@ -37,6 +37,13 @@ class FundConstituent(Base):
     disclosure_date  = Column(String(10))                 # YYYY-MM-DD of the disclosure
     fetched_at       = Column(DateTime, default=datetime.utcnow)
 
+    # Provenance — how this row was obtained. Required for traceability:
+    #   "amfi_live"           real AMFI portfolio disclosure
+    #   "synthetic_estimated" modelled from the fund's SEBI mandate category
+    #   "unknown_legacy"      written before provenance was tracked (treat as unverified)
+    # Never present these interchangeably in the UI — see build_portfolio_lookthrough().
+    source           = Column(String(32), default="unknown_legacy", index=True)
+
     __table_args__ = (
         UniqueConstraint("scheme_code", "underlying_isin", "disclosure_date",
                          name="uq_scheme_underlying_date"),

@@ -49,6 +49,14 @@ app = FastAPI(
 def startup():
     """Create all tables on first boot. Safe on existing DB — skips tables that exist."""
     create_tables()
+    # Validate the optional AI key and log loudly if it is a placeholder.
+    # Non-fatal by design — the memo layer must not gate the core API.
+    try:
+        from app.ai.client import startup_check
+        startup_check()
+    except Exception as e:                      # never block boot on this
+        import logging
+        logging.getLogger(__name__).warning("AI key startup check skipped: %s", e)
 
 
 # v1 API routes

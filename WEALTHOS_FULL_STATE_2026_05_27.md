@@ -22,7 +22,7 @@ WealthOS is a **financial intelligence infrastructure system** for Indian mutual
 | Admin email | tiwarikshitij20@gmail.com |
 | Admin password | WealthOS2026! |
 | Server SSH | `ssh root@64.227.147.106` |
-| Backend service name | `wealthos-api` (NOT `wealthos`) |
+| Backend service name | **`wealthos`** — NOT `wealthos-api` (corrected 2026-08-06, see §2) |
 | Backend port | 8000 (127.0.0.1 only, nginx proxies) |
 | DB | PostgreSQL (running) + SQLite fallback |
 | Nginx frontend | `/opt/wlthos/frontend/dist/` |
@@ -41,12 +41,45 @@ Browser → Nginx (api.wlthos.in:443) → 127.0.0.1:8000 (FastAPI)
 FastAPI → PostgreSQL (running, tables exist) or SQLite fallback
 ```
 
-**CRITICAL:** The service is called `wealthos-api`, not `wealthos`. Always use:
-```bash
-systemctl restart wealthos-api
-systemctl status wealthos-api
-journalctl -u wealthos-api -n 50
-```
+> ## 🚨 CRITICAL — CORRECTED 2026-08-06
+>
+> **The live service is `wealthos`. It is NOT `wealthos-api`.**
+>
+> This document previously stated the opposite, and that single line cost
+> **ten weeks of deploys that silently did nothing.**
+>
+> Two systemd units exist, both titled "WealthOS API", both with an identical
+> `ExecStart` on port 8000:
+>
+> | Unit | Created | Reality |
+> |---|---|---|
+> | `wealthos.service` | 2026-05-27 20:17 | **Holds port 8000. This serves all traffic.** |
+> | `wealthos-api.service` | 2026-05-27 07:30 | Duplicate. Cannot bind — port already taken. Crash-loops on `Address already in use`, then systemd gives up. |
+>
+> `wealthos-api` was correct when this doc was written that morning. Someone
+> created `wealthos.service` at 20:17 the same evening; it took the port, and
+> the doc was never updated. Every `systemctl restart wealthos-api` since has
+> been a **no-op against a dead unit** — the real process kept running stale
+> code and stale environment variables.
+>
+> This is why the AI Memo held a placeholder `ANTHROPIC_API_KEY` for weeks
+> after it was "fixed", and why code deployed since May appeared never to go
+> live.
+>
+> **Always use:**
+> ```bash
+> systemctl restart wealthos
+> systemctl status wealthos
+> journalctl -u wealthos -n 50
+> ```
+>
+> `wealthos-api.service` was disabled on 2026-08-06. If you ever see it come
+> back, something re-enabled it — remove it rather than restarting it.
+>
+> Note the **nginx** config file genuinely is named `wealthos-api`
+> (`/etc/nginx/sites-available/wealthos-api`) — that name is correct and
+> unrelated to the systemd unit. The live vhost is
+> `/etc/nginx/sites-enabled/wlthos`.
 
 ---
 
@@ -347,7 +380,7 @@ rsync -avz /Users/user/Documents/Claude/Projects/WealthOS/frontend/dist/ \
   ssh root@64.227.147.106 "chmod 644 /opt/wlthos/frontend/dist/*.html"
 
 # Restart backend (correct service name)
-ssh root@64.227.147.106 "systemctl restart wealthos-api && sleep 3 && systemctl status wealthos-api"
+ssh root@64.227.147.106 "systemctl restart wealthos && sleep 3 && systemctl status wealthos"
 
 # Verify health
 ssh root@64.227.147.106 "curl -s http://127.0.0.1:8000/health"
@@ -395,7 +428,8 @@ These are the next features in priority order:
 3. **Determinism is law** — same input → same output, always.
 4. **Explainability is mandatory** — every metric has a methodology version and audit trail.
 5. **No CORSMiddleware in FastAPI** — nginx handles CORS exclusively. Adding it causes duplicate headers that break Safari.
-6. **Service name is `wealthos-api`** — not `wealthos`. Always use the correct name.
+6. **Service name is `wealthos`** — NOT `wealthos-api`. Corrected 2026-08-06; the
+   old instruction caused ten weeks of no-op deploys. See §2.
 
 ---
 

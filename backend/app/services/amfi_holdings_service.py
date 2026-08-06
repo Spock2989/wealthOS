@@ -99,18 +99,64 @@ def get_scheme_code_from_isin(isin: str, db_path: str) -> Optional[str]:
         return None
 
 
+# ── Provenance tags ─────────────────────────────────────────────
+SOURCE_AMFI_LIVE = "amfi_live"
+SOURCE_SYNTHETIC = "synthetic_estimated"
+SOURCE_UNKNOWN   = "unknown_legacy"
+
+# Sources that are NOT a real AMFI disclosure and must be disclosed as such.
+NON_DISCLOSED_SOURCES = {SOURCE_SYNTHETIC, SOURCE_UNKNOWN}
+
+
+def _dominant_source(constituents: List[dict]) -> str:
+    """
+    Collapse a constituent list to one provenance tag for the whole fund.
+
+    Biased toward honesty: if ANY row is not a real disclosure, the fund is
+    reported as not-disclosed. A fund is only "amfi_live" when every row is.
+    """
+    if not constituents:
+        return SOURCE_UNKNOWN
+    tags = {c.get("source") or SOURCE_UNKNOWN for c in constituents}
+    if tags & NON_DISCLOSED_SOURCES:
+        return SOURCE_SYNTHETIC if SOURCE_SYNTHETIC in tags else SOURCE_UNKNOWN
+    return SOURCE_AMFI_LIVE
+
+
+def _ensure_source_column(conn) -> None:
+    """
+    Add fund_constituents.source to pre-existing tables.
+
+    Rows written before provenance tracking get NULL, which is read back as
+    "unknown_legacy" — deliberately NOT "amfi_live". We do not know they came
+    from a real disclosure, and claiming so would reintroduce the exact bug
+    this column exists to prevent.
+    """
+    try:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(fund_constituents)").fetchall()}
+        if cols and "source" not in cols:
+            conn.execute("ALTER TABLE fund_constituents ADD COLUMN source TEXT")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_fc_source ON fund_constituents(source)")
+            logger.info("Added fund_constituents.source column (existing rows → unknown_legacy)")
+    except Exception as e:
+        logger.warning("Could not ensure source column: %s", e)
+
+
 def get_cached_constituents(scheme_code: str, db_path: str,
                             max_age_days: int = 35) -> Optional[List[dict]]:
     """
     Return cached fund_constituents for this scheme_code if fresher than max_age_days.
     Returns None if no cache or cache is stale (triggers a fresh AMFI fetch).
+
+    Each returned constituent carries its original "source" so provenance
+    follows the data through the cache rather than being flattened to "cache".
     """
     try:
         conn = sqlite3.connect(db_path)
-        cutoff = datetime.utcnow().strftime("%Y-%m-%d")
+        _ensure_source_column(conn)
         rows = conn.execute("""
             SELECT underlying_isin, underlying_name, underlying_sector,
-                   underlying_cap, weight_in_fund_pct, disclosure_date
+                   underlying_cap, weight_in_fund_pct, disclosure_date, source
             FROM fund_constituents
             WHERE scheme_code=?
             ORDER BY weight_in_fund_pct DESC
@@ -133,6 +179,7 @@ def get_cached_constituents(scheme_code: str, db_path: str,
                 "underlying_cap":     r[3],
                 "weight_in_fund_pct": r[4],
                 "disclosure_date":    r[5],
+                "source":             r[6] or SOURCE_UNKNOWN,
             }
             for r in rows
         ]
@@ -142,10 +189,14 @@ def get_cached_constituents(scheme_code: str, db_path: str,
 
 
 def store_constituents(scheme_code: str, fund_isin: str, fund_name: str,
-                       constituents: List[dict], db_path: str) -> int:
+                       constituents: List[dict], db_path: str,
+                       source: str = SOURCE_UNKNOWN) -> int:
     """
     Upsert fund constituent rows into fund_constituents table.
     Returns number of rows stored.
+
+    `source` records how the data was obtained and is persisted per row, so a
+    later cache hit still knows whether it is a real disclosure or a model.
     """
     if not constituents:
         return 0
@@ -166,11 +217,13 @@ def store_constituents(scheme_code: str, fund_isin: str, fund_name: str,
                 underlying_cap TEXT,
                 weight_in_fund_pct REAL NOT NULL,
                 disclosure_date TEXT,
-                fetched_at TEXT
+                fetched_at TEXT,
+                source TEXT
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS ix_fc_scheme ON fund_constituents(scheme_code)")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_fc_u_isin ON fund_constituents(underlying_isin)")
+        _ensure_source_column(conn)
 
         for c in constituents:
             import uuid as _uuid
@@ -180,8 +233,8 @@ def store_constituents(scheme_code: str, fund_isin: str, fund_name: str,
                     INSERT OR REPLACE INTO fund_constituents
                     (id, scheme_code, fund_isin, fund_name, underlying_isin,
                      underlying_name, underlying_sector, underlying_cap,
-                     weight_in_fund_pct, disclosure_date, fetched_at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                     weight_in_fund_pct, disclosure_date, fetched_at, source)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     str(_uuid.uuid4()),
                     scheme_code,
@@ -194,6 +247,7 @@ def store_constituents(scheme_code: str, fund_isin: str, fund_name: str,
                     float(c.get("weight_in_fund_pct", 0)),
                     disc_date,
                     fetched_at,
+                    c.get("source") or source,
                 ))
                 rows_stored += 1
             except Exception as row_err:
@@ -404,16 +458,38 @@ _TEMPLATES: Dict[str, List[Tuple[str, float]]] = {
 }
 
 
+# Categories with NO defensible Indian-equity template. Modelling these as a
+# Nifty-50 proxy invented holdings the fund cannot possibly own — a silver ETF
+# FoF was showing HDFC Bank at 8%. These return no constituents so the caller
+# marks them data_pending and the UI shows them as opaque.
+NO_TEMPLATE_CATEGORY = "no_template"
+
+
 def _detect_fund_category(fund_name: str, scheme_type: str = "") -> str:
-    """Map fund name + AMFI scheme type to one of our template keys."""
+    """
+    Map fund name + AMFI scheme type to one of our template keys.
+
+    Returns NO_TEMPLATE_CATEGORY for funds whose real holdings cannot be
+    approximated from an Indian large-cap mandate (commodity/precious-metal
+    FoFs, international/feeder funds). Those must not be modelled.
+    """
     n  = fund_name.lower()
     st = scheme_type.lower()
-    if any(x in n for x in ["elss", "tax saver", "tax saving", "tax-saver"]):
+    # Punctuation-flattened form so "U.S. Opportunities" matches "us opportunities"
+    # and "Mid-Cap" matches "mid cap". AMC naming is inconsistent on both.
+    n_flat = n.replace(".", "").replace("-", " ")
+    n_flat = " ".join(n_flat.split())
+
+    if any(x in n_flat for x in ["elss", "tax saver", "tax saving"]):
         return "elss"
-    if any(x in n for x in ["nasdaq", "us opportunities", "us equity", "global", "international", "world"]):
-        return "diversified"   # international — show Indian proxy holdings
-    if any(x in n for x in ["silver", "gold", "commodity"]):
-        return "diversified"   # commodity FoF — minimal equity via rebalancing
+    # International / feeder funds hold foreign securities, not Indian equity.
+    if any(x in n_flat for x in ["nasdaq", "us opportunities", "us equity", "global",
+                                 "international", "world", "feeder", "overseas",
+                                 "s&p 500", "msci"]):
+        return NO_TEMPLATE_CATEGORY
+    # Commodity / precious-metal FoFs hold bullion or ETF units, not equity.
+    if any(x in n_flat for x in ["silver", "gold", "commodity", "bullion"]):
+        return NO_TEMPLATE_CATEGORY
     if any(x in n for x in ["corporate bond", "bond fund", "credit risk"]) or "debt" in st:
         return "debt_corp"
     if any(x in n for x in ["large & mid", "large and mid", "large mid"]):
@@ -437,8 +513,20 @@ def generate_synthetic_portfolio(fund_name: str, scheme_type: str = "") -> List[
     composition mandated by SEBI — NOT actual portfolio disclosures from AMFI.
     Weights are representative; actual fund holdings will differ.
     Used as a fallback when AMFI live data is unavailable.
+
+    Returns [] for fund categories that cannot be honestly approximated from an
+    Indian equity mandate (commodity/precious-metal FoFs, international feeders).
+    The caller then reports the fund as data_pending rather than inventing a
+    portfolio for it.
     """
     category = _detect_fund_category(fund_name, scheme_type)
+    if category == NO_TEMPLATE_CATEGORY:
+        logger.info(
+            "No defensible template for '%s' (commodity/international) — "
+            "returning no constituents; fund will show as data_pending",
+            fund_name,
+        )
+        return []
     template = _TEMPLATES.get(category, _TEMPLATES["diversified"])
     disc_date = date.today().isoformat()
 
@@ -579,25 +667,28 @@ def get_fund_constituents(
         logger.debug("No scheme_code for ISIN %s — likely an equity stock, not a fund", isin)
         return [], "not_a_fund"
 
-    # Step 2: check cache
+    # Step 2: check cache.
+    # Provenance follows the data: a cached synthetic row is still synthetic.
+    # Returning "cache" here would launder modelled data into apparent fact.
     if not force_refresh:
         cached = get_cached_constituents(scheme_code, db_path)
         if cached:
-            return cached, "cache"
+            return cached, _dominant_source(cached)
 
     # Step 3: fetch from AMFI
     logger.info("Fetching AMFI portfolio for scheme %s (%s)", scheme_code, fund_name)
     constituents = fetch_amfi_portfolio(scheme_code, fund_name)
     if constituents:
-        stored = store_constituents(scheme_code, isin, fund_name, constituents, db_path)
+        stored = store_constituents(scheme_code, isin, fund_name, constituents,
+                                    db_path, source=SOURCE_AMFI_LIVE)
         logger.info("Stored %d constituents for scheme %s", stored, scheme_code)
-        return constituents, "amfi_live"
+        return constituents, SOURCE_AMFI_LIVE
 
     # Step 4: fallback to whatever is in stale cache
     stale = get_cached_constituents(scheme_code, db_path, max_age_days=365)
     if stale:
         logger.info("Using stale cache for scheme %s", scheme_code)
-        return stale, "cache_stale"
+        return stale, _dominant_source(stale)
 
     # Step 5: synthetic fallback — deterministic, mandate-based estimation
     # Look up scheme_type from amfi_instruments for better category detection
@@ -616,9 +707,10 @@ def get_fund_constituents(
 
     synthetic = generate_synthetic_portfolio(fund_name, scheme_type)
     if synthetic:
-        stored = store_constituents(scheme_code, isin, fund_name, synthetic, db_path)
+        stored = store_constituents(scheme_code, isin, fund_name, synthetic,
+                                    db_path, source=SOURCE_SYNTHETIC)
         logger.info("Stored %d synthetic holdings for scheme %s (%s)", stored, scheme_code, fund_name)
-        return synthetic, "synthetic_estimated"
+        return synthetic, SOURCE_SYNTHETIC
 
     return [], "unavailable"
 
@@ -672,6 +764,11 @@ def build_portfolio_lookthrough(
         "funds_without_constituents": 0,
         "funds_pending_data": [],
         "direct_equity_count": 0,
+        # Provenance split — never collapse these into funds_with_constituents.
+        # funds_real_count is ONLY genuine AMFI disclosures.
+        "funds_real_count": 0,
+        "funds_synthetic_count": 0,
+        "funds_synthetic_names": [],
     }
 
     # Build fund_constituents map for pairwise overlap later
@@ -700,6 +797,8 @@ def build_portfolio_lookthrough(
                 "fund_weight_pct":        round(holding_pct, 3),
                 "constituent_weight_pct": 100.0,
                 "contribution_pct":       round(holding_pct, 3),
+                "data_source":            "direct_holding",
+                "is_estimated":           False,
             })
             data_quality["direct_equity_count"] += 1
             continue
@@ -723,10 +822,17 @@ def build_portfolio_lookthrough(
                 "constituent_weight_pct": None,  # unknown
                 "contribution_pct":       round(holding_pct, 3),
                 "data_source":            source,
+                "is_estimated":           False,   # opaque, not modelled
             })
             continue
 
         data_quality["funds_with_constituents"] += 1
+        is_modelled = source in NON_DISCLOSED_SOURCES
+        if is_modelled:
+            data_quality["funds_synthetic_count"] += 1
+            data_quality["funds_synthetic_names"].append(name)
+        else:
+            data_quality["funds_real_count"] += 1
         fund_constituents_map[isin] = {c["underlying_isin"]: c["weight_in_fund_pct"]
                                        for c in constituents}
 
@@ -746,6 +852,8 @@ def build_portfolio_lookthrough(
                 "fund_weight_pct":        round(holding_pct, 3),
                 "constituent_weight_pct": round(c["weight_in_fund_pct"], 3),
                 "contribution_pct":       round(contrib_pct, 4),
+                "data_source":            source,
+                "is_estimated":           is_modelled,
             })
 
     # Build sorted underlying positions list
@@ -759,6 +867,9 @@ def build_portfolio_lookthrough(
             "market_cap":          data["cap"] or "n_a",
             "effective_weight_pct": round(eff_pct, 3),
             "vehicles_count":      len(data["sources"]),
+            # True if ANY contributing vehicle used modelled constituents, so a
+            # single row can be badged without re-walking sources in the UI.
+            "is_estimated":        any(s.get("is_estimated") for s in data["sources"]),
             "sources":             data["sources"],
         })
     underlying_positions.sort(key=lambda x: x["effective_weight_pct"], reverse=True)
