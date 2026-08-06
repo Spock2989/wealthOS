@@ -261,3 +261,77 @@ hides transformation logic
 introduces ambiguous mapping
 sacrifices accuracy for “smartness”
 END OF INSTRUCTION
+
+---
+
+# 12. PRODUCTION OPERATIONS — READ BEFORE ANY DEPLOY
+
+## 12.1 🚨 The service is `wealthos`, NOT `wealthos-api`
+
+```bash
+systemctl restart wealthos     # ✅ correct — this is what serves traffic
+systemctl restart wealthos-api # ❌ WRONG — dead duplicate unit, silent no-op
+```
+
+Two systemd units existed, both titled "WealthOS API", both with an identical
+`ExecStart` on port 8000. `wealthos.service` (created 2026-05-27 20:17) holds
+the port. `wealthos-api.service` (created 07:30 the same day) cannot bind and
+crash-loops on `Address already in use`.
+
+**This one wrong instruction caused ten weeks of deploys that appeared not to
+land.** Restarting `wealthos-api` returned success while the real process kept
+running May code with stale environment variables — which is why a placeholder
+`ANTHROPIC_API_KEY` survived weeks of "fixes". `wealthos-api` was disabled on
+2026-08-06.
+
+If a deploy seems not to take effect, verify the running process actually
+restarted before changing any code:
+
+```bash
+systemctl show wealthos -p MainPID -p ActiveEnterTimestamp
+```
+
+## 12.2 The entry point is root `main.py`, not `app/main.py`
+
+```
+ExecStart=/opt/wlthos/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2
+WorkingDirectory=/opt/wlthos/backend
+```
+
+`uvicorn main:app` resolves to `/opt/wlthos/backend/main.py`. A separate
+`app/main.py` exists and has **diverged** (different routers, adds a
+CORSMiddleware that root `main.py` explicitly forbids). Router changes made only
+in `app/main.py` will never go live. Register routers in **root `main.py`**.
+
+## 12.3 Deploy sequence
+
+```bash
+rsync -avz backend/ root@64.227.147.106:/opt/wlthos/backend/ \
+  --exclude='__pycache__' --exclude='venv' --exclude='.venv' \
+  --exclude='.env' --exclude='*.pyc' --exclude='wealthos.db*'
+rsync -avz frontend/dist/ root@64.227.147.106:/opt/wlthos/frontend/dist/
+ssh root@64.227.147.106 "systemctl restart wealthos"
+```
+
+Never rsync `.env` or `wealthos.db*` — both are server-owned state.
+
+Back up the DB before any migration, and **checkpoint the WAL first** — it has
+held multiple MB of un-merged data, so a plain `cp` produces a silently
+incomplete backup:
+
+```bash
+sqlite3 wealthos.db "PRAGMA wal_checkpoint(TRUNCATE);"
+sqlite3 wealthos.db ".backup wealthos.db.$(date +%Y%m%d_%H%M%S).bak"
+```
+
+## 12.4 Data provenance is a Prime Directive concern
+
+Per §2.4 (traceability), any fund constituent that is **modelled** rather than a
+real AMFI disclosure must be tagged `synthetic_estimated` in
+`fund_constituents.source` and disclosed in the UI. Never let modelled data
+reach a user labelled as, or visually indistinguishable from, a real
+disclosure. `generate_synthetic_portfolio()` is a permitted labelled fallback —
+it is not a data source.
+
+Deterministic arithmetic over invented inputs still violates §10. Reproducible
+and wrong is still wrong.

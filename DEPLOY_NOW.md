@@ -79,9 +79,9 @@ access-control-allow-credentials: true
 
 ```bash
 ssh root@64.227.147.106
-systemctl restart wealthos-api
+systemctl restart wealthos
 sleep 3
-systemctl status wealthos-api   # must show: active (running)
+systemctl status wealthos   # must show: active (running)
 curl http://127.0.0.1:8000/health
 # Expected: {"status":"ok","service":"wealthos-api","version":"2.0.0","db":"..."}
 ```
@@ -174,7 +174,7 @@ Add `loadLookthrough(portfolioId)` call to populate sector/cap bars from the API
 ### Priority 4 — PostgreSQL migration
 Current state: service connects to PostgreSQL (`.env` or systemd env has PG URL).
 The SQLite seed was run but the service uses PG.
-- Confirm what DATABASE_URL the service actually uses: `systemctl cat wealthos-api | grep DATABASE`
+- Confirm what DATABASE_URL the service actually uses: `systemctl cat wealthos | grep DATABASE`
 - If PG: run the admin seed against PG using the psycopg2 URL
 - If SQLite: all is fine
 
@@ -220,10 +220,10 @@ Open browser DevTools → Console, then try login. Look for:
 → nginx still not sending headers. Check `nginx -t` output on server, check which config is symlinked: `ls -la /etc/nginx/sites-enabled/`
 
 **401 Unauthorized**:
-→ Admin user may not exist in the DB the service is using. Check: `systemctl cat wealthos-api | grep DATABASE` to see which DB URL is active. If PostgreSQL, the sqlite-seeded admin doesn't apply. Run the seed against the correct DB.
+→ Admin user may not exist in the DB the service is using. Check: `systemctl cat wealthos | grep DATABASE` to see which DB URL is active. If PostgreSQL, the sqlite-seeded admin doesn't apply. Run the seed against the correct DB.
 
 **Network Error (fetch failed)**:
-→ API is down. Check `systemctl status wealthos-api` on server.
+→ API is down. Check `systemctl status wealthos` on server.
 
 **"Invalid email or password"**:
-→ User exists but password hash mismatch. The seed uses HMAC-SHA256 with pepper `"wealthos-pepper"`. If PW_PEPPER env var is different on server, hashes won't match. Check `systemctl cat wealthos-api | grep PW_PEPPER`.
+→ User exists but password hash mismatch. The seed uses HMAC-SHA256 with pepper `"wealthos-pepper"`. If PW_PEPPER env var is different on server, hashes won't match. Check `systemctl cat wealthos | grep PW_PEPPER`.

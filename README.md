@@ -109,10 +109,10 @@ make ssh
 ssh -o ServerAliveInterval=30 root@64.227.147.106
 
 # Restart API
-systemctl restart wealthos-api && sleep 12 && curl https://api.wlthos.in/health
+systemctl restart wealthos && sleep 12 && curl https://api.wlthos.in/health
 
 # Logs
-journalctl -u wealthos-api -n 50 --no-pager
+journalctl -u wealthos -n 50 --no-pager
 
 # Seed AMFI data
 make seed

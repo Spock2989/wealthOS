@@ -30,7 +30,7 @@ Or manually:
 rsync -avz backend/ root@64.227.147.106:/opt/wlthos/backend/ \
   --exclude='__pycache__' --exclude='venv' --exclude='.env' --exclude='*.pyc'
 
-ssh root@64.227.147.106 "systemctl restart wealthos-api && sleep 5 && curl -s http://localhost:8000/health"
+ssh root@64.227.147.106 "systemctl restart wealthos && sleep 5 && curl -s http://localhost:8000/health"
 ```
 
 ### ⚠️ FRONTEND DEPLOY — CORRECT PATH (verified 2026-05-27)

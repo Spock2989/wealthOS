@@ -200,8 +200,8 @@ something I do on your behalf. Generate a key at
 
 ```bash
 ssh root@64.227.147.106 "nano /opt/wlthos/backend/.env"   # replace the line
-ssh root@64.227.147.106 "systemctl restart wealthos-api"
-ssh root@64.227.147.106 "journalctl -u wealthos-api -n 20 --no-pager | grep -i 'ANTHROPIC\|AI memo'"
+ssh root@64.227.147.106 "systemctl restart wealthos"
+ssh root@64.227.147.106 "journalctl -u wealthos -n 20 --no-pager | grep -i 'ANTHROPIC\|AI memo'"
 ```
 
 After commit `5642cc3` the log states plainly whether the key validated or why
@@ -224,10 +224,22 @@ Phase 1 logic was verified with standalone assertion scripts against the real
 prod values instead, since the suite could not run.
 
 ### Deploy state
-**Nothing in this branch is on the server.** Note prod boots
-`/opt/wlthos/backend/main.py` (root) via systemd — **not** `app/main.py`. See
-the earlier investigation: `app/main.py` is served by a PM2 process on port 8765
-that nginx does not route to.
+
+> 🚨 **CORRECTION (2026-08-06).** An earlier revision of this document said the
+> live systemd unit was `wealthos-api`. **That was wrong.** The live unit is
+> **`wealthos`**. `wealthos-api` is a duplicate that cannot bind port 8000 and
+> has crash-looped since May; restarting it is a silent no-op. It was disabled
+> on 2026-08-06. Full explanation in
+> [`WEALTHOS_FULL_STATE_2026_05_27.md`](../WEALTHOS_FULL_STATE_2026_05_27.md) §2
+> and [`CLAUDE.md`](../CLAUDE.md) §12.1.
+
+Prod boots `/opt/wlthos/backend/main.py` (**root**, not `app/main.py`) via
+`wealthos.service`: `uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2`,
+`WorkingDirectory=/opt/wlthos/backend`.
+
+A PM2 process (`wlthos-api`) also runs `app.main:app` on port **8765**. Nginx
+does not route to it — it is unreachable and its code is stale. Do not deploy
+to `app/main.py` expecting it to go live.
 
 The `source` column migration runs automatically via `_ensure_source_column()`
 on first constituent read/write after deploy.
