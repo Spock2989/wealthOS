@@ -1580,7 +1580,11 @@ function openPortfolio(portfolioId) {
                 ? '−' + Math.abs(parseFloat(_dd.worst_case_drawdown_pct || _dd.max_drawdown_pct)).toFixed(1) + '%' : '—';
 
     document.getElementById('clientHHI').textContent  = hhi;
-    document.getElementById('clientNeff').textContent = neff;
+    // Neff is only interpretable against the position count it is drawn from:
+    // "8.4" alone reads like a score, "8.4 of 17" reads as the effective
+    // number of independent bets across 17 holdings.
+    document.getElementById('clientNeff').textContent =
+      (neff !== '—' && a.holding_count) ? neff + ' of ' + a.holding_count : neff;
     document.getElementById('clientVol').textContent  = vol;
     document.getElementById('clientDD').textContent   = dd;
     // Max gain pulled from outlook engine (populated after scenario run; set placeholder from vol)
@@ -2510,7 +2514,9 @@ function _runXRay(portfolioId, forceRefresh) {
         }).join('');
         underEl.innerHTML = '<table class="tbl"><thead><tr><th>#</th><th>INSTRUMENT</th><th>EFFECTIVE WEIGHT</th><th>CAP</th></tr></thead><tbody>' + rows + '</tbody></table>' +
           '<div style="padding:10px 18px;border-top:1px solid var(--line);font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--ink-3)">' +
-          '// ' + (d.total_underlying_positions||underlying.length) + ' UNIQUE POSITIONS · EFFECTIVE WEIGHT = FUND_WEIGHT × STOCK_WEIGHT_IN_FUND · ' + (d.methodology_version||'lookthrough_v2.0') + '</div>';
+          '// ' + (d.total_underlying_positions||underlying.length) +
+          (_xrayHasEstimated ? ' UNDERLYING POSITIONS (ESTIMATED)' : ' UNDERLYING POSITIONS') +
+          ' · EFFECTIVE WEIGHT = FUND_WEIGHT × STOCK_WEIGHT_IN_FUND · ' + (d.methodology_version||'lookthrough_v2.0') + '</div>';
       } else {
         underEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-3);font-size:13px">No underlying positions. Constituent data may not be available yet.</div>';
       }
