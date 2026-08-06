@@ -11,6 +11,11 @@ logger = logging.getLogger(__name__)
 _HAIKU   = "claude-haiku-4-5-20251001"
 _SONNET  = "claude-sonnet-4-6"
 
+# The model call_llm() uses when the caller does not name one. Callers that
+# record which model produced a stored artefact MUST report the model they
+# actually passed — never a hardcoded string, which silently goes stale.
+DEFAULT_MODEL = _HAIKU
+
 # Substrings that mark a copied-from-.env.example placeholder rather than a key.
 _PLACEHOLDER_MARKERS = (
     "your_", "your-", "yourkey", "xxx", "changeme", "change_me",
@@ -69,7 +74,7 @@ def startup_check() -> bool:
         return False
 
 
-def call_llm(prompt: str, *, model: str = _HAIKU, max_tokens: int = 1500) -> str:
+def call_llm(prompt: str, *, model: str = DEFAULT_MODEL, max_tokens: int = 1500) -> str:
     """
     Call the Anthropic API. Raises a clear RuntimeError on auth / model errors
     so the caller can surface a structured 500, not a cryptic stack trace.

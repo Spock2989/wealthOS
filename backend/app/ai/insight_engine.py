@@ -1,4 +1,4 @@
-from app.ai.client import call_llm
+from app.ai.client import call_llm, DEFAULT_MODEL
 import dataclasses, json
 
 class InsightEngine:
@@ -53,14 +53,20 @@ Use exact numbers from the analytics throughout. Reference specific scenarios (R
 Analytics JSON:
 {d}"""
 
-        s = call_llm(summary_prompt)
-        m = call_llm(meeting_prompt)
-        r = call_llm(risk_prompt)
+        # Pass the model explicitly and report that same variable, so the
+        # stored report can never claim a model that did not produce it.
+        # This previously hardcoded "claude-sonnet-4-20250514" while call_llm
+        # actually ran Haiku — a false provenance label on a persisted record.
+        model = DEFAULT_MODEL
+
+        s = call_llm(summary_prompt, model=model)
+        m = call_llm(meeting_prompt, model=model)
+        r = call_llm(risk_prompt, model=model)
 
         return {
             "portfolio_summary": s,
             "meeting_prep_notes": m,
             "risk_commentary": r,
             "ai_provider": "claude",
-            "model": "claude-sonnet-4-20250514"
+            "model": model,
         }
