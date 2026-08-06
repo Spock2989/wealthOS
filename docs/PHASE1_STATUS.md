@@ -2,8 +2,10 @@
 
 **Branch:** `fix/phase1-synthetic-data-disclosure`
 **Base:** `main` @ `2d1da82`
-**Status:** 5 of 6 items complete. **NOT merged. NOT deployed.**
-**Date:** 2026-08-05
+**Status:** all 6 items complete in code. **NOT merged. NOT deployed.**
+The one remaining action is an operator task: set a real `ANTHROPIC_API_KEY`
+in prod `.env` (see below). Item 5's production DELETE was executed 2026-08-06.
+**Date:** 2026-08-05, updated 2026-08-06
 
 Phase 1 goal: the system was showing modelled fund constituents as if they
 were real AMFI disclosures. The fix is **disclosure, not removal** —
@@ -82,26 +84,58 @@ modelled and real together — the original bug).
 
 ## What's left of Phase 1
 
-### Item 6 — header labels (NOT STARTED)
+### Item 6 — header labels ✅ DONE — commit `7c72b45`
 In `frontend/dist/dashboard.html`:
 
-1. **Neff** — currently renders bare `8.4` (element `#clientNeff`, set at
-   ~line 1583). Should read **"Neff 8.4 of 17"** so the number is interpretable
-   against the position count. `holding_count` is on the analytics result.
-2. **Underlying position count** — the results footer (~line 2496) reads
-   `'// ' + total_underlying_positions + ' UNIQUE POSITIONS'`, printing **247**
-   with no qualification. Should read **"underlying positions (estimated)"**
-   whenever modelled constituents contributed.
-   A global `var _xrayHasEstimated` is **already declared and set** for exactly
-   this (set in `_runXRay` from `funds_synthetic_count`) — it is wired but not
-   yet consumed.
+1. **Neff** now renders **"8.4 of 17"** instead of a bare `8.4`, which read like
+   a score out of 10 rather than the effective number of independent bets.
+   Falls back to the bare value when `holding_count` is absent, rather than
+   printing "of undefined".
+2. **Underlying position count** now reads **"247 UNDERLYING POSITIONS
+   (ESTIMATED)"** whenever modelled constituents contributed, instead of
+   "247 UNIQUE POSITIONS" presented as counted fact.
 
-### Item 5, DB half — delete duplicate portfolio (NOT EXECUTED)
+Consumes `_xrayHasEstimated`, which `5bc3116` declared and set from
+`funds_synthetic_count` but left unread. When real AMFI coverage lands and
+`funds_synthetic_count` reaches 0, the "(ESTIMATED)" qualifier disappears on
+its own — no further code change needed.
 
-⚠️ **BLOCKED ON A BACKUP. Do not run this until a fresh backup exists.**
+### Item 5, DB half — delete duplicate portfolio ✅ DONE 2026-08-06
 
-**There is no backup of the current production database.** What exists on the
-server is stale and does **not** contain this data:
+Executed against production. Backup taken first:
+**`/opt/wlthos/backend/wealthos.db.20260806_044233.bak`** (3,612,672 bytes,
+`integrity_check: ok`).
+
+The WAL was checkpointed (`PRAGMA wal_checkpoint(TRUNCATE)`) **before** the
+backup — it held 4.6 MB of data and the main file grew ~208 KB when folded in.
+A plain `cp` of `wealthos.db` would have produced a backup missing that data.
+
+Backup verified to contain, before any delete: 381 `fund_constituents`, both
+portfolio rows, 17 holdings each, 2 users, 1 demo_request.
+
+Deleted in one `BEGIN IMMEDIATE` transaction — 19 rows, matching the
+pre-flight count exactly:
+
+| Table | Rows deleted |
+|---|---|
+| `analytics_snapshots` | 1 |
+| `holdings` | 17 |
+| `ai_reports` | 0 |
+| `portfolios` | 1 |
+
+Post-delete verification: target returns 0/0/0; keeper
+`f1bb14dc-f680-49ed-ba06-562538e971a9` intact at 1 portfolio / 17 holdings /
+1 snapshot; `fund_constituents` still 381; users 2; demo_requests 1;
+`integrity_check: ok`.
+
+One other portfolio remains and was untouched: `holdings-ZC0726.xlsx`
+(status `error`, 0 holdings, 2026-05-28) — a pre-existing failed upload.
+
+<details>
+<summary>Original pre-execution analysis (why a fresh backup was required)</summary>
+
+**There was no backup of the production database.** What existed on the
+server was stale and did **not** contain this data:
 
 | File | Date | Size | Contains the portfolio? |
 |---|---|---|---|
@@ -149,6 +183,8 @@ COMMIT;
 
 The ORM has `cascade="all, delete-orphan"`, but raw SQLite does not enforce it
 here — hence the explicit child deletes, children first.
+
+</details>
 
 ---
 
