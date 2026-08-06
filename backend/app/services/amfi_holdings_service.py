@@ -142,6 +142,22 @@ def _ensure_source_column(conn) -> None:
         logger.warning("Could not ensure source column: %s", e)
 
 
+def _ensure_superseded_column(conn) -> None:
+    """Add fund_constituents.superseded_at when reading a pre-crawler database."""
+    try:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(fund_constituents)").fetchall()}
+        if cols and "superseded_at" not in cols:
+            conn.execute("ALTER TABLE fund_constituents ADD COLUMN superseded_at TEXT")
+            logger.info("Added fund_constituents.superseded_at column")
+    except Exception as e:
+        logger.warning("Could not ensure superseded_at column: %s", e)
+
+
+# Real AMFI disclosure ingested by app/crawler. Distinct from SOURCE_AMFI_LIVE,
+# which means fetched live during a look-through request.
+SOURCE_AMFI_DISCLOSURE = "amfi_disclosure"
+
+
 def get_cached_constituents(scheme_code: str, db_path: str,
                             max_age_days: int = 35) -> Optional[List[dict]]:
     """
@@ -154,11 +170,17 @@ def get_cached_constituents(scheme_code: str, db_path: str,
     try:
         conn = sqlite3.connect(db_path)
         _ensure_source_column(conn)
+        # superseded_at IS NULL is essential, not cosmetic. When a real AMFI
+        # disclosure supersedes modelled rows, both remain in the table for
+        # audit (CLAUDE.md 2.4). Reading both back mixes them, and
+        # _dominant_source then reports the fund as synthetic forever — the
+        # real data would be ingested and still never surface.
+        _ensure_superseded_column(conn)
         rows = conn.execute("""
             SELECT underlying_isin, underlying_name, underlying_sector,
                    underlying_cap, weight_in_fund_pct, disclosure_date, source
             FROM fund_constituents
-            WHERE scheme_code=?
+            WHERE scheme_code=? AND superseded_at IS NULL
             ORDER BY weight_in_fund_pct DESC
         """, (scheme_code,)).fetchall()
         conn.close()
